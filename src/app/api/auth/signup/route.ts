@@ -1,11 +1,16 @@
 import { createUser, normalizeEmail } from "@/lib/auth";
 import { createSessionToken, sessionCookieHeader } from "@/lib/server-auth";
+import { getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 function validEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 export async function POST(req: Request) {
+  const ip = getClientIp(req);
+  const limited = rateLimit(`signup:${ip}`, 5, 5 * 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.resetAt);
+
   try {
     const { email, password, name } = await req.json();
     const cleanEmail = normalizeEmail(email);

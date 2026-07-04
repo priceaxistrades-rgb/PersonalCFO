@@ -1,7 +1,12 @@
 import { validateUser } from "@/lib/auth";
 import { createSessionToken, sessionCookieHeader } from "@/lib/server-auth";
+import { getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
+  const ip = getClientIp(req);
+  const limited = rateLimit(`login:${ip}`, 8, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.resetAt);
+
   try {
     const { email, password } = await req.json();
 

@@ -41,7 +41,12 @@ const NAV = [
   },
   {
     group: "System",
-    items: [{ href: "/settings", label: "Settings & Data", icon: "⚙️" }],
+    items: [
+      { href: "/onboarding", label: "Onboarding", icon: "✅" },
+      { href: "/settings", label: "Settings & Data", icon: "⚙️" },
+      { href: "/privacy", label: "Privacy", icon: "🔐" },
+      { href: "/terms", label: "Terms", icon: "📜" },
+    ],
   },
 ];
 
