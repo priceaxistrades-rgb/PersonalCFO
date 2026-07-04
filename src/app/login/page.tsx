@@ -1,14 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
-import { useSession } from "@/lib/session";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { setSession } = useSession();
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -27,11 +23,12 @@ export default function LoginPage() {
 
       const data = await res.json();
 
-      if (!res.ok) setError(data.error || "Login failed");
-      else {
-        setSession(data.session);
-        router.push("/");
-        router.refresh();
+      if (!res.ok) {
+        setError(data.error || "Login failed");
+        setLoading(false);
+      } else {
+        window.location.replace("/");
+        return;
       }
     } catch {
       setError("Network error. Please try again.");
