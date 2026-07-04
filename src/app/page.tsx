@@ -2,6 +2,7 @@ import { SectionTitle, Badge } from "@/components/ui/Card";
 import { FilteredDashboard } from "@/components/FilteredDashboard";
 import { ExcelButton } from "@/components/ExcelButton";
 import { MemberSelectorClient } from "@/components/MemberSelectorClient";
+import { QuickActionCenter } from "@/components/QuickActionCenter";
 import {
   getTransactions,
   getBills,
@@ -41,6 +42,8 @@ export default async function Dashboard() {
       />
 
       <MemberSelectorClient members={members} />
+
+      <QuickActionCenter accounts={accs} />
 
       <FilteredDashboard 
         txns={txns}
