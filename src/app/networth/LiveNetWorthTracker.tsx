@@ -31,7 +31,19 @@ function keyForInvestment(i: Investment) {
   return null;
 }
 
-export function LiveNetWorthTracker({ accounts, investments, debts, snapshots }: { accounts: Account[]; investments: Investment[]; debts: Debt[]; snapshots: Snapshot[] }) {
+export function LiveNetWorthTracker({ 
+  accounts, 
+  investments, 
+  debts, 
+  snapshots,
+  currentFlow 
+}: { 
+  accounts: Account[]; 
+  investments: Investment[]; 
+  debts: Debt[]; 
+  snapshots: Snapshot[];
+  currentFlow: { income: number; expense: number; savings: number };
+}) {
   const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
   const [loading, setLoading] = useState(false);
   const [updatedAt, setUpdatedAt] = useState("");
@@ -131,6 +143,18 @@ export function LiveNetWorthTracker({ accounts, investments, debts, snapshots }:
         <KpiCard label="Live Assets" value={inr(totalAssets, { compact: true })} icon="📦" tone="success" privacyKey="networth-assets" />
         <KpiCard label="Liabilities" value={inr(liabilities, { compact: true })} icon="📉" tone="danger" privacyKey="networth-liabilities" />
         <KpiCard label="Growth" value={inr(growth, { compact: true })} icon="🚀" tone="accent" trend={{ dir: growth >= 0 ? "up" : "down", text: `${growthPct.toFixed(0)}%`, good: growth >= 0 }} privacyKey="networth-growth" />
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <KpiCard label="Monthly Income" value={inr(currentFlow.income, { compact: true })} icon="💰" tone="success" sub="Current month" />
+        <KpiCard label="Monthly Expense" value={inr(currentFlow.expense, { compact: true })} icon="💸" tone="danger" sub="Current month" />
+        <KpiCard 
+          label="Monthly Savings" 
+          value={inr(currentFlow.savings, { compact: true })} 
+          icon="🏦" 
+          tone={currentFlow.savings >= 0 ? "success" : "danger"} 
+          sub="Income - Expense" 
+        />
       </div>
 
       <Card title="Live Net Worth Trend" subtitle={`Latest movement: ${inr(monthlyGrowth, { compact: true })} · current live point appended`}>
