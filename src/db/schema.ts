@@ -50,6 +50,7 @@ export const transactions = pgTable("transactions", {
   amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
   txnDate: date("txn_date").notNull(),
   memberId: integer("member_id"),
+  accountId: integer("account_id"), // Bank/cash/wallet account affected by this transaction
   note: text("note"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

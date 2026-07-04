@@ -10,10 +10,12 @@ export function TransactionForm({
   type,
   categories,
   members,
+  accounts,
 }: {
   type: "income" | "expense";
   categories: string[];
   members: { id: number; name: string }[];
+  accounts?: { id: number; name: string; type: string; balance: string }[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -26,6 +28,7 @@ export function TransactionForm({
     amount: "",
     txnDate: today,
     memberId: "",
+    accountId: "",
     note: "",
   });
 
@@ -49,6 +52,7 @@ export function TransactionForm({
         amount: form.amount,
         txnDate: form.txnDate,
         memberId: form.memberId || null,
+        accountId: form.accountId || null,
         note: form.note || null,
       }),
     });
@@ -145,6 +149,21 @@ export function TransactionForm({
               <option value="">—</option>
               {members.map((m) => (
                 <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+            {type === "income" ? "Received In" : "Paid From"}
+            <select
+              className={inputCls}
+              style={style}
+              value={form.accountId}
+              onChange={(e) => setForm({ ...form, accountId: e.target.value })}
+            >
+              <option value="">Do not update account</option>
+              {(accounts || []).map((a) => (
+                <option key={a.id} value={a.id}>{a.name} · {a.type}</option>
               ))}
             </select>
           </label>

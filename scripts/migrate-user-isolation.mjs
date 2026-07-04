@@ -100,6 +100,8 @@ async function main() {
     await addColumn(table, "member_id", "integer");
   }
 
+  await addColumn("transactions", "account_id", "integer");
+
   await q(`insert into "users" ("id", "email", "password", "name")
     values (1, 'legacy@personalcfo.local', 'legacy-migrated-user', 'Legacy Data')
     on conflict ("id") do nothing;`);

@@ -30,10 +30,12 @@ type ExpenseTxn = {
   amount: string;
   txnDate: string;
   memberId: number | null;
+  accountId: number | null;
   note: string | null;
 };
 
 type Member = { id: number; name: string };
+type Account = { id: number; name: string; type: string };
 type ExpensePanel = "today" | "week" | "month" | "year";
 
 function dateKey(d: string | Date): string {
@@ -75,7 +77,7 @@ function expenseByCategory(txns: ExpenseTxn[]) {
   return [...map.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
 }
 
-export function FilteredExpenses({ expenses, members }: { expenses: ExpenseTxn[]; members: Member[] }) {
+export function FilteredExpenses({ expenses, members, accounts = [] }: { expenses: ExpenseTxn[]; members: Member[]; accounts?: Account[] }) {
   const router = useRouter();
   const { mask } = usePrivacy();
   const { isSelected, hasSelection, selectedIds } = useMemberFilter();

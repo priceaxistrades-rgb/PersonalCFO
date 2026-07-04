@@ -33,12 +33,19 @@ type IncomeTxn = {
   amount: string;
   txnDate: string;
   memberId: number | null;
+  accountId: number | null;
   note: string | null;
 };
 
 type Member = {
   id: number;
   name: string;
+};
+
+type Account = {
+  id: number;
+  name: string;
+  type: string;
 };
 
 function getMonthKey(d: string | Date): string {
@@ -81,9 +88,11 @@ function currentMonthKey(): string {
 export function FilteredIncome({
   income,
   members,
+  accounts = [],
 }: {
   income: IncomeTxn[];
   members: Member[];
+  accounts?: Account[];
 }) {
   const router = useRouter();
   const { mask } = usePrivacy();
