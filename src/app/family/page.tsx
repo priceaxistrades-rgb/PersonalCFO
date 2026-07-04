@@ -4,6 +4,8 @@ import { DonutChart } from "@/components/ui/Charts";
 import { Table, Tr, Td } from "@/components/ui/Table";
 import { inr, num } from "@/lib/format";
 import { getTransactions, getMembers, currentMonthKey, monthKey, sumBy } from "@/lib/data";
+import { MembersManager } from "../settings/MembersManager";
+import { TransactionsManager } from "../settings/TransactionsManager";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +42,9 @@ export default async function FamilyPage() {
         <KpiCard label="Top Spender" value={topSpender?.name.split(" ")[0] ?? "—"} icon="📌" tone="warning" sub={inr(topSpender?.spend ?? 0, { compact: true })} />
         <KpiCard label="Per Member Avg" value={inr(total / Math.max(members.length, 1), { compact: true })} icon="➗" tone="success" />
       </div>
+
+      <MembersManager members={members} />
+      <TransactionsManager transactions={txns} members={members} />
 
       <div className="grid lg:grid-cols-3 gap-4">
         <Card title="Spend Distribution" subtitle="By member, this month">
