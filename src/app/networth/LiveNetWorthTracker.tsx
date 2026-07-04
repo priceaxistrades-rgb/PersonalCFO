@@ -145,16 +145,56 @@ export function LiveNetWorthTracker({
         <KpiCard label="Growth" value={inr(growth, { compact: true })} icon="🚀" tone="accent" trend={{ dir: growth >= 0 ? "up" : "down", text: `${growthPct.toFixed(0)}%`, good: growth >= 0 }} privacyKey="networth-growth" />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <KpiCard label="Monthly Income" value={inr(currentFlow.income, { compact: true })} icon="💰" tone="success" sub="Current month" />
-        <KpiCard label="Monthly Expense" value={inr(currentFlow.expense, { compact: true })} icon="💸" tone="danger" sub="Current month" />
-        <KpiCard 
-          label="Monthly Savings" 
-          value={inr(currentFlow.savings, { compact: true })} 
-          icon="🏦" 
-          tone={currentFlow.savings >= 0 ? "success" : "danger"} 
-          sub="Income - Expense" 
-        />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card title="Net Worth Engine" subtitle="How your money is moving this month">
+          <div className="space-y-3 py-2">
+            <div className="flex justify-between items-center text-sm">
+              <span className="opacity-70">Total Assets</span>
+              <span className="font-semibold" style={{ color: "var(--success)" }}>+{inr(totalAssets, { compact: true })}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="opacity-70">Total Liabilities</span>
+              <span className="font-semibold" style={{ color: "var(--danger)" }}>−{inr(liabilities, { compact: true })}</span>
+            </div>
+            <div className="h-px bg-border my-2" style={{ borderColor: "var(--border)" }} />
+            <div className="flex justify-between items-center font-bold text-base">
+              <span>Live Net Worth</span>
+              <span style={{ color: "var(--primary)" }}>{inr(netWorth, { compact: true })}</span>
+            </div>
+          </div>
+        </Card>
+
+        <Card title="Monthly Cash Flow" subtitle="Impact on Net Worth">
+          <div className="space-y-3 py-2">
+            <div className="flex justify-between items-center text-sm">
+              <span className="opacity-70">Monthly Income</span>
+              <span className="font-semibold" style={{ color: "var(--success)" }}>+{inr(currentFlow.income, { compact: true })}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="opacity-70">Monthly Expenses</span>
+              <span className="font-semibold" style={{ color: "var(--danger)" }}>−{inr(currentFlow.expense, { compact: true })}</span>
+            </div>
+            <div className="h-px bg-border my-2" style={{ borderColor: "var(--border)" }} />
+            <div className="flex justify-between items-center font-bold text-base">
+              <span>Net Savings</span>
+              <span style={{ color: currentFlow.savings >= 0 ? "var(--success)" : "var(--danger)" }}>
+                {inr(currentFlow.savings, { compact: true })}
+              </span>
+            </div>
+          </div>
+        </Card>
+
+        <Card title="Net Worth Driver" subtitle="Contribution this month">
+           <div className="flex flex-col items-center justify-center py-4">
+              <span className="text-xs opacity-60 mb-1">Current Month Contribution</span>
+              <span className="text-2xl font-bold" style={{ color: currentFlow.savings >= 0 ? "var(--success)" : "var(--danger)" }}>
+                {currentFlow.savings >= 0 ? "+" : ""}{inr(currentFlow.savings, { compact: true })}
+              </span>
+              <p className="text-[10px] text-center mt-2 opacity-50 px-4">
+                This amount is added to your assets and increases your overall Net Worth.
+              </p>
+           </div>
+        </Card>
       </div>
 
       <Card title="Live Net Worth Trend" subtitle={`Latest movement: ${inr(monthlyGrowth, { compact: true })} · current live point appended`}>
