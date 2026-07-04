@@ -32,7 +32,7 @@ A comprehensive, production-ready financial dashboard for Indian households. Tra
 - **Styling**: Tailwind CSS 4
 - **Language**: TypeScript
 - **Charts**: Custom SVG (zero dependencies)
-- **Auth**: bcryptjs + localStorage sessions
+- **Auth**: bcryptjs + signed HTTP-only cookie sessions
 
 ## Quick Start
 
@@ -46,10 +46,10 @@ npm install
 
 # 3. Set up environment
 cp .env.example .env
-# Edit .env with your DATABASE_URL
+# Edit .env with DATABASE_URL and AUTH_SECRET
 
 # 4. Push database schema
-npx drizzle-kit push
+npm run db:push
 
 # 5. Run development server
 npm run dev
@@ -61,7 +61,7 @@ Open [http://localhost:3000](http://localhost:3000)
 
 1. Push to GitHub
 2. Go to [vercel.com](https://vercel.com) → Import project
-3. Add `DATABASE_URL` environment variable
+3. Add `DATABASE_URL` and `AUTH_SECRET` environment variables
 4. Deploy
 
 For the database, use [Neon](https://neon.tech) (free tier) or [Railway](https://railway.app) ($5/mo).

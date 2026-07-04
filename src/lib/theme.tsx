@@ -2,21 +2,30 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
-export type Theme = "light" | "dark" | "blue";
+export type Theme = "light" | "dark" | "blue" | "black";
 
 const ThemeContext = createContext<{
   theme: Theme;
   setTheme: (t: Theme) => void;
-}>({ theme: "light", setTheme: () => {} });
+  hydrated: boolean;
+}>({ theme: "light", setTheme: () => {}, hydrated: false });
+
+const isTheme = (value: string | null): value is Theme =>
+  Boolean(value && ["light", "dark", "blue", "black"].includes(value));
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("light");
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const stored = (typeof window !== "undefined" &&
-      (localStorage.getItem("cfo-theme") as Theme)) || "light";
-    setThemeState(stored);
-    document.documentElement.setAttribute("data-theme", stored);
+    const timer = setTimeout(() => {
+      const stored = localStorage.getItem("cfo-theme");
+      const next = isTheme(stored) ? stored : "light";
+      setThemeState(next);
+      document.documentElement.setAttribute("data-theme", next);
+      setHydrated(true);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const setTheme = (t: Theme) => {
@@ -26,7 +35,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, hydrated }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -10,12 +10,14 @@ import {
   getInvestments,
   getAccounts,
   getMembers,
+  getCurrentUser,
 } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
-  const [txns, bills, debts, goals, invs, accs, members] = await Promise.all([
+  const [user, txns, bills, debts, goals, invs, accs, members] = await Promise.all([
+    getCurrentUser(),
     getTransactions(),
     getBills(),
     getDebts(),
@@ -29,7 +31,7 @@ export default async function Dashboard() {
     <div className="space-y-6">
       <SectionTitle
         title="Financial Dashboard"
-        subtitle={`Welcome back, Rajesh · ${new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`}
+        subtitle={`Welcome back, ${user.name} · ${new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`}
         action={
           <div className="flex items-center gap-2">
             <Badge tone="primary">Personal CFO</Badge>

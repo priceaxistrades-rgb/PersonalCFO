@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import { transactions, accounts, investments, debts, bills, goals, members } from "@/db/schema";
+import { isSession, requireApiSession } from "@/lib/server-auth";
 import * as XLSX from "xlsx";
 
 export const runtime = "nodejs";
@@ -35,6 +36,8 @@ function parseAmount(value: any): number {
 }
 
 export async function POST(req: Request) {
+  const session = requireApiSession(req);
+  if (!isSession(session)) return session;
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File;
@@ -42,6 +45,14 @@ export async function POST(req: Request) {
 
     if (!file) {
       return Response.json({ error: "No file provided" }, { status: 400 });
+    }
+    const allowed = [".xlsx", ".xls", ".csv"];
+    const name = file.name.toLowerCase();
+    if (!allowed.some((ext) => name.endsWith(ext))) {
+      return Response.json({ error: "Only .xlsx, .xls, and .csv files are allowed" }, { status: 400 });
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      return Response.json({ error: "File is too large. Maximum upload size is 5 MB." }, { status: 400 });
     }
 
     const bytes = await file.arrayBuffer();
@@ -89,6 +100,7 @@ export async function POST(req: Request) {
     if ((!targetType || targetType === "members") && results.members.length > 0) {
       for (const item of results.members) {
         await db.insert(members).values({
+          userId: session.userId,
           name: item.name,
           role: item.role || "Household",
           color: item.color || "#6366f1",
@@ -100,6 +112,7 @@ export async function POST(req: Request) {
     if ((!targetType || targetType === "accounts") && results.accounts.length > 0) {
       for (const item of results.accounts) {
         await db.insert(accounts).values({
+          userId: session.userId,
           name: item.name,
           type: item.type || "Bank",
           category: item.category || "liquid",
@@ -112,6 +125,7 @@ export async function POST(req: Request) {
     if ((!targetType || targetType === "transactions") && results.transactions.length > 0) {
       for (const item of results.transactions) {
         await db.insert(transactions).values({
+          userId: session.userId,
           type: item.type || "expense",
           category: item.category || "Miscellaneous",
           amount: String(parseAmount(item.amount)),
@@ -125,6 +139,7 @@ export async function POST(req: Request) {
     if ((!targetType || targetType === "investments") && results.investments.length > 0) {
       for (const item of results.investments) {
         await db.insert(investments).values({
+          userId: session.userId,
           name: item.name,
           type: item.type || "Other",
           invested: String(parseAmount(item.invested)),
@@ -139,6 +154,7 @@ export async function POST(req: Request) {
     if ((!targetType || targetType === "debts") && results.debts.length > 0) {
       for (const item of results.debts) {
         await db.insert(debts).values({
+          userId: session.userId,
           name: item.name,
           type: item.type || "PersonalLoan",
           principal: String(parseAmount(item.principal)),
@@ -154,6 +170,7 @@ export async function POST(req: Request) {
     if ((!targetType || targetType === "bills") && results.bills.length > 0) {
       for (const item of results.bills) {
         await db.insert(bills).values({
+          userId: session.userId,
           name: item.name,
           category: item.category || "Miscellaneous",
           amount: String(parseAmount(item.amount)),
@@ -168,6 +185,7 @@ export async function POST(req: Request) {
     if ((!targetType || targetType === "goals") && results.goals.length > 0) {
       for (const item of results.goals) {
         await db.insert(goals).values({
+          userId: session.userId,
           name: item.name,
           category: item.category || "Custom",
           target: String(parseAmount(item.target)),

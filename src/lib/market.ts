@@ -133,28 +133,40 @@ export async function fetchStock(symbol: string): Promise<MarketQuote> {
     cagr: { y1: null, y3: null, y5: null },
     asOf: "",
   };
+
+  const headers = {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+    Accept: "application/json",
+  };
+
   try {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
+    // Important: use a short daily chart for day movement. Do NOT use 5Y weekly
+    // chartPreviousClose for day movement — that can point to the range boundary.
+    const dayUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
+      symbol
+    )}?interval=1d&range=5d`;
+
+    const historyUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
       symbol
     )}?interval=1wk&range=5y`;
-    const res = await fetch(url, {
-      next: { revalidate: 300 },
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
-        Accept: "application/json",
-      },
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = (await res.json()) as {
+
+    const [dayRes, historyRes] = await Promise.all([
+      fetch(dayUrl, { next: { revalidate: 60 }, headers }),
+      fetch(historyUrl, { next: { revalidate: 3600 }, headers }),
+    ]);
+
+    if (!dayRes.ok) throw new Error(`Day HTTP ${dayRes.status}`);
+    if (!historyRes.ok) throw new Error(`History HTTP ${historyRes.status}`);
+
+    const dayJson = (await dayRes.json()) as {
       chart?: {
         result?: {
           meta?: {
             regularMarketPrice?: number;
-            chartPreviousClose?: number;
             previousClose?: number;
+            chartPreviousClose?: number;
             currency?: string;
-            symbol?: string;
             shortName?: string;
             longName?: string;
             fullExchangeName?: string;
@@ -165,28 +177,64 @@ export async function fetchStock(symbol: string): Promise<MarketQuote> {
         error?: { description?: string } | null;
       };
     };
-    const r = json.chart?.result?.[0];
-    if (!r || !r.meta) throw new Error(json.chart?.error?.description || "No data");
-    const meta = r.meta;
-    const price = meta.regularMarketPrice ?? 0;
-    const prev = meta.chartPreviousClose ?? meta.previousClose ?? price;
-    const ts = r.timestamp || [];
-    const closes = r.indicators?.quote?.[0]?.close || [];
+
+    const historyJson = (await historyRes.json()) as {
+      chart?: {
+        result?: {
+          meta?: {
+            regularMarketPrice?: number;
+            currency?: string;
+            shortName?: string;
+            longName?: string;
+            fullExchangeName?: string;
+          };
+          timestamp?: number[];
+          indicators?: { quote?: { close?: (number | null)[] }[] };
+        }[];
+        error?: { description?: string } | null;
+      };
+    };
+
+    const dayResult = dayJson.chart?.result?.[0];
+    const historyResult = historyJson.chart?.result?.[0];
+    if (!dayResult?.meta) throw new Error(dayJson.chart?.error?.description || "No day data");
+    if (!historyResult?.meta) throw new Error(historyJson.chart?.error?.description || "No history data");
+
+    const dayMeta = dayResult.meta;
+    const historyMeta = historyResult.meta;
+
+    const dayCloses = (dayResult.indicators?.quote?.[0]?.close || []).filter(
+      (v): v is number => typeof v === "number" && Number.isFinite(v)
+    );
+
+    const price = dayMeta.regularMarketPrice ?? dayCloses[dayCloses.length - 1] ?? 0;
+
+    // Yahoo's previousClose is the real previous trading day's close.
+    // If missing, fall back to the second-last daily close. Avoid chartPreviousClose unless necessary.
+    const prev =
+      dayMeta.previousClose ??
+      (dayCloses.length >= 2 ? dayCloses[dayCloses.length - 2] : undefined) ??
+      dayMeta.chartPreviousClose ??
+      price;
+
+    const ts = historyResult.timestamp || [];
+    const closes = historyResult.indicators?.quote?.[0]?.close || [];
     const points: PricePoint[] = [];
     for (let i = 0; i < ts.length; i++) {
       const c = closes[i];
       if (typeof c === "number") points.push({ t: ts[i] * 1000, v: c });
     }
+
     return {
       ...base,
       ok: true,
-      name: meta.longName || meta.shortName || symbol,
-      extra: meta.fullExchangeName,
+      name: dayMeta.longName || dayMeta.shortName || historyMeta.longName || historyMeta.shortName || symbol,
+      extra: dayMeta.fullExchangeName || historyMeta.fullExchangeName,
       price,
       prevClose: prev,
       change: price - prev,
       changePct: prev ? ((price - prev) / prev) * 100 : 0,
-      currency: meta.currency || "INR",
+      currency: dayMeta.currency || historyMeta.currency || "INR",
       cagr: cagrFromSeries(points, price),
       asOf: new Date().toLocaleDateString("en-IN"),
     };
@@ -196,14 +244,53 @@ export async function fetchStock(symbol: string): Promise<MarketQuote> {
 }
 
 // ---- MF search ----
+type MfScheme = { schemeCode: number; schemeName: string };
+
+let mfSchemeCache: { data: MfScheme[]; loadedAt: number } | null = null;
+const MF_CACHE_MS = 24 * 60 * 60 * 1000;
+
+function scoreMfResult(name: string, query: string) {
+  const n = name.toLowerCase();
+  const q = query.toLowerCase();
+  if (n === q) return 0;
+  if (n.startsWith(q)) return 1;
+  if (n.includes(q)) return 2;
+  return 3;
+}
+
 export async function searchMutualFunds(q: string) {
+  const query = q.trim().toLowerCase();
+  if (query.length < 2) return [];
+
   try {
-    const res = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(q)}`, {
-      headers: { Accept: "application/json" },
-    });
-    if (!res.ok) return [];
-    const json = (await res.json()) as { schemeCode: number; schemeName: string }[];
-    return json.slice(0, 15);
+    const now = Date.now();
+    if (!mfSchemeCache || now - mfSchemeCache.loadedAt > MF_CACHE_MS) {
+      // mfapi.in /mf returns the complete public Indian MF scheme list.
+      // This is more reliable than the older search endpoint and lets us filter fast server-side.
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch("https://api.mfapi.in/mf", {
+        next: { revalidate: 86400 },
+        headers: { Accept: "application/json" },
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      if (!res.ok) return [];
+      const json = (await res.json()) as MfScheme[];
+      mfSchemeCache = {
+        data: Array.isArray(json) ? json : [],
+        loadedAt: now,
+      };
+    }
+
+    const words = query.split(/\s+/).filter(Boolean);
+    return mfSchemeCache.data
+      .filter((scheme) => {
+        const name = scheme.schemeName.toLowerCase();
+        return words.every((word) => name.includes(word)) || String(scheme.schemeCode).includes(query);
+      })
+      .sort((a, b) => scoreMfResult(a.schemeName, query) - scoreMfResult(b.schemeName, query))
+      .slice(0, 30);
   } catch {
     return [];
   }

@@ -1,9 +1,12 @@
 import { buildWorkbook } from "@/lib/excel";
+import { isSession, requireApiSession } from "@/lib/server-auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const session = requireApiSession(req);
+  if (!isSession(session)) return session;
   try {
     const buffer = await buildWorkbook();
     const stamp = new Date().toISOString().slice(0, 10);

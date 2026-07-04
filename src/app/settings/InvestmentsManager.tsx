@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Badge } from "@/components/ui/Card";
 import { Table, Tr, Td } from "@/components/ui/Table";
@@ -9,11 +9,98 @@ import { inr } from "@/lib/format";
 const inputStyle = { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" };
 const TYPES = ["Stocks", "MutualFunds", "PPF", "EPF", "NPS", "FD", "RD", "Gold", "Silver", "Bonds", "Crypto", "RealEstate", "Other"];
 
-export function InvestmentsManager({ investments }: { investments: { id: number; name: string; type: string; invested: string; currentValue: string; annualReturn: string | null; symbol: string | null; schemeCode: string | null; units: string | null; startDate: string | null }[] }) {
+type InvestmentRow = {
+  id: number;
+  name: string;
+  type: string;
+  invested: string;
+  currentValue: string;
+  annualReturn: string | null;
+  symbol: string | null;
+  schemeCode: string | null;
+  units: string | null;
+  startDate: string | null;
+};
+
+type StockResult = { symbol: string; name: string; exchange: string; sector?: string };
+type MfResult = { schemeCode: number; schemeName: string };
+
+export function InvestmentsManager({ investments }: { investments: InvestmentRow[] }) {
   const router = useRouter();
   const [editing, setEditing] = useState<number | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [stockQuery, setStockQuery] = useState("");
+  const [stockResults, setStockResults] = useState<StockResult[]>([]);
+  const [mfQuery, setMfQuery] = useState("");
+  const [mfResults, setMfResults] = useState<MfResult[]>([]);
+  const [searching, setSearching] = useState(false);
   const [form, setForm] = useState({ name: "", type: "Stocks", invested: 0, currentValue: 0, annualReturn: 0, symbol: "", schemeCode: "", units: "", startDate: "" });
+
+  const reset = () => {
+    setEditing(null);
+    setShowAdd(false);
+    setStockQuery("");
+    setStockResults([]);
+    setMfQuery("");
+    setMfResults([]);
+    setForm({ name: "", type: "Stocks", invested: 0, currentValue: 0, annualReturn: 0, symbol: "", schemeCode: "", units: "", startDate: "" });
+  };
+
+  useEffect(() => {
+    if (form.type !== "Stocks") return;
+    const q = stockQuery.trim();
+    if (!q) {
+      const clearTimer = setTimeout(() => setStockResults([]), 0);
+      return () => clearTimeout(clearTimer);
+    }
+    let active = true;
+    const timer = setTimeout(() => {
+      setSearching(true);
+      void fetch(`/api/market/stock-search?q=${encodeURIComponent(q)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (active) setStockResults(data.results || []);
+        })
+        .catch(() => {
+          if (active) setStockResults([]);
+        })
+        .finally(() => {
+          if (active) setSearching(false);
+        });
+    }, 250);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [stockQuery, form.type]);
+
+  useEffect(() => {
+    if (form.type !== "MutualFunds") return;
+    const q = mfQuery.trim();
+    if (q.length < 2) {
+      const clearTimer = setTimeout(() => setMfResults([]), 0);
+      return () => clearTimeout(clearTimer);
+    }
+    let active = true;
+    const timer = setTimeout(() => {
+      setSearching(true);
+      void fetch(`/api/market/search?q=${encodeURIComponent(q)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (active) setMfResults(data.results || []);
+        })
+        .catch(() => {
+          if (active) setMfResults([]);
+        })
+        .finally(() => {
+          if (active) setSearching(false);
+        });
+    }, 250);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [mfQuery, form.type]);
 
   const save = async () => {
     if (!form.name) return;
@@ -23,9 +110,7 @@ export function InvestmentsManager({ investments }: { investments: { id: number;
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(editing ? { id: editing, ...payload } : payload),
     });
-    setEditing(null);
-    setShowAdd(false);
-    setForm({ name: "", type: "Stocks", invested: 0, currentValue: 0, annualReturn: 0, symbol: "", schemeCode: "", units: "", startDate: "" });
+    reset();
     router.refresh();
   };
 
@@ -35,30 +120,116 @@ export function InvestmentsManager({ investments }: { investments: { id: number;
     router.refresh();
   };
 
+  const startEdit = (i: InvestmentRow) => {
+    setEditing(i.id);
+    setShowAdd(false);
+    setStockQuery(i.symbol || "");
+    setMfQuery(i.schemeCode || "");
+    setForm({
+      name: i.name,
+      type: i.type,
+      invested: Number(i.invested),
+      currentValue: Number(i.currentValue),
+      annualReturn: Number(i.annualReturn),
+      symbol: i.symbol || "",
+      schemeCode: i.schemeCode || "",
+      units: i.units || "",
+      startDate: i.startDate || "",
+    });
+  };
+
+  const chooseStock = (stock: StockResult) => {
+    setForm({ ...form, type: "Stocks", symbol: stock.symbol, schemeCode: "", name: form.name || stock.name });
+    setStockQuery(`${stock.symbol} · ${stock.name}`);
+    setStockResults([]);
+  };
+
+  const chooseMf = (fund: MfResult) => {
+    setForm({ ...form, type: "MutualFunds", schemeCode: String(fund.schemeCode), symbol: "", name: form.name || fund.schemeName });
+    setMfQuery(`${fund.schemeCode} · ${fund.schemeName}`);
+    setMfResults([]);
+  };
+
   return (
     <Card title="📈 Investments" subtitle={`${investments.length} holdings`}>
       <div className="flex justify-end mb-3 no-print">
-        <button onClick={() => setShowAdd(!showAdd)} className="px-3 py-1.5 rounded-lg text-sm font-semibold text-white" style={{ background: "var(--primary)" }}>
+        <button onClick={() => { setShowAdd(!showAdd); setEditing(null); }} className="px-3 py-1.5 rounded-lg text-sm font-semibold text-white" style={{ background: "var(--primary)" }}>
           {showAdd ? "Cancel" : "+ Add Investment"}
         </button>
       </div>
 
       {(showAdd || editing) && (
-        <div className="grid sm:grid-cols-3 gap-3 mb-4 p-3 rounded-xl" style={{ background: "var(--surface-2)" }}>
-          <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
-          <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle}>
-            {TYPES.map((t) => (<option key={t}>{t}</option>))}
-          </select>
-          <input type="number" placeholder="Invested" value={form.invested} onChange={(e) => setForm({ ...form, invested: Number(e.target.value) })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
-          <input type="number" placeholder="Current Value" value={form.currentValue} onChange={(e) => setForm({ ...form, currentValue: Number(e.target.value) })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
-          <input type="number" step="0.01" placeholder="Annual Return %" value={form.annualReturn} onChange={(e) => setForm({ ...form, annualReturn: Number(e.target.value) })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
-          <input type="date" placeholder="Start Date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
-          <input placeholder="Stock Symbol (e.g. RELIANCE.NS)" value={form.symbol} onChange={(e) => setForm({ ...form, symbol: e.target.value })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
-          <input placeholder="MF Scheme Code" value={form.schemeCode} onChange={(e) => setForm({ ...form, schemeCode: e.target.value })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
-          <input placeholder="Units/Quantity" value={form.units} onChange={(e) => setForm({ ...form, units: e.target.value })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
-          <div className="flex gap-2 sm:col-span-3">
+        <div className="space-y-3 mb-4 p-3 rounded-xl" style={{ background: "var(--surface-2)" }}>
+          <div className="grid sm:grid-cols-3 gap-3">
+            <input placeholder="Holding Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
+            <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value, symbol: "", schemeCode: "" })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle}>
+              {TYPES.map((t) => (<option key={t}>{t}</option>))}
+            </select>
+            <input type="number" placeholder="Units / Quantity" value={form.units} onChange={(e) => setForm({ ...form, units: e.target.value })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
+          </div>
+
+          {form.type === "Stocks" && (
+            <div className="relative">
+              <input
+                placeholder="Search Indian stock by name/symbol e.g. Reliance, TCS, HDFC"
+                value={stockQuery}
+                onChange={(e) => { setStockQuery(e.target.value); setForm({ ...form, symbol: e.target.value.toUpperCase() }); }}
+                className="w-full px-3 py-2 rounded-lg text-sm border"
+                style={inputStyle}
+              />
+              {stockResults.length > 0 && (
+                <div className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto rounded-xl border shadow-xl" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+                  {stockResults.map((s) => (
+                    <button key={s.symbol} onClick={() => chooseStock(s)} className="w-full text-left px-3 py-2 border-b text-sm hover:opacity-80" style={{ borderColor: "var(--border)", color: "var(--text)" }}>
+                      <span className="font-medium">{s.name}</span>
+                      <span className="block text-[11px]" style={{ color: "var(--text-faint)" }}>{s.symbol} · {s.exchange}{s.sector ? ` · ${s.sector}` : ""}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {form.type === "MutualFunds" && (
+            <div className="relative">
+              <input
+                placeholder="Search mutual fund by name e.g. Parag Parikh, Nifty Index, SBI"
+                value={mfQuery}
+                onChange={(e) => { setMfQuery(e.target.value); setForm({ ...form, schemeCode: e.target.value }); }}
+                className="w-full px-3 py-2 rounded-lg text-sm border"
+                style={inputStyle}
+              />
+              {mfResults.length > 0 && (
+                <div className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto rounded-xl border shadow-xl" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+                  {mfResults.map((m) => (
+                    <button key={m.schemeCode} onClick={() => chooseMf(m)} className="w-full text-left px-3 py-2 border-b text-sm hover:opacity-80" style={{ borderColor: "var(--border)", color: "var(--text)" }}>
+                      <span className="font-medium">{m.schemeName}</span>
+                      <span className="block text-[11px]" style={{ color: "var(--text-faint)" }}>Scheme Code: {m.schemeCode}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {searching && <p className="text-xs" style={{ color: "var(--text-muted)" }}>Searching live instruments...</p>}
+
+          <div className="grid sm:grid-cols-3 gap-3">
+            <input type="number" placeholder="Invested Amount" value={form.invested} onChange={(e) => setForm({ ...form, invested: Number(e.target.value) })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
+            <input type="number" placeholder="Manual Current Value / Fallback" value={form.currentValue} onChange={(e) => setForm({ ...form, currentValue: Number(e.target.value) })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
+            <input type="number" step="0.01" placeholder="Annual Return %" value={form.annualReturn} onChange={(e) => setForm({ ...form, annualReturn: Number(e.target.value) })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
+            <input type="date" placeholder="Start Date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
+            <input placeholder="Selected Stock Symbol" value={form.symbol} onChange={(e) => setForm({ ...form, symbol: e.target.value.toUpperCase() })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
+            <input placeholder="Selected MF Scheme Code" value={form.schemeCode} onChange={(e) => setForm({ ...form, schemeCode: e.target.value })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
+          </div>
+
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            For automatic live value, select a stock/MF and enter units. Current value will sync as live price/NAV × units on the Investments page.
+          </p>
+
+          <div className="flex gap-2">
             <button onClick={save} className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: "var(--success)" }}>Save</button>
-            <button onClick={() => { setEditing(null); setShowAdd(false); }} className="px-4 py-2 rounded-lg text-sm" style={{ background: "var(--surface-3)", color: "var(--text)" }}>Cancel</button>
+            <button onClick={reset} className="px-4 py-2 rounded-lg text-sm" style={{ background: "var(--surface-3)", color: "var(--text)" }}>Cancel</button>
           </div>
         </div>
       )}
@@ -74,7 +245,7 @@ export function InvestmentsManager({ investments }: { investments: { id: number;
             <Td right muted>{i.symbol || i.schemeCode || "—"}</Td>
             <Td right>
               <div className="flex gap-2 justify-end no-print">
-                <button onClick={() => { setEditing(i.id); setForm({ name: i.name, type: i.type, invested: Number(i.invested), currentValue: Number(i.currentValue), annualReturn: Number(i.annualReturn), symbol: i.symbol || "", schemeCode: i.schemeCode || "", units: i.units || "", startDate: i.startDate || "" }); }} className="px-2 py-1 rounded text-xs" style={{ background: "var(--primary-soft)", color: "var(--primary)" }}>Edit</button>
+                <button onClick={() => startEdit(i)} className="px-2 py-1 rounded text-xs" style={{ background: "var(--primary-soft)", color: "var(--primary)" }}>Edit</button>
                 <button onClick={() => del(i.id)} className="px-2 py-1 rounded text-xs text-white" style={{ background: "var(--danger)" }}>Delete</button>
               </div>
             </Td>

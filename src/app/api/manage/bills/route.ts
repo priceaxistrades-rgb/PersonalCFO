@@ -1,20 +1,26 @@
 import { db } from "@/db";
 import { bills } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { isSession, requireApiSession } from "@/lib/server-auth";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const session = requireApiSession(req);
+  if (!isSession(session)) return session;
   try {
-    const rows = await db.select().from(bills).orderBy(bills.dueDate);
+    const rows = await db.select().from(bills).where(eq(bills.userId, session.userId)).orderBy(bills.dueDate);
     return Response.json({ ok: true, rows });
-  } catch (e) {
-    return Response.json({ error: String(e) }, { status: 500 });
+  } catch {
+    return Response.json({ error: "Server error" }, { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
+  const session = requireApiSession(req);
+  if (!isSession(session)) return session;
   try {
     const b = await req.json();
     const [row] = await db.insert(bills).values({
+      userId: session.userId,
       name: b.name,
       category: b.category,
       amount: String(b.amount || 0),
@@ -23,28 +29,35 @@ export async function POST(req: Request) {
       paid: Boolean(b.paid),
     }).returning();
     return Response.json({ ok: true, row });
-  } catch (e) {
-    return Response.json({ error: String(e) }, { status: 500 });
+  } catch {
+    return Response.json({ error: "Server error" }, { status: 500 });
   }
 }
 
 export async function PATCH(req: Request) {
+  const session = requireApiSession(req);
+  if (!isSession(session)) return session;
   try {
-    const { id, ...updates } = await req.json();
-    if (updates.amount !== undefined) updates.amount = String(updates.amount);
-    await db.update(bills).set(updates).where(eq(bills.id, Number(id)));
+    const { id, userId: _ignoredUserId, ...updates } = await req.json();
+    if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
+    if (updates.amount !== undefined) updates.amount = updates.amount ? String(updates.amount) : "0";
+    if (updates.paid !== undefined) updates.paid = Boolean(updates.paid);
+    await db.update(bills).set(updates).where(and(eq(bills.id, Number(id)), eq(bills.userId, session.userId)));
     return Response.json({ ok: true });
-  } catch (e) {
-    return Response.json({ error: String(e) }, { status: 500 });
+  } catch {
+    return Response.json({ error: "Server error" }, { status: 500 });
   }
 }
 
 export async function DELETE(req: Request) {
+  const session = requireApiSession(req);
+  if (!isSession(session)) return session;
   try {
     const { id } = await req.json();
-    await db.delete(bills).where(eq(bills.id, Number(id)));
+    if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
+    await db.delete(bills).where(and(eq(bills.id, Number(id)), eq(bills.userId, session.userId)));
     return Response.json({ ok: true });
-  } catch (e) {
-    return Response.json({ error: String(e) }, { status: 500 });
+  } catch {
+    return Response.json({ error: "Server error" }, { status: 500 });
   }
 }

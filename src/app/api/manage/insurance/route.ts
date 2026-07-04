@@ -1,20 +1,26 @@
 import { db } from "@/db";
 import { insurance } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { isSession, requireApiSession } from "@/lib/server-auth";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const session = requireApiSession(req);
+  if (!isSession(session)) return session;
   try {
-    const rows = await db.select().from(insurance).orderBy(insurance.renewalDate);
+    const rows = await db.select().from(insurance).where(eq(insurance.userId, session.userId)).orderBy(insurance.renewalDate);
     return Response.json({ ok: true, rows });
-  } catch (e) {
-    return Response.json({ error: String(e) }, { status: 500 });
+  } catch {
+    return Response.json({ error: "Server error" }, { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
+  const session = requireApiSession(req);
+  if (!isSession(session)) return session;
   try {
     const b = await req.json();
     const [row] = await db.insert(insurance).values({
+      userId: session.userId,
       name: b.name,
       type: b.type,
       provider: b.provider,
@@ -23,29 +29,35 @@ export async function POST(req: Request) {
       renewalDate: b.renewalDate,
     }).returning();
     return Response.json({ ok: true, row });
-  } catch (e) {
-    return Response.json({ error: String(e) }, { status: 500 });
+  } catch {
+    return Response.json({ error: "Server error" }, { status: 500 });
   }
 }
 
 export async function PATCH(req: Request) {
+  const session = requireApiSession(req);
+  if (!isSession(session)) return session;
   try {
-    const { id, ...updates } = await req.json();
-    if (updates.premium !== undefined) updates.premium = String(updates.premium);
-    if (updates.coverage !== undefined) updates.coverage = String(updates.coverage);
-    await db.update(insurance).set(updates).where(eq(insurance.id, Number(id)));
+    const { id, userId: _ignoredUserId, ...updates } = await req.json();
+    if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
+    if (updates.premium !== undefined) updates.premium = updates.premium ? String(updates.premium) : "0";
+    if (updates.coverage !== undefined) updates.coverage = updates.coverage ? String(updates.coverage) : "0";
+    await db.update(insurance).set(updates).where(and(eq(insurance.id, Number(id)), eq(insurance.userId, session.userId)));
     return Response.json({ ok: true });
-  } catch (e) {
-    return Response.json({ error: String(e) }, { status: 500 });
+  } catch {
+    return Response.json({ error: "Server error" }, { status: 500 });
   }
 }
 
 export async function DELETE(req: Request) {
+  const session = requireApiSession(req);
+  if (!isSession(session)) return session;
   try {
     const { id } = await req.json();
-    await db.delete(insurance).where(eq(insurance.id, Number(id)));
+    if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
+    await db.delete(insurance).where(and(eq(insurance.id, Number(id)), eq(insurance.userId, session.userId)));
     return Response.json({ ok: true });
-  } catch (e) {
-    return Response.json({ error: String(e) }, { status: 500 });
+  } catch {
+    return Response.json({ error: "Server error" }, { status: 500 });
   }
 }

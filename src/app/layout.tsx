@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/lib/theme";
 import { MemberFilterProvider } from "@/lib/filters";
 import { SessionProvider } from "@/lib/session";
+import { PrivacyProvider } from "@/lib/privacy";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
 
@@ -33,15 +34,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="antialiased" style={{ color: "var(--text)" }}>
         <ThemeProvider>
           <SessionProvider>
-            <MemberFilterProvider>
-              <div className="flex min-h-screen">
-                <Sidebar />
-                <main className="flex-1 min-w-0 px-3 sm:px-4 lg:px-8 pt-16 lg:pt-6 pb-20 lg:pb-8 max-w-[1500px] mx-auto w-full">
-                  {children}
-                </main>
-              </div>
-              <MobileNav />
-            </MemberFilterProvider>
+            <PrivacyProvider>
+              <MemberFilterProvider>
+                <div className="flex min-h-screen">
+                  <Sidebar />
+                  <main className="flex-1 min-w-0 px-3 sm:px-4 lg:px-8 pt-16 lg:pt-6 pb-20 lg:pb-8 max-w-[1500px] mx-auto w-full">
+                    {children}
+                  </main>
+                </div>
+                <MobileNav />
+              </MemberFilterProvider>
+            </PrivacyProvider>
           </SessionProvider>
         </ThemeProvider>
       </body>

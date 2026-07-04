@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
+import { useSession } from "@/lib/session";
 
 export default function SignupPage() {
   const router = useRouter();
+  const { setSession } = useSession();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -17,8 +19,8 @@ export default function SignupPage() {
     setLoading(true);
     setError("");
 
-    if (form.password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (form.password.length < 8) {
+      setError("Password must be at least 8 characters");
       setLoading(false);
       return;
     }
@@ -35,22 +37,12 @@ export default function SignupPage() {
       if (!res.ok) {
         setError(data.error || "Signup failed");
       } else {
+        setSession(data.session);
         setSuccess(true);
-        // Auto login after signup
-        const loginRes = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: form.email, password: form.password }),
-        });
-        
-        const loginData = await loginRes.json();
-        if (loginRes.ok) {
-          localStorage.setItem("session", JSON.stringify(loginData.session));
-          setTimeout(() => {
-            router.push("/");
-            router.refresh();
-          }, 1000);
-        }
+        setTimeout(() => {
+          router.push("/");
+          router.refresh();
+        }, 500);
       }
     } catch {
       setError("Network error. Please try again.");
@@ -68,25 +60,19 @@ export default function SignupPage() {
             Create Account
           </h1>
           <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-            Start your financial journey with Personal CFO
+            Your financial data will be private to this account.
           </p>
         </div>
 
         {error && (
-          <div 
-            className="mb-4 p-3 rounded-lg text-sm"
-            style={{ background: "var(--danger-soft)", color: "var(--danger)" }}
-          >
+          <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: "var(--danger-soft)", color: "var(--danger)" }}>
             {error}
           </div>
         )}
 
         {success && (
-          <div 
-            className="mb-4 p-3 rounded-lg text-sm"
-            style={{ background: "var(--success-soft)", color: "var(--success)" }}
-          >
-            Account created! Redirecting...
+          <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: "var(--success-soft)", color: "var(--success)" }}>
+            Account created. Redirecting...
           </div>
         )}
 
@@ -102,7 +88,7 @@ export default function SignupPage() {
               required
               className="w-full px-4 py-3 rounded-lg border text-sm"
               style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" }}
-              placeholder="John Doe"
+              placeholder="Your name"
             />
           </div>
 
@@ -130,13 +116,13 @@ export default function SignupPage() {
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               required
-              minLength={6}
+              minLength={8}
               className="w-full px-4 py-3 rounded-lg border text-sm"
               style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" }}
               placeholder="••••••••"
             />
             <p className="text-xs mt-1" style={{ color: "var(--text-faint)" }}>
-              Must be at least 6 characters
+              Must be at least 8 characters.
             </p>
           </div>
 
@@ -152,11 +138,7 @@ export default function SignupPage() {
 
         <div className="mt-6 text-center text-sm" style={{ color: "var(--text-muted)" }}>
           Already have an account?{" "}
-          <Link 
-            href="/login" 
-            className="font-medium"
-            style={{ color: "var(--primary)" }}
-          >
+          <Link href="/login" className="font-medium" style={{ color: "var(--primary)" }}>
             Sign in
           </Link>
         </div>

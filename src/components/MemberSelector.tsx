@@ -21,6 +21,7 @@ export function MemberSelector({
   } = useMemberFilter();
   
   const [showAll, setShowAll] = useState(false);
+  const [showCustomSelect, setShowCustomSelect] = useState(true);
 
   const self = members.find((m) => m.role === "Self");
   const spouse = members.find((m) => m.role === "Spouse");
@@ -125,63 +126,109 @@ export function MemberSelector({
         )}
       </div>
 
-      {/* Multi-Select Member Pills - Collapsible on Mobile */}
+      {/* Multi-Select Member Pills - Collapsible */}
       <div className="card p-3 sm:p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>
-            🎯 Custom Select
-          </span>
-          <div className="flex items-center gap-2">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setShowCustomSelect((value) => !value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setShowCustomSelect((value) => !value);
+            }
+          }}
+          className="flex items-center justify-between gap-2 mb-2 cursor-pointer select-none rounded-xl"
+          title={showCustomSelect ? "Click to hide custom member selection" : "Click to view custom member selection"}
+        >
+          <div className="min-w-0">
+            <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+              🎯 Custom Select
+            </span>
+            {hasSelection && (
+              <span className="ml-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                {selectedIds.length} selected
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
             {hasSelection && (
               <button
-                onClick={clear}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  clear();
+                }}
                 className="text-xs px-2 py-1 rounded-full font-medium"
                 style={{ background: "var(--danger-soft)", color: "var(--danger)" }}
               >
-                Clear ({selectedIds.length})
+                Clear
               </button>
             )}
             <button
-              onClick={() => setShowAll(!showAll)}
-              className="text-xs px-2 py-1 rounded-full lg:hidden"
-              style={{ background: "var(--surface-3)", color: "var(--text-muted)" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowCustomSelect(!showCustomSelect);
+              }}
+              className="text-xs px-2 py-1 rounded-full font-medium"
+              style={{ background: "var(--surface-3)", color: "var(--text)" }}
             >
-              {showAll ? "Less" : "More"}
+              {showCustomSelect ? "Hide" : "View"}
             </button>
+            {showCustomSelect && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowAll(!showAll);
+                }}
+                className="text-xs px-2 py-1 rounded-full lg:hidden"
+                style={{ background: "var(--surface-3)", color: "var(--text-muted)" }}
+              >
+                {showAll ? "Less" : "More"}
+              </button>
+            )}
           </div>
         </div>
 
-        <div className={`flex flex-wrap gap-2 ${showAll ? "" : "max-h-[72px] overflow-hidden"} lg:max-h-none`}>
-          {members.map((m) => {
-            const isActive = selectedIds.includes(m.id);
-            return (
-              <button
-                key={m.id}
-                onClick={() => toggleId(m.id)}
-                className={`px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 ${
-                  isActive ? "ring-2" : ""
-                }`}
-                style={{
-                  background: isActive ? m.color : "var(--surface-3)",
-                  color: isActive ? "#fff" : "var(--text)",
-                  opacity: hasSelection && !isActive ? 0.5 : 1,
-                }}
-                title={`Tap to toggle`}
-              >
-                <span
-                  className="w-2 h-2 rounded-full"
-                  style={{ background: isActive ? "#fff" : m.color }}
-                />
-                <span className="truncate max-w-[80px]">{m.name.split(" ")[0]}</span>
-                {isActive && <span className="text-[10px]">✓</span>}
-              </button>
-            );
-          })}
-        </div>
+        <div
+          className="overflow-hidden"
+          style={{
+            maxHeight: showCustomSelect ? 180 : 0,
+            opacity: showCustomSelect ? 1 : 0,
+            transition: "max-height 180ms ease, opacity 140ms ease",
+          }}
+        >
+          <div className={`flex flex-wrap gap-2 ${showAll ? "" : "max-h-[72px] overflow-hidden"} lg:max-h-none`}>
+            {members.map((m) => {
+              const isActive = selectedIds.includes(m.id);
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => toggleId(m.id)}
+                  className={`px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 ${
+                    isActive ? "ring-2" : ""
+                  }`}
+                  style={{
+                    background: isActive ? m.color : "var(--surface-3)",
+                    color: isActive ? "#fff" : "var(--text)",
+                    opacity: hasSelection && !isActive ? 0.5 : 1,
+                  }}
+                  title="Tap to toggle"
+                >
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ background: isActive ? "#fff" : m.color }}
+                  />
+                  <span className="truncate max-w-[80px]">{m.name.split(" ")[0]}</span>
+                  {isActive && <span className="text-[10px]">✓</span>}
+                </button>
+              );
+            })}
+          </div>
 
-        <p className="text-xs mt-2" style={{ color: "var(--text-faint)" }}>
-          💡 Tap to select multiple members
-        </p>
+          <p className="text-xs mt-2" style={{ color: "var(--text-faint)" }}>
+            💡 Tap to select multiple members
+          </p>
+        </div>
       </div>
 
       {/* Active Filter Indicator */}

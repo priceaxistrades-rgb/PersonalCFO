@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q") || "";
-  if (q.length < 3) return Response.json({ ok: true, results: [] });
+  if (q.trim().length < 2) return Response.json({ ok: true, results: [] });
   const results = await searchMutualFunds(q);
   return Response.json({ ok: true, results });
 }

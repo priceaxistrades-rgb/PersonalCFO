@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
+import { useSession } from "@/lib/session";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { setSession } = useSession();
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -25,11 +27,9 @@ export default function LoginPage() {
 
       const data = await res.json();
 
-      if (!res.ok) {
-        setError(data.error || "Login failed");
-      } else {
-        // Store session in localStorage
-        localStorage.setItem("session", JSON.stringify(data.session));
+      if (!res.ok) setError(data.error || "Login failed");
+      else {
+        setSession(data.session);
         router.push("/");
         router.refresh();
       }
@@ -49,15 +49,12 @@ export default function LoginPage() {
             Welcome Back
           </h1>
           <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-            Sign in to your Personal CFO account
+            Sign in to your private Personal CFO workspace.
           </p>
         </div>
 
         {error && (
-          <div 
-            className="mb-4 p-3 rounded-lg text-sm"
-            style={{ background: "var(--danger-soft)", color: "var(--danger)" }}
-          >
+          <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: "var(--danger-soft)", color: "var(--danger)" }}>
             {error}
           </div>
         )}
@@ -105,12 +102,8 @@ export default function LoginPage() {
 
         <div className="mt-6 text-center text-sm" style={{ color: "var(--text-muted)" }}>
           Don&apos;t have an account?{" "}
-          <Link 
-            href="/signup" 
-            className="font-medium"
-            style={{ color: "var(--primary)" }}
-          >
-            Sign up
+          <Link href="/signup" className="font-medium" style={{ color: "var(--primary)" }}>
+            Create account
           </Link>
         </div>
       </Card>

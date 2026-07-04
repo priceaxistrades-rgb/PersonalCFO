@@ -20,20 +20,7 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    
-    const files = Array.from(e.dataTransfer.files);
-    await uploadFiles(files);
-  }, []);
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    await uploadFiles(files);
-  };
-
-  const uploadFiles = async (files: File[]) => {
+  const uploadFiles = useCallback(async (files: File[]) => {
     setUploading(true);
     setError(null);
     setResult(null);
@@ -64,6 +51,18 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
     }
 
     setUploading(false);
+  }, [onSuccess, router]);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    await uploadFiles(files);
+  }, [uploadFiles]);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    await uploadFiles(files);
   };
 
   return (

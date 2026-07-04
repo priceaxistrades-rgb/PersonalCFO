@@ -1,11 +1,14 @@
 import { db } from "@/db";
 import { bills } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { isSession, requireApiSession } from "@/lib/server-auth";
 
 export async function PATCH(req: Request) {
+  const session = requireApiSession(req);
+  if (!isSession(session)) return session;
   try {
     const { id, paid } = await req.json();
-    await db.update(bills).set({ paid: Boolean(paid) }).where(eq(bills.id, Number(id)));
+    await db.update(bills).set({ paid: Boolean(paid) }).where(and(eq(bills.id, Number(id)), eq(bills.userId, session.userId)));
     return Response.json({ ok: true });
   } catch {
     return Response.json({ error: "Server error" }, { status: 500 });

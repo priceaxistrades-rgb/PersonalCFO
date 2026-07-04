@@ -16,7 +16,6 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: text("password").notNull(), // hashed
   name: text("name").notNull(),
-  image: text("image"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

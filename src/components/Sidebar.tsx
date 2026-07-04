@@ -49,6 +49,7 @@ const THEMES: { id: Theme; label: string; dot: string }[] = [
   { id: "light", label: "Minimal White", dot: "#ffffff" },
   { id: "dark", label: "Premium Dark", dot: "#131a26" },
   { id: "blue", label: "Professional Blue", dot: "#1e6fd9" },
+  { id: "black", label: "Readable Black", dot: "#000000" },
 ];
 
 function ProfileIndicator() {
@@ -77,8 +78,18 @@ function ProfileIndicator() {
 }
 
 function AuthButton() {
-  const { session, logout } = useSession();
-  const pathname = usePathname();
+  const { session, logout, loading } = useSession();
+
+  if (loading) {
+    return (
+      <div className="px-4 py-3 border-t" style={{ borderColor: "rgba(128,128,128,0.15)" }}>
+        <div className="h-10 rounded-lg animate-pulse" style={{ background: "var(--surface-3)" }} />
+        <p className="text-[10px] text-center mt-2" style={{ color: "var(--text-muted)" }}>
+          Checking session...
+        </p>
+      </div>
+    );
+  }
   
   if (!session) {
     return (
@@ -127,7 +138,7 @@ function AuthButton() {
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, hydrated } = useTheme();
   const [open, setOpen] = useState(false);
 
   return (
@@ -226,19 +237,20 @@ export function Sidebar() {
           <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-faint)" }}>
             Theme
           </p>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-4 gap-2">
             {THEMES.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setTheme(t.id)}
                 title={t.label}
-                className="flex-1 h-9 rounded-lg border-2 grid place-items-center transition-all"
+                aria-label={`Switch to ${t.label}`}
+                className="h-8 rounded-lg border-2 grid place-items-center transition-all"
                 style={{
                   borderColor: theme === t.id ? "var(--primary)" : "var(--border)",
                   background: t.dot,
                 }}
               >
-                {theme === t.id && <span className="text-[10px]" style={{ color: t.id === "light" ? "#000" : "#fff" }}>✓</span>}
+                {hydrated && theme === t.id && <span className="text-[10px] font-bold" style={{ color: t.id === "light" ? "#000" : "#fff" }}>✓</span>}
               </button>
             ))}
           </div>

@@ -1,4 +1,5 @@
 import { validateUser } from "@/lib/auth";
+import { createSessionToken, sessionCookieHeader } from "@/lib/server-auth";
 
 export async function POST(req: Request) {
   try {
@@ -20,18 +21,17 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create session (simple token-based)
     const session = {
       userId: user.id,
       email: user.email,
       name: user.name,
     };
 
-    return Response.json({
-      ok: true,
-      session,
-    });
-  } catch (error) {
+    return Response.json(
+      { ok: true, session },
+      { headers: { "Set-Cookie": sessionCookieHeader(createSessionToken(session)) } }
+    );
+  } catch {
     return Response.json(
       { error: "Login failed" },
       { status: 500 }

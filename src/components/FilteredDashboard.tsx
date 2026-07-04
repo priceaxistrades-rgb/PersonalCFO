@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemberFilter } from "@/lib/filters";
 import { Card, Badge } from "@/components/ui/Card";
 import { KpiCard, Progress } from "@/components/ui/Kpi";
@@ -85,6 +86,8 @@ export function FilteredDashboard({
   accounts: any[];
   members: any[];
 }) {
+  const router = useRouter();
+  const go = (href: string) => router.push(href);
   const { isSelected, hasSelection, selectedIds } = useMemberFilter();
 
   // Filter by selected members
@@ -161,14 +164,17 @@ export function FilteredDashboard({
 
       {/* KPI Row - Responsive: 2 cols mobile, 4 cols desktop */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-        <KpiCard label="Net Worth" value={inr(netWorth, { compact: true })} icon="💎" tone="primary" sub="Assets − Liabilities" />
-        <KpiCard label="Cash Available" value={inr(liquidAssets, { compact: true })} icon="💵" tone="accent" sub="Liquid funds" />
+        <KpiCard label="Net Worth" value={inr(netWorth, { compact: true })} icon="💎" tone="primary" sub="Assets − Liabilities · click" onClick={() => go("/networth")} active={false} />
+        <KpiCard label="Cash Available" value={inr(liquidAssets, { compact: true })} icon="💵" tone="accent" sub="Liquid funds · click" onClick={() => go("/networth")} active={false} />
         <KpiCard
           label="Monthly Income"
           value={inr(income, { compact: true })}
           icon="💰"
           tone="success"
           trend={{ dir: income >= prevMonth.income ? "up" : "down", text: inr(Math.abs(income - prevMonth.income), { compact: true }), good: income >= prevMonth.income }}
+          sub="click to manage"
+          onClick={() => go("/income")}
+          active={false}
         />
         <KpiCard
           label="Monthly Expenses"
@@ -176,6 +182,9 @@ export function FilteredDashboard({
           icon="🧾"
           tone="danger"
           trend={{ dir: expense <= prevMonth.expense ? "down" : "up", text: inr(Math.abs(expense - prevMonth.expense), { compact: true }), good: expense <= prevMonth.expense }}
+          sub="click to manage"
+          onClick={() => go("/expenses")}
+          active={false}
         />
       </div>
 
@@ -186,7 +195,9 @@ export function FilteredDashboard({
           icon="🐖"
           tone="success"
           trend={{ dir: savingsRate >= 20 ? "up" : "down", text: `${savingsRate.toFixed(0)}%`, good: savingsRate >= 20 }}
-          sub="of income saved"
+          sub="of income saved · click"
+          onClick={() => go("/reports")}
+          active={false}
         />
         <KpiCard
           label="Investment Growth"
@@ -194,16 +205,20 @@ export function FilteredDashboard({
           icon="📈"
           tone="primary"
           trend={{ dir: "up", text: `${invGrowth > 0 ? '+' : ''}${inr(invGrowth, { compact: true })}`, good: invGrowth >= 0 }}
-          sub="unrealised gains"
+          sub="unrealised gains · click"
+          onClick={() => go("/investments")}
+          active={false}
         />
         <KpiCard
           label="Emergency Fund"
           value={`${emergencyMonths.toFixed(1)} mo`}
           icon="🛟"
           tone={emergencyMonths >= 6 ? "success" : "warning"}
-          sub={`${inr(emergencySaved, { compact: true })} saved`}
+          sub={`${inr(emergencySaved, { compact: true })} saved · click`}
+          onClick={() => go("/savings")}
+          active={false}
         />
-        <KpiCard label="Total EMI" value={inr(totalEmi, { compact: true })} icon="🏦" tone="warning" sub={`${debtToIncome.toFixed(0)}% of income`} />
+        <KpiCard label="Total EMI" value={inr(totalEmi, { compact: true })} icon="🏦" tone="warning" sub={`${debtToIncome.toFixed(0)}% of income · click`} onClick={() => go("/debt")} active={false} />
       </div>
 
       {/* Charts row */}

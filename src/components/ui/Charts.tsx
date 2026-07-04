@@ -2,6 +2,22 @@
 
 import { useState } from "react";
 import { inr } from "@/lib/format";
+import { usePrivacy } from "@/lib/privacy";
+
+function HiddenChart({ height = 180 }: { height?: number }) {
+  return (
+    <div
+      className="w-full rounded-xl grid place-items-center text-sm border"
+      style={{ height, background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-muted)" }}
+    >
+      <div className="text-center">
+        <div className="text-2xl mb-1">🙈</div>
+        <div className="font-medium">Values hidden</div>
+        <div className="text-xs mt-1">Use any KPI eye button to show financial values.</div>
+      </div>
+    </div>
+  );
+}
 
 const PALETTE = [
   "#6366f1",
@@ -31,22 +47,28 @@ export function DonutChart({
   centerLabel?: string;
   centerValue?: string;
 }) {
+  const { globalHidden: hidden } = usePrivacy();
+  const [active, setActive] = useState<number | null>(null);
+  if (hidden) return <HiddenChart height={size} />;
+
   // Use passed size or default
   const chartSize = size;
   const total = data.reduce((s, d) => s + d.value, 0) || 1;
   const radius = (size - thickness) / 2;
   const circ = 2 * Math.PI * radius;
-  let offset = 0;
-  const [active, setActive] = useState<number | null>(null);
+  const segments = data.reduce<{ dash: number; offset: number }[]>((acc, d) => {
+    const offset = acc.reduce((sum, s) => sum + s.dash, 0);
+    acc.push({ dash: (d.value / total) * circ, offset });
+    return acc;
+  }, []);
 
   return (
     <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-5">
       <svg width={chartSize} height={chartSize} viewBox={`0 0 ${chartSize} ${chartSize}`} className="shrink-0 max-w-[160px] sm:max-w-none">
         <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
           {data.map((d, i) => {
-            const frac = d.value / total;
-            const dash = frac * circ;
-            const seg = (
+            const { dash, offset } = segments[i];
+            return (
               <circle
                 key={i}
                 cx={size / 2}
@@ -62,8 +84,6 @@ export function DonutChart({
                 style={{ transition: "stroke-width .15s", cursor: "pointer" }}
               />
             );
-            offset += dash;
-            return seg;
           })}
         </g>
         <text
@@ -126,6 +146,10 @@ export function LineChart({
   height?: number;
   format?: (v: number) => string;
 }) {
+  const { globalHidden: hidden } = usePrivacy();
+  const [hover, setHover] = useState<number | null>(null);
+  if (hidden) return <HiddenChart height={height} />;
+
   const width = 600;
   const pad = { l: 8, r: 8, t: 12, b: 22 };
   const all = series.flatMap((s) => s.values);
@@ -137,7 +161,6 @@ export function LineChart({
   const n = labels.length;
   const x = (i: number) => pad.l + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
   const y = (v: number) => pad.t + innerH - ((v - min) / range) * innerH;
-  const [hover, setHover] = useState<number | null>(null);
 
   return (
     <div className="w-full">
@@ -259,8 +282,11 @@ export function BarChart({
   height?: number;
   format?: (v: number) => string;
 }) {
-  const max = Math.max(...data.map((d) => d.value), 1);
+  const { globalHidden: hidden } = usePrivacy();
   const [hover, setHover] = useState<number | null>(null);
+  if (hidden) return <HiddenChart height={height} />;
+
+  const max = Math.max(...data.map((d) => d.value), 1);
   return (
     <div className="w-full">
       <div className="flex items-end gap-2 sm:gap-3" style={{ height }}>
@@ -313,6 +339,9 @@ export function GroupedBarChart({
   series: { name: string; values: number[]; color: string }[];
   height?: number;
 }) {
+  const { globalHidden: hidden } = usePrivacy();
+  if (hidden) return <HiddenChart height={height} />;
+
   const max = Math.max(...series.flatMap((s) => s.values), 1);
   return (
     <div className="w-full">
