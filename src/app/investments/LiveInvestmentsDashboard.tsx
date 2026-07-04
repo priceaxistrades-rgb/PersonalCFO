@@ -14,7 +14,7 @@ const TYPE_LABELS: Record<string, string> = {
   RealEstate: "Real Estate",
 };
 
-type Investment = {
+export type Investment = {
   id: number;
   name: string;
   type: string;
@@ -27,7 +27,7 @@ type Investment = {
   startDate: string | null;
 };
 
-type LiveInvestment = Investment & {
+export type LiveInvestment = Investment & {
   liveCurrentValue: number;
   livePrice: number | null;
   liveChangePct: number | null;
@@ -62,7 +62,7 @@ function displayPct(value: number | null) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
-export function LiveInvestmentsDashboard({ investments }: { investments: Investment[] }) {
+export function useLiveInvestments(investments: Investment[]) {
   const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
   const [loading, setLoading] = useState(false);
   const [updatedAt, setUpdatedAt] = useState("");
@@ -129,6 +129,22 @@ export function LiveInvestmentsDashboard({ investments }: { investments: Investm
     });
   }, [investments, quotes]);
 
+  return { liveInvestments, loading, updatedAt, error, loadQuotes };
+}
+
+export function InvestmentKpis({ 
+  liveInvestments, 
+  loading, 
+  updatedAt, 
+  error, 
+  loadQuotes 
+}: { 
+  liveInvestments: LiveInvestment[], 
+  loading: boolean, 
+  updatedAt: string, 
+  error: string, 
+  loadQuotes: () => Promise<void> 
+}) {
   const invested = sumBy(liveInvestments, (i) => num(i.invested));
   const current = sumBy(liveInvestments, (i) => i.liveCurrentValue);
   const pnl = current - invested;
@@ -138,14 +154,6 @@ export function LiveInvestmentsDashboard({ investments }: { investments: Investm
     ? sumBy(cagrLinked, (i) => (i.liveCagr1Y ?? 0) * i.liveCurrentValue) / sumBy(cagrLinked, (i) => i.liveCurrentValue)
     : 0;
   const liveLinked = liveInvestments.filter((i) => i.liveOk).length;
-
-  const byType = new Map<string, number>();
-  liveInvestments.forEach((i) => byType.set(i.type, (byType.get(i.type) || 0) + i.liveCurrentValue));
-  const allocation = [...byType.entries()]
-    .map(([t, v]) => ({ label: TYPE_LABELS[t] || t, value: v }))
-    .sort((a, b) => b.value - a.value);
-
-  const rows = [...liveInvestments].sort((a, b) => b.liveCurrentValue - a.liveCurrentValue);
 
   return (
     <div className="space-y-6">
@@ -193,90 +201,108 @@ export function LiveInvestmentsDashboard({ investments }: { investments: Investm
         />
         <KpiCard label="Live 1Y CAGR" value={cagrLinked.length ? `${weightedReturn.toFixed(1)}%` : "—"} icon="🎯" tone="warning" sub="weighted from live quotes" privacyKey="investments-return" />
       </div>
-
-      <div className="grid lg:grid-cols-3 gap-4">
-        <Card title="Asset Allocation" subtitle="By live current value">
-          <DonutChart data={allocation} centerLabel="Total" centerValue={inr(current, { compact: true })} />
-        </Card>
-
-        <Card
-          title="Live Holdings"
-          subtitle="Stocks/MFs update automatically from live market data when symbol/code + units are present"
-          className="lg:col-span-2"
-          action={
-            <Link
-              href="/markets"
-              className="text-xs font-semibold no-print px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5"
-              style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
-            >
-              🛰️ Live Markets
-            </Link>
-          }
-        >
-          <Table headers={["Instrument", "Type", "Units", "Live Price", "Day", "Invested", "Live Current", "Live P&L", "1Y CAGR", "3Y", "5Y", "Chart"]} right={[2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}>
-            {rows.map((i) => {
-              const inv = num(i.invested);
-              const cur = i.liveCurrentValue;
-              const p = cur - inv;
-              const pp = inv > 0 ? (p / inv) * 100 : 0;
-              const chart = chartUrl(i);
-              return (
-                <Tr key={i.id}>
-                  <Td strong>
-                    {i.name}
-                    <span className="block text-[10px]" style={{ color: i.liveOk ? "var(--success)" : "var(--text-faint)" }}>
-                      {i.liveOk ? `Live · ${i.liveAsOf || "now"}` : i.symbol || i.schemeCode ? "Waiting for quote / add units" : "Manual value"}
-                    </span>
-                  </Td>
-                  <Td><Badge>{TYPE_LABELS[i.type] || i.type}</Badge></Td>
-                  <Td right muted>{i.units || "—"}</Td>
-                  <Td right>{i.livePrice ? inr(i.livePrice) : "—"}</Td>
-                  <Td right>
-                    {i.liveChangePct === null ? (
-                      <span style={{ color: "var(--text-faint)" }}>—</span>
-                    ) : (
-                      <span style={{ color: i.liveChangePct >= 0 ? "var(--success)" : "var(--danger)" }}>
-                        {displayPct(i.liveChangePct)}
-                      </span>
-                    )}
-                  </Td>
-                  <Td right muted>{inr(inv, { compact: true })}</Td>
-                  <Td right strong>{inr(cur, { compact: true })}</Td>
-                  <Td right>
-                    <span style={{ color: p >= 0 ? "var(--success)" : "var(--danger)" }}>
-                      {p >= 0 ? "+" : "−"}{inr(Math.abs(p), { compact: true })} ({pp.toFixed(1)}%)
-                    </span>
-                  </Td>
-                  <Td right><span style={{ color: (i.liveCagr1Y ?? 0) >= 0 ? "var(--success)" : "var(--danger)" }}>{displayPct(i.liveCagr1Y)}</span></Td>
-                  <Td right><span style={{ color: (i.liveCagr3Y ?? 0) >= 0 ? "var(--success)" : "var(--danger)" }}>{displayPct(i.liveCagr3Y)}</span></Td>
-                  <Td right><span style={{ color: (i.liveCagr5Y ?? 0) >= 0 ? "var(--success)" : "var(--danger)" }}>{displayPct(i.liveCagr5Y)}</span></Td>
-                  <Td right>
-                    {chart ? (
-                      <a
-                        href={chart}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs px-2 py-1 rounded-lg no-print"
-                        style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
-                      >
-                        Chart
-                      </a>
-                    ) : (
-                      <span style={{ color: "var(--text-faint)" }}>—</span>
-                    )}
-                  </Td>
-                </Tr>
-              );
-            })}
-          </Table>
-        </Card>
-      </div>
-
-      <Card className="!p-4">
-        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          🔗 <span className="font-semibold" style={{ color: "var(--text)" }}>Auto-sync rule:</span> For stocks and mutual funds, enter symbol/scheme code plus units. Current value is then calculated as live price/NAV × units. FD, PPF, real estate and other assets remain manual because they do not have live exchange prices.
-        </p>
-      </Card>
     </div>
+  );
+}
+
+export function InvestmentHoldings({ liveInvestments }: { liveInvestments: LiveInvestment[] }) {
+  const rows = [...liveInvestments].sort((a, b) => b.liveCurrentValue - a.liveCurrentValue);
+
+  return (
+    <Card
+      title="Live Holdings"
+      subtitle="Stocks/MFs update automatically from live market data when symbol/code + units are present"
+      action={
+        <Link
+          href="/markets"
+          className="text-xs font-semibold no-print px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5"
+          style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
+        >
+          🛰️ Live Markets
+        </Link>
+      }
+    >
+      <Table headers={["Instrument", "Type", "Units", "Live Price", "Day", "Invested", "Live Current", "Live P&L", "1Y CAGR", "3Y", "5Y", "Chart"]} right={[2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}>
+        {rows.map((i) => {
+          const inv = num(i.invested);
+          const cur = i.liveCurrentValue;
+          const p = cur - inv;
+          const pp = inv > 0 ? (p / inv) * 100 : 0;
+          const chart = chartUrl(i);
+          return (
+            <Tr key={i.id}>
+              <Td strong>
+                {i.name}
+                <span className="block text-[10px]" style={{ color: i.liveOk ? "var(--success)" : "var(--text-faint)" }}>
+                  {i.liveOk ? `Live · ${i.liveAsOf || "now"}` : i.symbol || i.schemeCode ? "Waiting for quote / add units" : "Manual value"}
+                </span>
+              </Td>
+              <Td><Badge>{TYPE_LABELS[i.type] || i.type}</Badge></Td>
+              <Td right muted>{i.units || "—"}</Td>
+              <Td right>{i.livePrice ? inr(i.livePrice) : "—"}</Td>
+              <Td right>
+                {i.liveChangePct === null ? (
+                  <span style={{ color: "var(--text-faint)" }}>—</span>
+                ) : (
+                  <span style={{ color: i.liveChangePct >= 0 ? "var(--success)" : "var(--danger)" }}>
+                    {displayPct(i.liveChangePct)}
+                  </span>
+                )}
+              </Td>
+              <Td right muted>{inr(inv, { compact: true })}</Td>
+              <Td right strong>{inr(cur, { compact: true })}</Td>
+              <Td right>
+                <span style={{ color: p >= 0 ? "var(--success)" : "var(--danger)" }}>
+                  {p >= 0 ? "+" : "−"}{inr(Math.abs(p), { compact: true })} ({pp.toFixed(1)}%)
+                </span>
+              </Td>
+              <Td right><span style={{ color: (i.liveCagr1Y ?? 0) >= 0 ? "var(--success)" : "var(--danger)" }}>{displayPct(i.liveCagr1Y)}</span></Td>
+              <Td right><span style={{ color: (i.liveCagr3Y ?? 0) >= 0 ? "var(--success)" : "var(--danger)" }}>{displayPct(i.liveCagr3Y)}</span></Td>
+              <Td right><span style={{ color: (i.liveCagr5Y ?? 0) >= 0 ? "var(--success)" : "var(--danger)" }}>{displayPct(i.liveCagr5Y)}</span></Td>
+              <Td right>
+                {chart ? (
+                  <a
+                    href={chart}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs px-2 py-1 rounded-lg no-print"
+                    style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
+                  >
+                    Chart
+                  </a>
+                ) : (
+                  <span style={{ color: "var(--text-faint)" }}>—</span>
+                )}
+              </Td>
+            </Tr>
+          );
+        })}
+      </Table>
+    </Card>
+  );
+}
+
+export function InvestmentAllocation({ liveInvestments }: { liveInvestments: LiveInvestment[] }) {
+  const current = sumBy(liveInvestments, (i) => i.liveCurrentValue);
+  const byType = new Map<string, number>();
+  liveInvestments.forEach((i) => byType.set(i.type, (byType.get(i.type) || 0) + i.liveCurrentValue));
+  const allocation = [...byType.entries()]
+    .map(([t, v]) => ({ label: TYPE_LABELS[t] || t, value: v }))
+    .sort((a, b) => b.value - a.value);
+
+  return (
+    <Card title="Asset Allocation" subtitle="By live current value">
+      <DonutChart data={allocation} centerLabel="Total" centerValue={inr(current, { compact: true })} />
+    </Card>
+  );
+}
+
+export function InvestmentFooter() {
+  return (
+    <Card className="!p-4">
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+        🔗 <span className="font-semibold" style={{ color: "var(--text)" }}>Auto-sync rule:</span> For stocks and mutual funds, enter symbol/scheme code plus units. Current value is then calculated as live price/NAV × units on the Investments page. FD, PPF, real estate and other assets remain manual because they do not have live exchange prices.
+      </p>
+    </Card>
   );
 }

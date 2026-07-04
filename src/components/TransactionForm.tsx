@@ -160,8 +160,9 @@ export function TransactionForm({
               style={style}
               value={form.accountId}
               onChange={(e) => setForm({ ...form, accountId: e.target.value })}
+              required
             >
-              <option value="">Do not update account</option>
+              <option value="" disabled>Select account</option>
               {(accounts || []).map((a) => (
                 <option key={a.id} value={a.id}>{a.name} · {a.type}</option>
               ))}
