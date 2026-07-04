@@ -1,6 +1,7 @@
 import { SectionTitle } from "@/components/ui/Card";
 import { getInvestments } from "@/lib/data";
 import { LiveInvestmentsDashboard } from "./LiveInvestmentsDashboard";
+import { InvestmentsManager } from "../settings/InvestmentsManager";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,7 @@ export default async function InvestmentsPage() {
       />
 
       <LiveInvestmentsDashboard investments={invs} />
+      <InvestmentsManager investments={invs} />
     </div>
   );
 }

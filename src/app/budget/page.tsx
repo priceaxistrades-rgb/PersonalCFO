@@ -9,6 +9,7 @@ import {
   expenseByCategory,
   sumBy,
 } from "@/lib/data";
+import { BudgetsManager } from "./BudgetsManager";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,8 @@ export default async function BudgetPage() {
         <KpiCard label="Remaining" value={inr(totalLeft, { compact: true })} icon="💵" tone={totalLeft >= 0 ? "success" : "danger"} />
         <KpiCard label="Over Budget" value={String(overspent.length)} icon="⚠️" tone={overspent.length ? "danger" : "success"} sub="categories" />
       </div>
+
+      <BudgetsManager budgets={budgets} />
 
       {overspent.length > 0 && (
         <Card className="!p-4" >

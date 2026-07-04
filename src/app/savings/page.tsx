@@ -3,6 +3,7 @@ import { KpiCard, Progress } from "@/components/ui/Kpi";
 import { GoalContribute } from "@/components/GoalContribute";
 import { inr, num, fmtDate, daysUntil } from "@/lib/format";
 import { getGoals, sumBy } from "@/lib/data";
+import { GoalsManager } from "../settings/GoalsManager";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,8 @@ export default async function SavingsPage() {
         <KpiCard label="Overall Progress" value={`${overallPct.toFixed(0)}%`} icon="📈" tone="accent" />
         <KpiCard label="Goals Achieved" value={`${completed}/${goals.length}`} icon="🏆" tone="warning" />
       </div>
+
+      <GoalsManager goals={goals} />
 
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
         {goals.map((g) => {

@@ -4,6 +4,7 @@ import { Table, Tr, Td } from "@/components/ui/Table";
 import { BillToggle } from "@/components/BillToggle";
 import { inr, num, fmtDate, daysUntil } from "@/lib/format";
 import { getBills, sumBy } from "@/lib/data";
+import { BillsManager } from "../settings/BillsManager";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,8 @@ export default async function BillsPage() {
           </div>
         </Card>
       )}
+
+      <BillsManager bills={bills} />
 
       <Card title="All Bills" subtitle="Sorted by due date">
         <Table headers={["Bill", "Category", "Frequency", "Due Date", "Amount", "Status"]} right={[4, 5]}>

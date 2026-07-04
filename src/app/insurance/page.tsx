@@ -4,6 +4,7 @@ import { DonutChart } from "@/components/ui/Charts";
 import { Table, Tr, Td } from "@/components/ui/Table";
 import { inr, num, fmtDate, daysUntil } from "@/lib/format";
 import { getInsurance, sumBy } from "@/lib/data";
+import { InsuranceManager } from "../settings/InsuranceManager";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,8 @@ export default async function InsurancePage() {
           </div>
         </Card>
       )}
+
+      <InsuranceManager insurance={policies} />
 
       <div className="grid lg:grid-cols-3 gap-4">
         <Card title="Coverage by Type" subtitle="Total sum assured">

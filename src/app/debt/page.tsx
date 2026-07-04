@@ -4,6 +4,7 @@ import { DonutChart } from "@/components/ui/Charts";
 import { Table, Tr, Td } from "@/components/ui/Table";
 import { inr, num } from "@/lib/format";
 import { getDebts, sumBy } from "@/lib/data";
+import { DebtsManager } from "../settings/DebtsManager";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,8 @@ export default async function DebtPage() {
         <KpiCard label="Already Repaid" value={inr(paidOff, { compact: true })} icon="✅" tone="success" sub={`of ${inr(totalPrincipal, { compact: true })}`} />
         <KpiCard label="Avg Interest" value={`${avgRate.toFixed(1)}%`} icon="📉" tone="primary" sub="weighted" />
       </div>
+
+      <DebtsManager debts={debts} />
 
       <div className="grid lg:grid-cols-3 gap-4">
         <Card title="Debt Composition" subtitle="By outstanding balance">
