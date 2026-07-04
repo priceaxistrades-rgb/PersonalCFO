@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, CSSProperties } from "react";
 
 export function Card({
   children,
@@ -6,15 +6,20 @@ export function Card({
   title,
   subtitle,
   action,
+  style,
 }: {
   children: ReactNode;
   className?: string;
   title?: string;
   subtitle?: string;
   action?: ReactNode;
+  style?: CSSProperties;
 }) {
   return (
-    <section className={`card p-3 sm:p-5 fade-in ${className}`}>
+    <section 
+      className={`card p-3 sm:p-5 fade-in ${className}`} 
+      style={style}
+    >
       {(title || action) && (
         <header className="flex items-start justify-between mb-3 sm:mb-4 gap-2 sm:gap-3">
           <div className="min-w-0 flex-1">
