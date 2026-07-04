@@ -84,6 +84,7 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
                   background: p.type === "income" ? "var(--success-soft)" : "var(--danger-soft)", 
                   color: p.type === "income" ? "var(--success)" : "var(--danger)",
                   outlineColor: p.type === "income" ? "var(--success)" : "var(--danger)"
+                  ringColor: p.type === "income" ? "var(--success)" : "var(--danger)"
                 }}
               >
                 <span className="block text-sm mb-1">{p.icon}</span>
