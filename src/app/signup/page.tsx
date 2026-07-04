@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { useSession } from "@/lib/session";
 
 export default function SignupPage() {
-  const router = useRouter();
   const { setSession } = useSession();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
@@ -40,9 +38,8 @@ export default function SignupPage() {
         setSession(data.session);
         setSuccess(true);
         setTimeout(() => {
-          router.push("/");
-          router.refresh();
-        }, 500);
+          window.location.replace("/");
+        }, 400);
       }
     } catch {
       setError("Network error. Please try again.");
