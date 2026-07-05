@@ -201,6 +201,7 @@ export function LiveMarkets({
 
   const remove = async (id: number, source?: string) => {
     if (source === "investment") return;
+    if (!confirm("Remove this instrument from your watchlist?")) return;
     await fetch("/api/watchlist", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
