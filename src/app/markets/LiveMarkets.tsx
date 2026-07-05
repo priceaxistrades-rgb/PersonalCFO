@@ -15,7 +15,10 @@ type WatchItem = {
   source?: "watchlist" | "investment";
   units?: string | null;
   invested?: string | null;
+  currentValue?: string | null;
   currentPrice?: number;
+  investmentId?: number;
+  investmentType?: string;
 };
 
 type ChartPoint = { date: string; value: number; open?: number; high?: number; low?: number; close?: number };
@@ -57,6 +60,7 @@ function HoldingsBadge({ item, livePrice }: { item: WatchItem; livePrice: number
   if (item.source !== "investment") return null;
   const units = Number(item.units) || 0;
   const invested = Number(item.invested) || 0;
+  const manualCurrentValue = Number(item.currentValue) || invested; // fallback to invested if no currentValue
 
   // Show holdings info even without units — just show invested value
   if (units <= 0) {
@@ -72,6 +76,11 @@ function HoldingsBadge({ item, livePrice }: { item: WatchItem; livePrice: number
           <span style={{ color: "var(--text-muted)" }}>
             Invested: <strong style={{ color: "var(--text)" }}>{compactINR(invested)}</strong>
           </span>
+          {manualCurrentValue > invested && (
+            <span style={{ color: "var(--success)", fontWeight: 600 }}>
+              Current: {compactINR(manualCurrentValue)}
+            </span>
+          )}
           <span style={{ color: "var(--text-faint)" }}>
             Add units for live price tracking
           </span>
@@ -81,7 +90,7 @@ function HoldingsBadge({ item, livePrice }: { item: WatchItem; livePrice: number
   }
 
   const avgPrice = units > 0 ? invested / units : 0;
-  const currentVal = livePrice ? livePrice * units : 0;
+  const currentVal = livePrice ? livePrice * units : manualCurrentValue;
   const pnl = currentVal - invested;
   const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0;
 
@@ -193,10 +202,12 @@ function MiniChart({ points, chartType, supportsCandles }: { points: ChartPoint[
 
 export function LiveMarkets({ 
   items, 
-  onAddToPortfolio 
+  onAddToPortfolio,
+  onSell,
 }: { 
   items: WatchItem[], 
-  onAddToPortfolio: (item: WatchItem) => void 
+  onAddToPortfolio: (item: WatchItem) => void,
+  onSell?: (item: WatchItem) => void,
 }) {
   const router = useRouter();
   const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
@@ -358,6 +369,18 @@ export function LiveMarkets({
           <Td right><Cagr v={q?.cagr.y5 ?? null} /></Td>
           <Td right>
             <div className="flex justify-end gap-1 no-print">
+              {onSell && isHeld && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSell(it);
+                  }}
+                  className="text-xs px-2 py-1 rounded-lg font-semibold"
+                  style={{ background: "var(--warning-soft)", color: "var(--warning)" }}
+                >
+                  📉 Sell
+                </button>
+              )}
               {target && isHeld && (
                 <button
                   onClick={(e) => {

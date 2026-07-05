@@ -5,19 +5,22 @@ import { useRouter } from "next/navigation";
 import { SectionTitle, Badge, Card } from "@/components/ui/Card";
 import { LiveMarkets } from "./LiveMarkets";
 import { AddWatch } from "./AddWatch";
-import { InvestmentForm } from "../settings/InvestmentsManager";
+import { InvestmentForm, SellInvestmentModal, type InvestmentRow } from "../settings/InvestmentsManager";
 
 export function MarketsClient({
   watchItemsPromise,
   investmentsPromise,
+  accounts,
 }: {
   watchItemsPromise: Promise<any[]>;
   investmentsPromise: Promise<any[]>;
+  accounts: { id: number; name: string; type: string }[];
 }) {
   const router = useRouter();
   const [watchItems, setWatchItems] = useState<any[]>([]);
   const [investments, setInvestments] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [sellTarget, setSellTarget] = useState<InvestmentRow | null>(null);
   const [selectedItem, setSelectedItem] = useState<{
     symbol?: string;
     schemeCode?: string;
@@ -46,6 +49,9 @@ export function MarketsClient({
       source: "investment" as const,
       units: investment.units,
       invested: investment.invested,
+      currentValue: investment.currentValue,
+      investmentId: investment.id,
+      investmentType: investment.type,
     }));
 
   const seen = new Set<string>();
@@ -68,6 +74,25 @@ export function MarketsClient({
     setShowAddModal(true);
   };
 
+  const handleSell = (item: any) => {
+    // Find the real investment from our investments array
+    const realId = item.investmentId || -item.id;
+    const inv = investments.find((i: any) => i.id === realId);
+    if (!inv) return;
+    setSellTarget({
+      id: inv.id,
+      name: inv.name,
+      type: inv.type,
+      invested: inv.invested,
+      currentValue: inv.currentValue,
+      annualReturn: inv.annualReturn,
+      symbol: inv.symbol,
+      schemeCode: inv.schemeCode,
+      units: inv.units,
+      startDate: inv.startDate,
+    });
+  };
+
   return (
     <div className="space-y-6">
       <SectionTitle
@@ -76,7 +101,7 @@ export function MarketsClient({
         action={<Badge tone="success">● Live data</Badge>}
       />
 
-      <LiveMarkets items={items} onAddToPortfolio={handleAddToPortfolio} />
+      <LiveMarkets items={items} onAddToPortfolio={handleAddToPortfolio} onSell={handleSell} />
 
       {showAddModal && selectedItem && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowAddModal(false)}>
@@ -120,6 +145,16 @@ export function MarketsClient({
       )}
 
       <AddWatch />
+
+      {sellTarget && (
+        <SellInvestmentModal
+          investment={sellTarget}
+          livePrice={null}
+          accounts={accounts}
+          onClose={() => setSellTarget(null)}
+          onSold={() => { setSellTarget(null); router.refresh(); }}
+        />
+      )}
 
       <Card className="!p-4">
         <p className="text-xs" style={{ color: "var(--text-muted)" }}>

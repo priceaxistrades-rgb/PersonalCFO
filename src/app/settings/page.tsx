@@ -70,7 +70,7 @@ export default async function SettingsPage() {
         <TransactionsManager transactions={transactions} members={members} />
         <MembersManager members={members} />
         <AccountsManager accounts={accounts} />
-        <InvestmentsManager investments={investments} />
+        <InvestmentsManager investments={investments} accounts={accounts.map(a => ({ id: a.id, name: a.name, type: a.type }))} />
         <DebtsManager debts={debts} />
         <GoalsManager goals={goals} />
         <BillsManager bills={bills} />
