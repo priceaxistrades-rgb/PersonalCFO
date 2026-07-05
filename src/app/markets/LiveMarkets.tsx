@@ -15,6 +15,7 @@ type WatchItem = {
   source?: "watchlist" | "investment";
   units?: string | null;
   invested?: string | null;
+  currentPrice?: number;
 };
 
 type ChartPoint = { date: string; value: number; open?: number; high?: number; low?: number; close?: number };
@@ -224,14 +225,16 @@ export function LiveMarkets({
           : null;
       return (
         <Tr key={`${it.source || "watchlist"}-${it.id}-${key}`}>
-          <Td strong
-            className="cursor-pointer hover:text-var(--primary) transition-colors"
-            onClick={() => target && openChart(target)}
-          >
-            {it.label}
-            <span className="block text-[10px] font-normal opacity-70" style={{ color: "var(--text-faint)" }}>
-              {q?.extra || (it.source === "investment" ? "Synced from investments" : "Watchlist")}
-            </span>
+          <Td strong>
+            <div 
+              className="cursor-pointer hover:text-var(--primary) transition-colors" 
+              onClick={() => target && openChart(target)}
+            >
+              {it.label}
+              <span className="block text-[10px] font-normal opacity-70" style={{ color: "var(--text-faint)" }}>
+                {q?.extra || (it.source === "investment" ? "Synced from investments" : "Watchlist")}
+              </span>
+            </div>
           </Td>
           <Td right strong>{q?.ok ? fmtNum(q.price, q.currency) : q ? "—" : "…"}</Td>
           <Td right>
