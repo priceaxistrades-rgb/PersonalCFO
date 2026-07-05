@@ -83,7 +83,7 @@ export function MarketsClient({
             </div>
             <InvestmentForm 
               editingInvestment={null} 
-              initialData={selectedItem}
+              initialData={selectedItem ?? undefined}
               onSave={async (form) => {
                 await fetch("/api/manage/investments", {
                   method: "POST",
