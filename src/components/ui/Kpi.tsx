@@ -23,9 +23,7 @@ export function KpiCard({
   trend?: { dir: "up" | "down"; text: string; good?: boolean };
   onClick?: () => void;
   active?: boolean;
-  /** local = hide only this card, global = parent hide/show all, none = no eye */
   privacyMode?: "local" | "global" | "none";
-  /** Stable id for syncing KPI value with drawer values */
   privacyKey?: string;
 }) {
   const key = privacyKey || label;
@@ -33,21 +31,15 @@ export function KpiCard({
   const hidden = isHidden(key, privacyMode);
   const canHide = privacyMode !== "none";
 
-  const toneColor: Record<string, string> = {
-    primary: "var(--primary)",
-    success: "var(--success)",
-    warning: "var(--warning)",
-    danger: "var(--danger)",
-    accent: "var(--accent)",
-  };
-  const toneSoft: Record<string, string> = {
-    primary: "var(--primary-soft)",
-    success: "var(--success-soft)",
-    warning: "var(--warning-soft)",
-    danger: "var(--danger-soft)",
-    accent: "var(--primary-soft)",
+  const toneColors: Record<string, { color: string; soft: string; gradient: string }> = {
+    primary: { color: "var(--primary)", soft: "var(--primary-soft)", gradient: "linear-gradient(135deg, var(--primary), var(--accent))" },
+    success: { color: "var(--success)", soft: "var(--success-soft)", gradient: "linear-gradient(135deg, var(--success), #059669)" },
+    warning: { color: "var(--warning)", soft: "var(--warning-soft)", gradient: "linear-gradient(135deg, var(--warning), #d97706)" },
+    danger:  { color: "var(--danger)",  soft: "var(--danger-soft)",  gradient: "linear-gradient(135deg, var(--danger), #e11d48)" },
+    accent:  { color: "var(--accent)",  soft: "var(--primary-soft)", gradient: "linear-gradient(135deg, var(--accent), var(--primary))" },
   };
 
+  const t = toneColors[tone];
   const clickable = Boolean(onClick);
 
   return (
@@ -57,68 +49,68 @@ export function KpiCard({
       onClick={onClick}
       onKeyDown={(e) => {
         if (!onClick) return;
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onClick();
-        }
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); }
       }}
-      className={`kpi-card card p-3 sm:p-5 fade-in relative overflow-hidden ${
-        clickable ? "cursor-pointer transition-all duration-200 active:scale-[0.98] hover:translate-y-[-2px]" : ""
-      }`}
+      className={`kpi-card card p-4 sm:p-5 fade-in relative ${clickable ? "cursor-pointer" : ""}`}
       style={{
-        outline: active ? `2px solid ${toneColor[tone]}` : "none",
+        outline: active ? `2px solid ${t.color}` : "none",
         outlineOffset: active ? 2 : 0,
-        boxShadow: clickable ? "var(--shadow-3d)" : undefined,
       }}
     >
-      <div className={canHide ? "flex items-start justify-between gap-2 pr-8" : "flex items-start justify-between gap-2"}>
-        <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wide truncate" style={{ color: "var(--text-muted)" }}>
+      {/* Icon badge */}
+      <div className="flex items-start justify-between mb-3">
+        <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>
           {label}
         </p>
         {icon && (
-          <span
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl grid place-items-center text-base sm:text-lg shrink-0 transition-transform duration-200"
-            style={{ background: toneSoft[tone], color: toneColor[tone] }}
+          <div
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl grid place-items-center text-base sm:text-lg shrink-0"
+            style={{ background: t.gradient, color: "#fff", boxShadow: `0 4px 12px ${t.soft}` }}
           >
             {icon}
-          </span>
+          </div>
         )}
       </div>
 
-      {canHide && (
-        <button
-          type="button"
-          aria-label={hidden ? `Show ${label}` : `Hide ${label}`}
-          title={privacyMode === "global" ? (hidden ? "Show all values" : "Hide all values") : hidden ? "Show only this value" : "Hide only this value"}
-          onClick={(e) => {
-            e.stopPropagation();
-            toggle(key, privacyMode);
-          }}
-          className="absolute top-2 right-2 w-7 h-7 rounded-lg grid place-items-center text-xs no-print transition-opacity duration-200 opacity-60 hover:opacity-100"
-          style={{ background: "var(--surface-3)", color: "var(--text-muted)" }}
-        >
-          {hidden ? "🙈" : "👁️"}
-        </button>
-      )}
-
-      <p className="text-lg sm:text-2xl font-bold mt-2 sm:mt-3 tracking-tight truncate" style={{ color: "var(--text)" }}>
+      {/* Value */}
+      <p className="text-2xl sm:text-3xl font-extrabold tracking-tight truncate" style={{ color: "var(--text-heading)" }}>
         {hidden ? "••" : value}
       </p>
-      <div className="flex items-center gap-1.5 sm:gap-2 mt-1 sm:mt-1.5 flex-wrap">
+
+      {/* Trend + sub */}
+      <div className="flex items-center gap-2 mt-2 flex-wrap">
         {trend && !hidden && (
           <span
-            className="text-[10px] sm:text-xs font-semibold inline-flex items-center gap-0.5"
-            style={{ color: trend.good ?? trend.dir === "up" ? "var(--success)" : "var(--danger)" }}
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-bold"
+            style={{
+              background: (trend.good ?? trend.dir === "up") ? "var(--success-soft)" : "var(--danger-soft)",
+              color: (trend.good ?? trend.dir === "up") ? "var(--success)" : "var(--danger)",
+            }}
           >
-            {trend.dir === "up" ? "▲" : "▼"} {trend.text}
+            {trend.dir === "up" ? "↑" : "↓"} {trend.text}
           </span>
         )}
         {sub && (
-          <span className="text-[10px] sm:text-xs truncate" style={{ color: "var(--text-muted)" }}>
+          <span className="text-[11px] truncate" style={{ color: "var(--text-faint)" }}>
             {hidden ? (privacyMode === "global" ? "all values hidden" : "value hidden") : sub}
           </span>
         )}
       </div>
+
+      {/* Privacy toggle */}
+      {canHide && (
+        <button
+          type="button"
+          aria-label={hidden ? `Show ${label}` : `Hide ${label}`}
+          onClick={(e) => { e.stopPropagation(); toggle(key, privacyMode); }}
+          className="absolute top-3 right-3 w-7 h-7 rounded-lg grid place-items-center text-xs no-print opacity-0 hover:opacity-100 transition-opacity"
+          style={{ background: "var(--surface-3)", color: "var(--text-muted)", ...(clickable ? { opacity: 0.5 } : {}) }}
+          onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.opacity = clickable ? "0.5" : "0"; }}
+        >
+          {hidden ? "🙈" : "👁️"}
+        </button>
+      )}
     </div>
   );
 }
@@ -126,7 +118,7 @@ export function KpiCard({
 export function Progress({
   value,
   tone = "primary",
-  height = 8,
+  height = 6,
 }: {
   value: number;
   tone?: "primary" | "success" | "warning" | "danger";
@@ -142,7 +134,7 @@ export function Progress({
   return (
     <div className="w-full rounded-full overflow-hidden" style={{ background: "var(--surface-3)", height }}>
       <div
-        className="h-full rounded-full transition-all duration-500 ease-out"
+        className="h-full rounded-full transition-all duration-700 ease-out"
         style={{ width: `${v}%`, background: colors[tone] }}
       />
     </div>

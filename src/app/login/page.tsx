@@ -13,97 +13,52 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-
+      const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
       const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Login failed");
-        setLoading(false);
-      } else {
-        window.location.replace("/");
-        return;
-      }
-    } catch {
-      setError("Network error. Please try again.");
-    }
-
+      if (!res.ok) { setError(data.error || "Login failed"); setLoading(false); }
+      else { window.location.replace("/"); return; }
+    } catch { setError("Network error. Please try again."); }
     setLoading(false);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md !p-6 sm:!p-8" variant="glass">
-        <div className="text-center mb-6">
-          <div className="text-4xl mb-3 float-anim">📊</div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--text)" }}>
-            Welcome Back
-          </h1>
-          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-            Sign in to your private Personal CFO workspace.
-          </p>
+      <div className="w-full max-w-md fade-in-up">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="inline-flex w-16 h-16 rounded-2xl grid place-items-center text-3xl mb-4 shadow-lg float-anim" style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))" }}>
+            📊
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: "var(--text-heading)" }}>Welcome Back</h1>
+          <p className="text-sm mt-2" style={{ color: "var(--text-muted)" }}>Sign in to your Personal CFO workspace</p>
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: "var(--danger-soft)", color: "var(--danger)" }}>
-            {error}
+        <Card variant="glass" className="!p-6 sm:!p-8">
+          {error && (
+            <div className="mb-5 p-3 rounded-lg text-sm font-medium" style={{ background: "var(--danger-soft)", color: "var(--danger)" }}>{error}</div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-muted)" }}>Email Address</label>
+              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="input" placeholder="you@example.com" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-muted)" }}>Password</label>
+              <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required className="input" placeholder="••••••••" />
+            </div>
+            <button type="submit" disabled={loading} className="quick-add-btn w-full py-3.5 rounded-xl text-sm disabled:opacity-50">
+              {loading ? "Signing in..." : "Sign In"}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center text-sm" style={{ color: "var(--text-muted)" }}>
+            Don&apos;t have an account?{" "}
+            <Link href="/signup" className="font-bold" style={{ color: "var(--primary)" }}>Create account</Link>
           </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-muted)" }}>
-              Email Address
-            </label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              required
-              className="w-full px-4 py-3 rounded-lg border text-sm"
-              style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" }}
-              placeholder="you@example.com"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-muted)" }}>
-              Password
-            </label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              required
-              className="w-full px-4 py-3 rounded-lg border text-sm"
-              style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" }}
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="quick-add-btn w-full py-3 rounded-lg font-semibold transition-all duration-200"
-            style={{ background: "var(--primary)", opacity: loading ? 0.7 : 1 }}
-          >
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-          Don&apos;t have an account?{" "}
-          <Link href="/signup" className="font-medium" style={{ color: "var(--primary)" }}>
-            Create account
-          </Link>
-        </div>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }

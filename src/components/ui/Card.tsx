@@ -17,27 +17,26 @@ export function Card({
   action?: ReactNode;
   style?: CSSProperties;
   onClick?: (e: MouseEvent<HTMLElement>) => void;
-  /** Card style variant */
   variant?: "default" | "3d" | "glass" | "kpi";
 }) {
-  const variantClass = variant === "3d" ? "card-3d" : variant === "glass" ? "card-glass" : variant === "kpi" ? "kpi-card card" : "card";
+  const baseClass = variant === "glass" ? "card-glass" : "card";
 
   return (
-    <section 
-      className={`${variantClass} p-3 sm:p-5 fade-in ${className}`} 
+    <section
+      className={`${baseClass} p-4 sm:p-6 fade-in ${onClick ? "cursor-pointer" : ""} ${className}`}
       style={style}
       onClick={onClick}
     >
       {(title || action) && (
-        <header className="flex items-start justify-between mb-3 sm:mb-4 gap-2 sm:gap-3">
+        <header className="flex items-start justify-between mb-4 sm:mb-5 gap-3">
           <div className="min-w-0 flex-1">
             {title && (
-              <h3 className="text-sm font-semibold tracking-tight truncate" style={{ color: "var(--text)" }}>
+              <h3 className="text-sm font-bold tracking-tight" style={{ color: "var(--text-heading)" }}>
                 {title}
               </h3>
             )}
             {subtitle && (
-              <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>
+              <p className="text-xs mt-1 truncate" style={{ color: "var(--text-faint)" }}>
                 {subtitle}
               </p>
             )}
@@ -57,22 +56,8 @@ export function Badge({
   children: ReactNode;
   tone?: "neutral" | "success" | "warning" | "danger" | "primary";
 }) {
-  const map: Record<string, { bg: string; fg: string }> = {
-    neutral: { bg: "var(--surface-3)", fg: "var(--text-muted)" },
-    success: { bg: "var(--success-soft)", fg: "var(--success)" },
-    warning: { bg: "var(--warning-soft)", fg: "var(--warning)" },
-    danger: { bg: "var(--danger-soft)", fg: "var(--danger)" },
-    primary: { bg: "var(--primary-soft)", fg: "var(--primary)" },
-  };
-  const c = map[tone];
-  return (
-    <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap"
-      style={{ background: c.bg, color: c.fg }}
-    >
-      {children}
-    </span>
-  );
+  const cls = `badge badge-${tone}`;
+  return <span className={cls}>{children}</span>;
 }
 
 export function SectionTitle({
@@ -85,13 +70,13 @@ export function SectionTitle({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-4 sm:mb-5 fade-in-up">
+    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-6 sm:mb-8 fade-in-up">
       <div className="min-w-0">
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate" style={{ color: "var(--text)" }}>
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: "var(--text-heading)" }}>
           {title}
         </h1>
         {subtitle && (
-          <p className="text-xs sm:text-sm mt-0.5 sm:mt-1 truncate" style={{ color: "var(--text-muted)" }}>
+          <p className="text-sm mt-1.5 truncate" style={{ color: "var(--text-muted)" }}>
             {subtitle}
           </p>
         )}
