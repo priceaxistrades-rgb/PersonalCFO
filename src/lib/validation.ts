@@ -19,17 +19,25 @@ import { z, ZodError } from "zod";
 
 // ─── Shared Primitives ─────────────────────────────────────────
 
-/** Positive monetary value as a string (matches Drizzle numeric columns). */
+/**
+ * Monetary value that accepts BOTH string and number input.
+ * HTML form inputs send numbers; DB stores strings.
+ * This coerces both to a validated string for DB storage.
+ */
 const moneyStr = z
-  .string()
-  .regex(/^-?\d+(\.\d{1,4})?$/, "Must be a valid monetary amount")
-  .transform((v) => v);
+  .union([z.string(), z.number()])
+  .pipe(
+    z.string()
+      .refine((v) => /^-?\d+(\.\d{1,4})?$/.test(v), "Must be a valid monetary amount")
+  );
 
-/** Non-negative monetary value (for balances, targets, etc.). */
+/** Non-negative monetary value (for balances, targets, etc.). Accepts string or number. */
 const nonNegMoneyStr = z
-  .string()
-  .regex(/^\d+(\.\d{1,4})?$/, "Must be a non-negative monetary amount")
-  .transform((v) => v);
+  .union([z.string(), z.number()])
+  .pipe(
+    z.string()
+      .refine((v) => /^\d+(\.\d{1,4})?$/.test(v), "Must be a non-negative monetary amount")
+  );
 
 /** Non-negative integer ID. */
 const positiveInt = z.number().int().positive();
@@ -43,14 +51,24 @@ const nonEmptyStr = z.string().trim().min(1, "Required");
 /** Date string in YYYY-MM-DD format. */
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format");
 
-/** Percentage as string (0–100, up to 2 decimal places). */
+/** Percentage as string (0–100, up to 2 decimal places). Accepts string or number. */
 const percentStr = z
-  .string()
-  .regex(/^\d+(\.\d{1,2})?$/, "Must be a valid percentage")
-  .transform((v) => v);
+  .union([z.string(), z.number()])
+  .pipe(
+    z.string()
+      .refine((v) => /^\d+(\.\d{1,2})?$/.test(v), "Must be a valid percentage")
+  );
 
 /** Interest rate as string (0–100, up to 2 decimal places). */
 const interestRateStr = percentStr;
+
+/** String or number coerced to trimmed string with max length (for schemeCode, etc.). */
+function coercedStrMax(maxLen: number) {
+  return z.preprocess(
+    (v) => String(v ?? "").trim(),
+    z.string().max(maxLen, `Maximum ${maxLen} characters`),
+  );
+}
 
 // ─── Enum Constants ─────────────────────────────────────────────
 
@@ -149,8 +167,8 @@ export const investmentCreateSchema = z.object({
   currentValue: nonNegMoneyStr,
   annualReturn: percentStr.default("0"),
   symbol: z.string().trim().max(30).nullable().optional(),
-  schemeCode: z.string().trim().max(20).nullable().optional(),
-  units: z.string().regex(/^\d+(\.\d{1,4})?$/, "Invalid units").nullable().optional(),
+  schemeCode: coercedStrMax(20).nullable().optional(),
+  units: z.union([z.string(), z.number()]).pipe(z.string().refine((v) => /^\d+(\.\d{1,4})?$/.test(v), "Invalid units")).nullable().optional(),
   startDate: dateStr.nullable().optional(),
   memberId: optionalIntId,
 }).strict();
@@ -163,8 +181,8 @@ export const investmentUpdateSchema = z.object({
   currentValue: moneyStr.optional(),
   annualReturn: percentStr.optional(),
   symbol: z.string().trim().max(30).nullable().optional(),
-  schemeCode: z.string().trim().max(20).nullable().optional(),
-  units: z.string().regex(/^\d+(\.\d{1,4})?$/, "Invalid units").nullable().optional(),
+  schemeCode: coercedStrMax(20).nullable().optional(),
+  units: z.union([z.string(), z.number()]).pipe(z.string().refine((v) => /^\d+(\.\d{1,4})?$/.test(v), "Invalid units")).nullable().optional(),
   startDate: dateStr.nullable().optional(),
   memberId: optionalIntId.optional(),
 }).strict();
@@ -335,7 +353,7 @@ export const taxProfileUpdateSchema = z.object({
 export const watchlistCreateSchema = z.object({
   kind: z.enum(WATCHLIST_KINDS),
   symbol: z.string().trim().max(30).nullable().optional(),
-  schemeCode: z.string().trim().max(20).nullable().optional(),
+  schemeCode: coercedStrMax(20).nullable().optional(),
   label: nonEmptyStr.max(100),
 }).strict();
 

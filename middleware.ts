@@ -21,8 +21,11 @@ function isCsrfSafe(req: NextRequest): boolean {
   const host = req.headers.get("host");
   if (!host) return false;
 
-  // Build the expected origin from the request host
-  const protocol = req.headers.get("x-forwarded-proto") || "https";
+  // Build the expected origin from the request's actual protocol.
+  // Use x-forwarded-proto if behind a reverse proxy (Vercel, etc.),
+  // otherwise infer from the request URL (fixes local dev over http).
+  const forwardedProto = req.headers.get("x-forwarded-proto");
+  const protocol = forwardedProto || req.nextUrl.protocol.replace(":", "");
   const expectedOrigin = `${protocol}://${host}`;
 
   return origin === expectedOrigin;
