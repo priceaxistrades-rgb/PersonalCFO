@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 
 export function ProfileUploadModal({ 
   user, 
-  onUploadSuccess 
+  onUploadSuccess,
+  onClose
 }: { 
   user: any; 
-  onUploadSuccess: (path: string) => void 
+  onUploadSuccess: (path: string) => void;
+  onClose: () => void;
 }) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -40,8 +42,15 @@ export function ProfileUploadModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-2xl max-w-sm w-full text-center space-y-4" style={{ background: "var(--surface)", color: "var(--text)" }}>
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-2xl max-w-sm w-full text-center space-y-4" 
+        style={{ background: "var(--surface)", color: "var(--text)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 className="text-lg font-bold">Update Profile Picture</h3>
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>
           Choose a JPG, JPEG, or PNG image to represent your profile.
@@ -64,10 +73,7 @@ export function ProfileUploadModal({
             {uploading ? "Uploading..." : "Select Image"}
           </button>
           <button 
-            onClick={() => {
-               // Since we don't have a 'close' prop, we have to handle it via state in parent.
-               // But for now, we can just rely on the parent's modal state.
-            }}
+            onClick={onClose}
             className="w-full py-2 rounded-lg text-sm" 
             style={{ background: "var(--surface-3)", color: "var(--text)" }}
           >

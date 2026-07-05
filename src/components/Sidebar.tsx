@@ -157,6 +157,7 @@ function AuthButton() {
             setShowUpload(false);
             router.refresh();
           }} 
+          onClose={() => setShowUpload(false)}
         />
       )}
     </div>
