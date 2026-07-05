@@ -334,6 +334,18 @@ export function LiveMarkets({
           <Td right><Cagr v={q?.cagr.y5 ?? null} /></Td>
           <Td right>
             <div className="flex justify-end gap-1 no-print">
+              {target && isHeld && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddToPortfolio({ ...it, currentPrice: q?.price });
+                  }}
+                  className="text-xs px-2 py-1 rounded-lg"
+                  style={{ background: "var(--success-soft)", color: "var(--success)" }}
+                >
+                  + Add More
+                </button>
+              )}
               {target && !isHeld && (
                 <button
                   onClick={(e) => {
