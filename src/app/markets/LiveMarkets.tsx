@@ -203,12 +203,21 @@ export function LiveMarkets({
   const remove = async (id: number, source?: string) => {
     if (source === "investment") return;
     if (!confirm("Remove this instrument from your watchlist?")) return;
-    await fetch("/api/watchlist", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    router.refresh();
+    try {
+      const res = await fetch("/api/watchlist", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) {
+        router.refresh();
+      } else {
+        const err = await res.json();
+        alert(`Error removing instrument: ${err.error || "Unknown error"}`);
+      }
+    } catch (e) {
+      alert("Failed to remove instrument. Please check your connection.");
+    }
   };
 
   const stockItems = items.filter((i) => i.kind === "stock");
@@ -227,10 +236,15 @@ export function LiveMarkets({
         <Tr key={`${it.source || "watchlist"}-${it.id}-${key}`}>
           <Td strong>
             <div 
-              className="cursor-pointer hover:text-var(--primary) transition-colors" 
+              className="flex items-center gap-2 cursor-pointer group" 
               onClick={() => target && openChart(target)}
             >
-              {it.label}
+              <span className="group-hover:text-var(--primary) transition-colors">
+                {it.label}
+              </span>
+              <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--primary)" }}>
+                📊 View Chart
+              </span>
               <span className="block text-[10px] font-normal opacity-70" style={{ color: "var(--text-faint)" }}>
                 {q?.extra || (it.source === "investment" ? "Synced from investments" : "Watchlist")}
               </span>
@@ -253,7 +267,10 @@ export function LiveMarkets({
             <div className="flex justify-end gap-1 no-print">
               {target && (
                 <button
-                  onClick={() => onAddToPortfolio({ ...it, currentPrice: q?.price })}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddToPortfolio({ ...it, currentPrice: q?.price });
+                  }}
                   className="text-xs px-2 py-1 rounded-lg"
                   style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
                 >
@@ -262,7 +279,10 @@ export function LiveMarkets({
               )}
               {it.source !== "investment" ? (
                 <button
-                  onClick={() => remove(it.id, it.source)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    remove(it.id, it.source);
+                  }}
                   className="text-xs px-2 py-1 rounded-lg"
                   style={{ background: "var(--danger-soft)", color: "var(--danger)" }}
                 >
