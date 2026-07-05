@@ -35,7 +35,7 @@ export function Table({
 
 export function Tr({ children }: { children: ReactNode }) {
   return (
-    <tr className="border-t align-middle" style={{ borderColor: "var(--border)" }}>
+    <tr className="border-t align-middle table-row-hover transition-colors duration-150" style={{ borderColor: "var(--border)" }}>
       {children}
     </tr>
   );

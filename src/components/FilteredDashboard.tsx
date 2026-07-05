@@ -164,7 +164,7 @@ export function FilteredDashboard({
       )}
 
       {/* KPI Row - Responsive: 2 cols mobile, 4 cols desktop */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 stagger">
         <KpiCard label="Net Worth" value={inr(netWorth, { compact: true })} icon="💎" tone="primary" sub="Assets − Liabilities · click" onClick={() => go("/networth")} active={false} />
         <KpiCard label="Cash Available" value={inr(liquidAssets, { compact: true })} icon="💵" tone="accent" sub="Liquid funds · click" onClick={() => go("/networth")} active={false} />
         <KpiCard

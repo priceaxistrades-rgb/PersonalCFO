@@ -188,7 +188,7 @@ export function InvestmentKpis({
         </div>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
         <KpiCard label="Live Portfolio" value={inr(current, { compact: true })} icon="📈" tone="primary" sub={`${liveLinked}/${liveInvestments.length} live-linked`} privacyMode="global" privacyKey="investments-total" />
         <KpiCard label="Total Invested" value={inr(invested, { compact: true })} icon="💼" tone="accent" privacyKey="investments-invested" />
         <KpiCard

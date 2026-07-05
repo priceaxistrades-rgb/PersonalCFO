@@ -75,7 +75,7 @@ export function TransactionForm({
     <div className="no-print">
       <button
         onClick={() => setOpen(!open)}
-        className="px-4 py-2 rounded-lg text-sm font-semibold text-white inline-flex items-center gap-2"
+        className="quick-add-btn px-4 py-2 rounded-lg text-sm font-semibold inline-flex items-center gap-2"
         style={{ background: "var(--primary)" }}
       >
         {open ? "✕ Close" : `+ Add ${type === "income" ? "Income" : "Expense"}`}

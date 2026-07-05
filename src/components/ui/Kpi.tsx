@@ -62,10 +62,13 @@ export function KpiCard({
           onClick();
         }
       }}
-      className={`card p-3 sm:p-5 fade-in relative overflow-hidden ${clickable ? "cursor-pointer transition-transform active:scale-[0.99] hover:opacity-95" : ""}`}
+      className={`kpi-card card p-3 sm:p-5 fade-in relative overflow-hidden ${
+        clickable ? "cursor-pointer transition-all duration-200 active:scale-[0.98] hover:translate-y-[-2px]" : ""
+      }`}
       style={{
         outline: active ? `2px solid ${toneColor[tone]}` : "none",
         outlineOffset: active ? 2 : 0,
+        boxShadow: clickable ? "var(--shadow-3d)" : undefined,
       }}
     >
       <div className={canHide ? "flex items-start justify-between gap-2 pr-8" : "flex items-start justify-between gap-2"}>
@@ -74,7 +77,7 @@ export function KpiCard({
         </p>
         {icon && (
           <span
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl grid place-items-center text-base sm:text-lg shrink-0"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl grid place-items-center text-base sm:text-lg shrink-0 transition-transform duration-200"
             style={{ background: toneSoft[tone], color: toneColor[tone] }}
           >
             {icon}
@@ -91,7 +94,7 @@ export function KpiCard({
             e.stopPropagation();
             toggle(key, privacyMode);
           }}
-          className="absolute top-2 right-2 w-7 h-7 rounded-lg grid place-items-center text-xs no-print"
+          className="absolute top-2 right-2 w-7 h-7 rounded-lg grid place-items-center text-xs no-print transition-opacity duration-200 opacity-60 hover:opacity-100"
           style={{ background: "var(--surface-3)", color: "var(--text-muted)" }}
         >
           {hidden ? "🙈" : "👁️"}
@@ -99,7 +102,7 @@ export function KpiCard({
       )}
 
       <p className="text-lg sm:text-2xl font-bold mt-2 sm:mt-3 tracking-tight truncate" style={{ color: "var(--text)" }}>
-        {hidden ? "**" : value}
+        {hidden ? "••" : value}
       </p>
       <div className="flex items-center gap-1.5 sm:gap-2 mt-1 sm:mt-1.5 flex-wrap">
         {trend && !hidden && (
@@ -138,7 +141,10 @@ export function Progress({
   const v = Math.max(0, Math.min(100, value));
   return (
     <div className="w-full rounded-full overflow-hidden" style={{ background: "var(--surface-3)", height }}>
-      <div className="h-full rounded-full transition-all" style={{ width: `${v}%`, background: colors[tone] }} />
+      <div
+        className="h-full rounded-full transition-all duration-500 ease-out"
+        style={{ width: `${v}%`, background: colors[tone] }}
+      />
     </div>
   );
 }

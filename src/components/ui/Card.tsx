@@ -8,6 +8,7 @@ export function Card({
   action,
   style,
   onClick,
+  variant = "default",
 }: {
   children: ReactNode;
   className?: string;
@@ -16,10 +17,14 @@ export function Card({
   action?: ReactNode;
   style?: CSSProperties;
   onClick?: (e: MouseEvent<HTMLElement>) => void;
+  /** Card style variant */
+  variant?: "default" | "3d" | "glass" | "kpi";
 }) {
+  const variantClass = variant === "3d" ? "card-3d" : variant === "glass" ? "card-glass" : variant === "kpi" ? "kpi-card card" : "card";
+
   return (
     <section 
-      className={`card p-3 sm:p-5 fade-in ${className}`} 
+      className={`${variantClass} p-3 sm:p-5 fade-in ${className}`} 
       style={style}
       onClick={onClick}
     >
@@ -80,7 +85,7 @@ export function SectionTitle({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-4 sm:mb-5">
+    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-4 sm:mb-5 fade-in-up">
       <div className="min-w-0">
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate" style={{ color: "var(--text)" }}>
           {title}

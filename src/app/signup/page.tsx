@@ -50,9 +50,9 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md !p-6 sm:!p-8">
+      <Card className="w-full max-w-md !p-6 sm:!p-8" variant="glass">
         <div className="text-center mb-6">
-          <div className="text-4xl mb-3">🎯</div>
+          <div className="text-4xl mb-3 float-anim">🎯</div>
           <h1 className="text-2xl font-bold" style={{ color: "var(--text)" }}>
             Create Account
           </h1>
@@ -126,7 +126,7 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-lg font-semibold text-white transition-opacity"
+            className="quick-add-btn w-full py-3 rounded-lg font-semibold transition-all duration-200"
             style={{ background: "var(--success)", opacity: loading ? 0.7 : 1 }}
           >
             {loading ? "Creating account..." : "Create Account"}

@@ -18,7 +18,7 @@ interface EmptyStateProps {
 
 export function EmptyState({ title, description, icon, action, secondaryAction }: EmptyStateProps) {
   return (
-    <div className="card p-8 sm:p-12 text-center">
+    <div className="card p-8 sm:p-12 text-center fade-in-up">
       <div className="text-6xl mb-4">{icon}</div>
       <h3 className="text-lg font-semibold mb-2" style={{ color: "var(--text)" }}>
         {title}
@@ -135,8 +135,8 @@ export function EmptyBills() {
 export function EmptyDashboard() {
   return (
     <div className="space-y-6">
-      <div className="card p-8 sm:p-12 text-center">
-        <div className="text-6xl mb-4">👋</div>
+      <div className="card p-8 sm:p-12 text-center fade-in-up">
+        <div className="text-6xl mb-4 float-anim">👋</div>
         <h3 className="text-xl font-semibold mb-3" style={{ color: "var(--text)" }}>
           Welcome to Personal CFO!
         </h3>
@@ -147,7 +147,7 @@ export function EmptyDashboard() {
         <div className="grid sm:grid-cols-2 gap-4 max-w-xl mx-auto">
           <Link
             href="/settings"
-            className="card p-5 text-left hover:scale-[1.02] transition-transform"
+            className="card p-5 text-left hover:scale-[1.02] transition-all duration-200 hover:translate-y-[-2px]"
             style={{ background: "var(--surface-2)" }}
           >
             <div className="text-3xl mb-3">✏️</div>
@@ -161,7 +161,7 @@ export function EmptyDashboard() {
           
           <Link
             href="/settings?tab=import"
-            className="card p-5 text-left hover:scale-[1.02] transition-transform"
+            className="card p-5 text-left hover:scale-[1.02] transition-all duration-200 hover:translate-y-[-2px]"
             style={{ background: "var(--surface-2)" }}
           >
             <div className="text-3xl mb-3">📁</div>

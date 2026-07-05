@@ -33,7 +33,7 @@ export default async function EmergencyPage() {
     <div className="space-y-6">
       <SectionTitle title="Emergency Planning" subtitle="Be prepared — for your family's peace of mind" />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
         <KpiCard label="Emergency Fund" value={inr(fundSaved, { compact: true })} icon="🛟" tone={monthsCovered >= 6 ? "success" : "warning"} sub={`${monthsCovered.toFixed(1)} months cover`} />
         <KpiCard label="Insurance Cover" value={inr(totalCover, { compact: true })} icon="🛡️" tone="primary" />
         <KpiCard label="Preparedness" value={`${readiness.toFixed(0)}%`} icon="✅" tone="accent" sub={`${done}/${items.length} done`} />
@@ -47,7 +47,7 @@ export default async function EmergencyPage() {
         </p>
       </Card>
 
-      <div className="grid lg:grid-cols-2 gap-4">
+      <div className="grid lg:grid-cols-2 gap-4 fade-in-up">
         <Card title="📞 Emergency Contacts" subtitle="Quick access in a crisis">
           <div className="space-y-2">
             {contacts.map((c) => (

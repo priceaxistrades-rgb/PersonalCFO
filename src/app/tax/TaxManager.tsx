@@ -77,7 +77,7 @@ export function TaxManager({ initialProfile }: { initialProfile: any }) {
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
         <Card className="!p-4 text-center">
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>Total Income</p>
           <p className="text-xl font-bold mt-1" style={{ color: "var(--text)" }}>{inr(totalIncome, { compact: true })}</p>

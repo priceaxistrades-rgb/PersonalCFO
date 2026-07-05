@@ -105,7 +105,7 @@ export function FinancialInsights({ txns, bills }: { txns: any[]; bills: any[] }
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger">
       {insights.map((ins, i) => (
         <Card key={i} className="p-4 border-l-4" style={{ borderLeftColor: `var(--${ins.tone})` }}>
           <div className="flex gap-3">

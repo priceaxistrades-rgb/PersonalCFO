@@ -162,7 +162,7 @@ export function LiveNetWorthTracker({
 
       {error && <div className="rounded-lg p-3 text-sm" style={{ background: "var(--danger-soft)", color: "var(--danger)" }}>{error}</div>}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
         <KpiCard label="Live Net Worth" value={inr(netWorth, { compact: true })} icon="💎" tone="primary" privacyMode="global" privacyKey="networth-total" />
         <KpiCard label="Live Assets" value={inr(totalAssets, { compact: true })} icon="📦" tone="success" privacyKey="networth-assets" />
         <KpiCard label="Liabilities" value={inr(liabilities, { compact: true })} icon="📉" tone="danger" privacyKey="networth-liabilities" />
@@ -233,7 +233,7 @@ export function LiveNetWorthTracker({
         />
       </Card>
 
-      <div className="grid lg:grid-cols-2 gap-4">
+      <div className="grid lg:grid-cols-2 gap-4 fade-in-up">
         <Card title="Assets" subtitle={`${inr(totalAssets, { compact: true })} live total`} action={<Link href="/investments" className="text-xs px-3 py-1.5 rounded-lg" style={{ background: "var(--primary-soft)", color: "var(--primary)" }}>Investments</Link>}>
           <Table headers={["Asset", "Type", "Value", "Status"]} right={[2]}>
             {assetRows.map((a, i) => (

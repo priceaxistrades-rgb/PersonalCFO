@@ -164,25 +164,24 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
       {!isOpen ? (
         <button 
           onClick={() => setIsOpen(true)} 
-          className="w-full py-4 rounded-2xl text-sm font-bold transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-3 shadow-lg"
-          style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark))", color: "white" }}
+          className="quick-add-btn w-full py-4 rounded-2xl text-sm font-bold flex items-center justify-center gap-3"
         >
           <span className="text-xl">⚡</span> Universal Quick Add
         </button>
       ) : (
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm scale-in"
           onClick={() => setIsOpen(false)}
         >
-          <Card className="p-5 shadow-2xl border-2 w-full max-w-2xl" style={{ borderColor: "var(--primary)" }} onClick={(e) => e.stopPropagation()}>
+          <Card className="p-5 shadow-2xl w-full max-w-2xl" variant="glass" style={{ borderColor: "var(--primary)" }} onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold flex items-center gap-2">
+              <h3 className="font-bold flex items-center gap-2" style={{ color: "var(--text)" }}>
                 <span className="text-lg">⚡</span> Financial Brain Entry
               </h3>
-              <button onClick={() => setIsOpen(false)} className="text-xs opacity-50 hover:opacity-100">Close ✕</button>
+              <button onClick={() => setIsOpen(false)} className="text-xs opacity-50 hover:opacity-100 transition-opacity" style={{ color: "var(--text-muted)" }}>Close ✕</button>
             </div>
 
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+            <div className="flex gap-2 mb-6 overflow-x-auto pb-2 hide-scrollbar">
               {(
                 [
                   { id: "income", label: "Income", icon: "💰", color: "var(--success)" },
@@ -198,11 +197,13 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
                 <button
                   key={t.id}
                   onClick={() => handleTypeChange(t.id)}
-                  className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${formType === t.id ? 'ring-2 ring-offset-2' : 'opacity-60 hover:opacity-100'}`}
+                  className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+                    formType === t.id ? 'ring-2 ring-offset-2 scale-105' : 'opacity-60 hover:opacity-100'
+                  }`}
                   style={{ 
                     background: formType === t.id ? t.color : "var(--surface-3)", 
                     color: formType === t.id ? "white" : "var(--text)",
-                    outlineColor: t.color
+                    outlineColor: t.color,
                   }}
                 >
                   <span className="mr-1">{t.icon}</span> {t.label}
@@ -212,23 +213,23 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
 
             <div className="grid sm:grid-cols-2 gap-4 mb-4">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase opacity-60">Amount (₹)</label>
+                <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Amount (₹)</label>
                 <input 
                   type="number" 
                   placeholder="0.00" 
                   value={form.amount} 
                   onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg text-sm border" 
+                  className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                   style={inputStyle} 
                   autoFocus
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase opacity-60">Account</label>
+                <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Account</label>
                 <select 
                   value={form.accountId} 
                   onChange={(e) => setForm({ ...form, accountId: Number(e.target.value) })}
-                  className="w-full px-3 py-2 rounded-lg text-sm border" 
+                  className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                   style={inputStyle}
                 >
                   {accounts.map((a) => (
@@ -241,12 +242,12 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
             {formType === "income" || formType === "expense" ? (
               <div className="grid sm:grid-cols-2 gap-4 mb-4">
                  <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Category</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Category</label>
                   <div className="flex gap-2">
                     <select 
                       value={form.category} 
                       onChange={(e) => setForm({ ...form, category: e.target.value })}
-                      className="flex-1 px-3 py-2 rounded-lg text-sm border" 
+                      className="flex-1 px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                       style={inputStyle}
                     >
                       {Object.values(CATEGORY_GROUPS).flat().map(cat => (
@@ -257,7 +258,7 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
                     {form.category === "custom" && (
                       <input 
                         placeholder="Custom category" 
-                        className="flex-1 px-3 py-2 rounded-lg text-sm border" 
+                        className="flex-1 px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                         style={inputStyle} 
                         onChange={(e) => setForm({ ...form, category: e.target.value })}
                       />
@@ -265,12 +266,12 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Note</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Note</label>
                   <input 
                     placeholder="Optional note..." 
                     value={form.note} 
                     onChange={(e) => setForm({ ...form, note: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle} 
                   />
                 </div>
@@ -278,21 +279,21 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
             ) : formType === "investment" ? (
               <div className="grid sm:grid-cols-2 gap-4 mb-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Asset Name</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Asset Name</label>
                   <input 
                     placeholder="e.g. HDFC Index Fund" 
                     value={form.name} 
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle} 
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Type</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Type</label>
                   <select 
                     value={form.type} 
                     onChange={(e) => setForm({ ...form, type: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle}
                   >
                     <option value="Stocks">Stocks</option>
@@ -302,23 +303,23 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Symbol / Code</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Symbol / Code</label>
                   <input 
                     placeholder="RELIANCE.NS or 12345" 
                     value={form.symbol} 
                     onChange={(e) => setForm({ ...form, symbol: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle} 
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Units</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Units</label>
                   <input 
                     type="number" 
                     placeholder="Quantity" 
                     value={form.units} 
                     onChange={(e) => setForm({ ...form, units: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle} 
                   />
                 </div>
@@ -326,21 +327,21 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
             ) : formType === "goal" ? (
               <div className="grid sm:grid-cols-2 gap-4 mb-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Goal Name</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Goal Name</label>
                   <input 
                     placeholder="e.g. New Car" 
                     value={form.goalName} 
                     onChange={(e) => setForm({ ...form, goalName: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle} 
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Category</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Category</label>
                   <select 
                     value={form.goalCategory} 
                     onChange={(e) => setForm({ ...form, goalCategory: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle}
                   >
                     <option value="Emergency">Emergency</option>
@@ -357,21 +358,21 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
             ) : formType === "bill" ? (
               <div className="grid sm:grid-cols-2 gap-4 mb-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Bill Name</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Bill Name</label>
                   <input 
                     placeholder="e.g. Electricity" 
                     value={form.billName} 
                     onChange={(e) => setForm({ ...form, billName: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle} 
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Category</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Category</label>
                   <select 
                     value={form.billCategory} 
                     onChange={(e) => setForm({ ...form, billCategory: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle}
                   >
                     <option value="Utilities">Utilities</option>
@@ -381,12 +382,12 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Due Date</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Due Date</label>
                   <input 
                     type="date" 
                     value={form.dueDate} 
                     onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle} 
                   />
                 </div>
@@ -394,21 +395,21 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
             ) : formType === "debt" ? (
               <div className="grid sm:grid-cols-2 gap-4 mb-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Loan Name</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Loan Name</label>
                   <input 
                     placeholder="e.g. Car Loan" 
                     value={form.debtName} 
                     onChange={(e) => setForm({ ...form, debtName: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle} 
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Type</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Type</label>
                   <select 
                     value={form.debtType} 
                     onChange={(e) => setForm({ ...form, debtType: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle}
                   >
                     <option value="HomeLoan">Home Loan</option>
@@ -419,24 +420,24 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Interest Rate (%)</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Interest Rate (%)</label>
                   <input 
                     type="number" 
                     placeholder="e.g. 8.5" 
                     value={form.rate} 
                     onChange={(e) => setForm({ ...form, rate: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle} 
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">EMI (₹)</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>EMI (₹)</label>
                   <input 
                     type="number" 
                     placeholder="Monthly EMI" 
                     value={form.emi} 
                     onChange={(e) => setForm({ ...form, emi: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle} 
                   />
                 </div>
@@ -444,21 +445,21 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
             ) : formType === "insurance" ? (
               <div className="grid sm:grid-cols-2 gap-4 mb-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Policy Name</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Policy Name</label>
                   <input 
                     placeholder="e.g. HDFC Life" 
                     value={form.insuranceName} 
                     onChange={(e) => setForm({ ...form, insuranceName: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle} 
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Type</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Type</label>
                   <select 
                     value={form.insuranceType} 
                     onChange={(e) => setForm({ ...form, insuranceType: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle}
                   >
                     <option value="Health">Health</option>
@@ -468,23 +469,23 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Coverage Amount</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Coverage Amount</label>
                   <input 
                     type="number" 
                     placeholder="e.g. 500000" 
                     value={form.coverage} 
                     onChange={(e) => setForm({ ...form, coverage: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle} 
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Renewal Date</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Renewal Date</label>
                   <input 
                     type="date" 
                     value={form.renewalDate} 
                     onChange={(e) => setForm({ ...form, renewalDate: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle} 
                   />
                 </div>
@@ -492,21 +493,21 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
             ) : (
               <div className="grid sm:grid-cols-2 gap-4 mb-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Plan Title</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Plan Title</label>
                   <input 
                     placeholder="e.g. Buy House" 
                     value={form.annualTitle} 
                     onChange={(e) => setForm({ ...form, annualTitle: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle} 
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase opacity-60">Category</label>
+                  <label className="text-[10px] font-bold uppercase opacity-60" style={{ color: "var(--text-muted)" }}>Category</label>
                   <select 
                     value={form.annualCategory} 
                     onChange={(e) => setForm({ ...form, annualCategory: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg text-sm border" 
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all duration-200" 
                     style={inputStyle}
                   >
                     <option value="Financial">Financial</option>
@@ -522,8 +523,7 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
             <button 
               onClick={submit} 
               disabled={loading || !form.amount}
-              className="w-full py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 disabled:opacity-50"
-              style={{ background: "var(--primary)" }}
+              className="quick-add-btn w-full py-3 rounded-xl text-sm font-bold transition-all duration-200 hover:opacity-90 disabled:opacity-50"
             >
               {loading ? "Processing..." : `Save ${formType.charAt(0).toUpperCase() + formType.slice(1)}`}
             </button>

@@ -42,16 +42,24 @@ export function MobileNav() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-col items-center justify-center flex-1 h-full active:opacity-70 transition-opacity"
+              className={`mobile-nav-item flex flex-col items-center justify-center flex-1 h-full transition-all duration-200 ${
+                isActive(item.href) ? "active" : ""
+              }`}
               style={{ color: isActive(item.href) ? "var(--primary)" : "var(--text-muted)" }}
             >
-              <span className="text-xl mb-0.5">{item.icon}</span>
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span className="text-xl mb-0.5 transition-transform duration-200" style={{
+                transform: isActive(item.href) ? "scale(1.15)" : "scale(1)",
+              }}>{item.icon}</span>
+              <span className="text-[10px] font-medium" style={{
+                fontWeight: isActive(item.href) ? 700 : 500,
+              }}>{item.label}</span>
             </Link>
           ))}
           <button
             onClick={() => setShowMore(true)}
-            className="flex flex-col items-center justify-center flex-1 h-full active:opacity-70 transition-opacity"
+            className={`mobile-nav-item flex flex-col items-center justify-center flex-1 h-full transition-all duration-200 ${
+              showMore ? "active" : ""
+            }`}
             style={{ color: showMore ? "var(--primary)" : "var(--text-muted)" }}
           >
             <span className="text-xl mb-0.5">☰</span>
@@ -64,11 +72,11 @@ export function MobileNav() {
       {showMore && (
         <div className="lg:hidden fixed inset-0 z-[60]">
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowMore(false)} />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowMore(false)} />
 
           {/* Modal */}
           <div
-            className="absolute bottom-20 left-4 right-4 rounded-2xl p-4 max-h-[70vh] overflow-y-auto shadow-2xl"
+            className="absolute bottom-20 left-4 right-4 rounded-2xl p-4 max-h-[70vh] overflow-y-auto shadow-2xl card fade-in-up"
             style={{ background: "var(--surface)" }}
           >
             <div className="flex items-center justify-between mb-4">
@@ -90,14 +98,14 @@ export function MobileNav() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setShowMore(false)}
-                  className="flex flex-col items-center p-3 rounded-xl active:scale-95 transition-transform"
+                  className="flex flex-col items-center p-3 rounded-xl active:scale-95 transition-all duration-200"
                   style={{
                     background: isActive(link.href) ? "var(--primary-soft)" : "var(--surface-2)",
                     color: isActive(link.href) ? "var(--primary)" : "var(--text)",
                   }}
                 >
                   <span className="text-2xl mb-1">{link.icon}</span>
-                  <span className="text-xs text-center">{link.label}</span>
+                  <span className="text-xs text-center font-medium">{link.label}</span>
                 </Link>
               ))}
             </div>

@@ -39,7 +39,7 @@ export default async function DebtPage() {
     <div className="space-y-6">
       <SectionTitle title="Debt & Loan Dashboard" subtitle="Track balances, EMIs and payoff timelines" />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
         <KpiCard label="Total Outstanding" value={inr(totalOutstanding, { compact: true })} icon="🏦" tone="danger" />
         <KpiCard label="Monthly EMI" value={inr(totalEmi, { compact: true })} icon="📅" tone="warning" />
         <KpiCard label="Already Repaid" value={inr(paidOff, { compact: true })} icon="✅" tone="success" sub={`of ${inr(totalPrincipal, { compact: true })}`} />
@@ -48,7 +48,7 @@ export default async function DebtPage() {
 
       <DebtsManager debts={debts} />
 
-      <div className="grid lg:grid-cols-3 gap-4">
+      <div className="grid lg:grid-cols-3 gap-4 stagger fade-in-up">
         <Card title="Debt Composition" subtitle="By outstanding balance">
           <DonutChart data={allocation} centerLabel="Total" centerValue={inr(totalOutstanding, { compact: true })} />
         </Card>

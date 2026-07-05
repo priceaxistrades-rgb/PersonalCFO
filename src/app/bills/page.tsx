@@ -21,7 +21,7 @@ export default async function BillsPage() {
     <div className="space-y-6">
       <SectionTitle title="Bill Tracker" subtitle="Never miss a due date again" />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
         <KpiCard label="Outstanding" value={inr(totalDue, { compact: true })} icon="🔔" tone="warning" sub={`${unpaid.length} bills`} />
         <KpiCard label="Paid This Cycle" value={inr(totalPaid, { compact: true })} icon="✅" tone="success" sub={`${paid.length} bills`} />
         <KpiCard label="Due Within 7 Days" value={String(dueSoon.length)} icon="⏰" tone="primary" />

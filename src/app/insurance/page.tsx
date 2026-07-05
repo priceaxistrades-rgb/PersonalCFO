@@ -29,7 +29,7 @@ export default async function InsurancePage() {
     <div className="space-y-6">
       <SectionTitle title="Insurance Tracker" subtitle="Policies, premiums and renewal reminders" />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
         <KpiCard label="Total Coverage" value={inr(totalCoverage, { compact: true })} icon="🛡️" tone="success" />
         <KpiCard label="Annual Premium" value={inr(totalPremium, { compact: true })} icon="💳" tone="primary" />
         <KpiCard label="Active Policies" value={String(policies.length)} icon="📋" tone="accent" />
@@ -50,7 +50,7 @@ export default async function InsurancePage() {
 
       <InsuranceManager insurance={policies} />
 
-      <div className="grid lg:grid-cols-3 gap-4">
+      <div className="grid lg:grid-cols-3 gap-4 stagger fade-in-up">
         <Card title="Coverage by Type" subtitle="Total sum assured">
           <DonutChart data={coverageData} centerLabel="Cover" centerValue={inr(totalCoverage, { compact: true })} />
         </Card>

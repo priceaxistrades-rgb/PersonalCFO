@@ -18,7 +18,7 @@ export default async function SavingsPage() {
     <div className="space-y-6">
       <SectionTitle title="Savings Dashboard" subtitle="Goal-based saving for life's milestones" />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
         <KpiCard label="Total Saved" value={inr(totalSaved, { compact: true })} icon="🐖" tone="success" />
         <KpiCard label="Total Target" value={inr(totalTarget, { compact: true })} icon="🎯" tone="primary" />
         <KpiCard label="Overall Progress" value={`${overallPct.toFixed(0)}%`} icon="📈" tone="accent" />

@@ -55,7 +55,7 @@ export default async function ReportsPage() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
         <KpiCard label="6-Mo Income" value={inr(totalIncome, { compact: true })} icon="💰" tone="success" />
         <KpiCard label="6-Mo Expenses" value={inr(totalExpense, { compact: true })} icon="🧾" tone="danger" />
         <KpiCard label="6-Mo Savings" value={inr(totalSavings, { compact: true })} icon="🐖" tone="primary" />
@@ -73,7 +73,7 @@ export default async function ReportsPage() {
         />
       </Card>
 
-      <div className="grid lg:grid-cols-2 gap-4">
+      <div className="grid lg:grid-cols-2 gap-4 fade-in-up">
         <Card title="Net Worth Growth" subtitle="12-month trend">
           <LineChart labels={nwLabels} series={[{ name: "Net Worth", values: nwSeries, color: "#6366f1" }]} />
         </Card>

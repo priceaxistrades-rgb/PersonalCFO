@@ -51,11 +51,11 @@ const NAV = [
   },
 ];
 
-const THEMES: { id: Theme; label: string; dot: string }[] = [
-  { id: "light", label: "Minimal White", dot: "#ffffff" },
-  { id: "dark", label: "Premium Dark", dot: "#131a26" },
-  { id: "blue", label: "Professional Blue", dot: "#1e6fd9" },
-  { id: "black", label: "Readable Black", dot: "#000000" },
+const THEMES: { id: Theme; label: string; dot: string; gradient: string }[] = [
+  { id: "obsidian", label: "Obsidian", dot: "#0f1219", gradient: "linear-gradient(135deg, #6366f1, #818cf8)" },
+  { id: "aurora", label: "Aurora", dot: "#f8faff", gradient: "linear-gradient(135deg, #6366f1, #0ea5e9)" },
+  { id: "emerald", label: "Emerald", dot: "#071a12", gradient: "linear-gradient(135deg, #10b981, #34d399)" },
+  { id: "royal", label: "Royal", dot: "#120a1d", gradient: "linear-gradient(135deg, #f59e0b, #fbbf24)" },
 ];
 
 function ProfileIndicator() {
@@ -104,7 +104,7 @@ function AuthButton() {
       <div className="px-4 py-3 border-t" style={{ borderColor: "rgba(128,128,128,0.15)" }}>
         <Link
           href="/login"
-          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg font-medium text-white"
+          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg font-medium text-white transition-transform active:scale-[0.98]"
           style={{ background: "var(--primary)" }}
         >
           🔐 Sign In
@@ -124,7 +124,7 @@ function AuthButton() {
       <div className="flex items-center gap-3 mb-3 group cursor-pointer" onClick={() => setShowUpload(true)}>
         <div className="relative">
           <div 
-            className="w-10 h-10 rounded-full overflow-hidden grid place-items-center text-lg font-bold border-2 border-transparent group-hover:border-primary transition-all"
+            className="w-10 h-10 rounded-full overflow-hidden grid place-items-center text-lg font-bold border-2 border-transparent group-hover:border-[var(--primary)] transition-all"
             style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
           >
             {session.profileImage ? (
@@ -144,7 +144,7 @@ function AuthButton() {
       </div>
       <button
         onClick={logout}
-        className="flex items-center justify-center gap-2 w-full py-2 rounded-lg font-medium text-sm"
+        className="flex items-center justify-center gap-2 w-full py-2 rounded-lg font-medium text-sm transition-transform active:scale-[0.98]"
         style={{ background: "var(--surface-3)", color: "var(--text)" }}
       >
         🚪 Sign Out
@@ -153,7 +153,7 @@ function AuthButton() {
       {showUpload && (
         <ProfileUploadModal 
           user={session} 
-          onUploadSuccess={(path) => {
+          onUploadSuccess={() => {
             setShowUpload(false);
             router.refresh();
           }} 
@@ -192,7 +192,7 @@ export function Sidebar() {
       </header>
 
       {/* Mobile Overlay */}
-      {open && <div className="lg:hidden fixed inset-0 z-30 bg-black/50" onClick={() => setOpen(false)} />}
+      {open && <div className="lg:hidden fixed inset-0 z-30 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} />}
 
       {/* Sidebar - Hidden on mobile by default, shown when open */}
       <aside
@@ -205,8 +205,8 @@ export function Sidebar() {
         <div className="hidden lg:block px-5 py-5 border-b" style={{ borderColor: "rgba(128,128,128,0.15)" }}>
           <div className="flex items-center gap-3">
             <div
-              className="w-10 h-10 rounded-xl grid place-items-center text-xl shadow"
-              style={{ background: "linear-gradient(135deg,#6366f1,#0ea5e9)" }}
+              className="w-10 h-10 rounded-xl grid place-items-center text-xl shadow-lg"
+              style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))" }}
             >
               📊
             </div>
@@ -242,10 +242,12 @@ export function Sidebar() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 transition-colors"
+                    className={`card-3d flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 transition-all duration-200 ${
+                      active ? "nav-active" : ""
+                    }`}
                     style={{
-                      background: active ? "var(--primary)" : "transparent",
-                      color: active ? "#fff" : "var(--text-muted)",
+                      background: active ? "var(--primary-soft)" : "transparent",
+                      color: active ? "var(--primary)" : "var(--text-muted)",
                     }}
                   >
                     <span className="text-base">{item.icon}</span>
@@ -273,16 +275,24 @@ export function Sidebar() {
                 onClick={() => setTheme(t.id)}
                 title={t.label}
                 aria-label={`Switch to ${t.label}`}
-                className="theme-btn h-8 rounded-lg border-2 grid place-items-center transition-all"
+                className="theme-btn h-9 rounded-lg grid place-items-center transition-all duration-200 hover:scale-110 active:scale-95"
                 style={{
-                  borderColor: theme === t.id ? "var(--primary)" : "var(--border)",
-                  background: t.dot,
+                  background: hydrated && theme === t.id ? t.gradient : t.dot,
+                  border: hydrated && theme === t.id ? "2px solid var(--primary)" : "2px solid var(--border)",
+                  boxShadow: hydrated && theme === t.id ? "0 0 12px var(--primary-glow)" : "none",
                 }}
               >
-                {hydrated && theme === t.id && <span className="text-[10px] font-bold" style={{ color: t.id === "light" ? "#000" : "#fff" }}>✓</span>}
+                {hydrated && theme === t.id ? (
+                  <span className="text-xs font-bold" style={{ color: t.id === "aurora" ? "#fff" : "#fff" }}>✓</span>
+                ) : (
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: t.id === "aurora" ? "#6366f1" : t.gradient }} />
+                )}
               </button>
             ))}
           </div>
+          <p className="text-[10px] text-center mt-2 font-medium" style={{ color: "var(--primary)" }}>
+            {THEMES.find((t) => t.id === theme)?.label || "Obsidian"}
+          </p>
         </div>
       </aside>
     </>
