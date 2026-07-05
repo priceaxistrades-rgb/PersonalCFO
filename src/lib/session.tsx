@@ -6,6 +6,7 @@ interface Session {
   userId: number;
   email: string;
   name: string;
+  profileImage?: string;
 }
 
 interface SessionContextType {
