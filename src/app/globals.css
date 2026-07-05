@@ -532,17 +532,22 @@ html.theme-transition *::after {
    ═══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 1023px) {
   body { font-size: 14px; overflow-x: hidden; }
+  .card { border-radius: 0.75rem; }
   button:not(.theme-btn), [role="button"]:not(.theme-btn), input, select, a {
     min-height: 44px; min-width: 44px;
   }
   .mobile-stack { grid-template-columns: 1fr !important; }
   .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   .hide-scrollbar::-webkit-scrollbar { display: none; }
+  /* Prevent KPI grid from overflowing */
+  .kpi-card { min-width: 0; }
 }
 
 @media (max-width: 640px) {
   html { font-size: 14px; }
   input, select, textarea { font-size: 16px !important; }
+  /* Tighter grid gaps on small screens */
+  .grid.grid-cols-2 { gap: 0.5rem; }
 }
 
 @supports (padding-top: env(safe-area-inset-top)) {

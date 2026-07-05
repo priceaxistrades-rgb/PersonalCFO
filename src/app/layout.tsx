@@ -40,9 +40,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <MemberFilterProvider>
                 <div className="flex min-h-screen">
                   <Sidebar />
-                  <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-10 pt-16 lg:pt-8 pb-24 lg:pb-10 max-w-[1500px] mx-auto w-full">
-                    {children}
-                  </main>
+                  <div className="flex-1 min-w-0 lg:min-h-screen overflow-x-hidden">
+                    <main className="px-4 sm:px-6 lg:px-10 pt-[4.5rem] lg:pt-8 pb-24 lg:pb-10 max-w-[1500px] mx-auto w-full">
+                      {children}
+                    </main>
+                  </div>
                 </div>
                 <MobileNav />
               </MemberFilterProvider>

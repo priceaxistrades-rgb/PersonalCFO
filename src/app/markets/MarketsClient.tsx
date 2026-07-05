@@ -7,18 +7,25 @@ import { LiveMarkets } from "./LiveMarkets";
 import { AddWatch } from "./AddWatch";
 import { InvestmentForm } from "../settings/InvestmentsManager";
 
-export function MarketsClient({ 
-  watchItemsPromise, 
-  investmentsPromise 
-}: { 
-  watchItemsPromise: Promise<any[]>, 
-  investmentsPromise: Promise<any[]> 
+export function MarketsClient({
+  watchItemsPromise,
+  investmentsPromise,
+}: {
+  watchItemsPromise: Promise<any[]>;
+  investmentsPromise: Promise<any[]>;
 }) {
   const router = useRouter();
   const [watchItems, setWatchItems] = useState<any[]>([]);
   const [investments, setInvestments] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<{ symbol?: string; schemeCode?: string; name: string; kind: "stock" | "mf"; price?: number } | null>(null);
+  const [selectedItem, setSelectedItem] = useState<{
+    symbol?: string;
+    schemeCode?: string;
+    name: string;
+    kind: "stock" | "mf";
+    price?: number;
+    type?: string;
+  } | null>(null);
 
   useEffect(() => {
     Promise.all([watchItemsPromise, investmentsPromise]).then(([w, i]) => {
@@ -56,6 +63,7 @@ export function MarketsClient({
       schemeCode: item.schemeCode,
       kind: item.kind === "stock" ? "stock" : "mf",
       price: item.currentPrice,
+      type: item.kind === "stock" ? "Stocks" : "MutualFunds",
     });
     setShowAddModal(true);
   };
@@ -64,27 +72,33 @@ export function MarketsClient({
     <div className="space-y-6">
       <SectionTitle
         title="Live Markets & CAGR"
-        subtitle="Market watchlist plus your investment-linked instruments, synced with Investments"
+        subtitle="Market watchlist plus your investment-linked instruments"
         action={<Badge tone="success">● Live data</Badge>}
       />
 
       <LiveMarkets items={items} onAddToPortfolio={handleAddToPortfolio} />
 
-      {showAddModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <Card className="w-full max-w-2xl p-6 shadow-2xl border-2" style={{ borderColor: "var(--primary)" }}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-lg flex items-center gap-2">
-                <span>💎</span> Add {selectedItem?.kind === "stock" ? "Stock" : "Mutual Fund"} to Portfolio
+      {showAddModal && selectedItem && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowAddModal(false)}>
+          <Card variant="glass" className="w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto scale-in" style={{ borderColor: "var(--border-accent)" }} onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="font-bold text-lg flex items-center gap-2" style={{ color: "var(--text-heading)" }}>
+                <span className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))" }}>💎</span>
+                Add {selectedItem.kind === "stock" ? "Stock" : "Mutual Fund"} to Portfolio
               </h3>
-              <button onClick={() => setShowAddModal(false)} className="p-1 opacity-50 hover:opacity-100">✕</button>
+              <button onClick={() => setShowAddModal(false)} className="btn btn-ghost w-8 h-8 rounded-full text-xs">✕</button>
             </div>
-            <div className="mb-4 p-3 rounded-lg bg-var(--surface-2) border text-sm">
-              <strong>Instrument:</strong> {selectedItem?.name} {selectedItem?.symbol && `(${selectedItem.symbol})`} {selectedItem?.schemeCode && `(Code: ${selectedItem.schemeCode})`}
+            <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+              <span className="font-semibold" style={{ color: "var(--text-heading)" }}>{selectedItem.name}</span>
+              {selectedItem.symbol && <span className="ml-2 badge badge-primary">{selectedItem.symbol}</span>}
+              {selectedItem.schemeCode && <span className="ml-2 badge badge-primary">Code: {selectedItem.schemeCode}</span>}
+              {selectedItem.price ? (
+                <span className="ml-2 badge badge-success">Live: ₹{selectedItem.price.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>
+              ) : null}
             </div>
-            <InvestmentForm 
-              editingInvestment={null} 
-              initialData={selectedItem ?? undefined}
+            <InvestmentForm
+              editingInvestment={null}
+              initialData={selectedItem}
               onSave={async (form) => {
                 await fetch("/api/manage/investments", {
                   method: "POST",
@@ -105,7 +119,7 @@ export function MarketsClient({
       <Card className="!p-4">
         <p className="text-xs" style={{ color: "var(--text-muted)" }}>
           📊 <span className="font-semibold" style={{ color: "var(--text)" }}>How it works: </span>
-          Your investments with a stock symbol or MF scheme code automatically appear here. Stock prices come from Yahoo Finance and mutual fund NAVs from AMFI via mfapi.in. Stocks auto-refresh frequently; mutual fund NAVs update daily after fund houses publish NAV. Market data may be delayed.
+          Your investments with a stock symbol or MF scheme code automatically appear here. Stock prices from Yahoo Finance, mutual fund NAVs from AMFI via mfapi.in. Click <strong>+ Add</strong> to add a stock/MF to your portfolio — just enter units &amp; average buy price, and current value auto-calculates from live price.
         </p>
       </Card>
     </div>

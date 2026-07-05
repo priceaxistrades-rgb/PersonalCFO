@@ -101,19 +101,19 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
       )}
 
       {/* ─── KPI Row 1 ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 stagger">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 stagger">
         <KpiCard label="Net Worth" value={inr(netWorth, { compact: true })} icon="💎" tone="primary" sub="Assets − Liabilities" onClick={() => go("/networth")} />
-        <KpiCard label="Cash Available" value={inr(liquidAssets, { compact: true })} icon="💵" tone="accent" sub="Liquid funds" onClick={() => go("/networth")} />
-        <KpiCard label="Monthly Income" value={inr(income, { compact: true })} icon="💰" tone="success" trend={{ dir: income >= prevMonth.income ? "up" : "down", text: inr(Math.abs(income - prevMonth.income), { compact: true }), good: income >= prevMonth.income }} sub="vs last month" onClick={() => go("/income")} />
-        <KpiCard label="Monthly Expenses" value={inr(expense, { compact: true })} icon="🧾" tone="danger" trend={{ dir: expense <= prevMonth.expense ? "down" : "up", text: inr(Math.abs(expense - prevMonth.expense), { compact: true }), good: expense <= prevMonth.expense }} sub="vs last month" onClick={() => go("/expenses")} />
+        <KpiCard label="Cash" value={inr(liquidAssets, { compact: true })} icon="💵" tone="accent" sub="Liquid funds" onClick={() => go("/networth")} />
+        <KpiCard label="Income" value={inr(income, { compact: true })} icon="💰" tone="success" trend={{ dir: income >= prevMonth.income ? "up" : "down", text: inr(Math.abs(income - prevMonth.income), { compact: true }), good: income >= prevMonth.income }} sub="vs last mo" onClick={() => go("/income")} />
+        <KpiCard label="Expenses" value={inr(expense, { compact: true })} icon="🧾" tone="danger" trend={{ dir: expense <= prevMonth.expense ? "down" : "up", text: inr(Math.abs(expense - prevMonth.expense), { compact: true }), good: expense <= prevMonth.expense }} sub="vs last mo" onClick={() => go("/expenses")} />
       </div>
 
       {/* ─── KPI Row 2 ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 stagger mt-3 sm:mt-4">
-        <KpiCard label="Savings Rate" value={`${savingsRate.toFixed(0)}%`} icon="🐖" tone="success" trend={{ dir: savingsRate >= 20 ? "up" : "down", text: `${savingsRate.toFixed(0)}%`, good: savingsRate >= 20 }} sub="of income saved" onClick={() => go("/reports")} />
-        <KpiCard label="Investment Growth" value={inr(invGrowth, { compact: true })} icon="📈" tone="primary" trend={{ dir: "up", text: `${invGrowth > 0 ? "+" : ""}${inr(invGrowth, { compact: true })}`, good: invGrowth >= 0 }} sub="unrealised gains" onClick={() => go("/investments")} />
-        <KpiCard label="Emergency Fund" value={`${emergencyMonths.toFixed(1)} mo`} icon="🛟" tone={emergencyMonths >= 6 ? "success" : "warning"} sub={`${inr(emergencySaved, { compact: true })} saved`} onClick={() => go("/savings")} />
-        <KpiCard label="Total EMI" value={inr(totalEmi, { compact: true })} icon="🏦" tone="warning" sub={`${debtToIncome.toFixed(0)}% of income`} onClick={() => go("/debt")} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 stagger mt-2 sm:mt-4">
+        <KpiCard label="Savings %" value={`${savingsRate.toFixed(0)}%`} icon="🐖" tone="success" trend={{ dir: savingsRate >= 20 ? "up" : "down", text: `${savingsRate.toFixed(0)}%`, good: savingsRate >= 20 }} sub="of income" onClick={() => go("/reports")} />
+        <KpiCard label="Inv. Growth" value={inr(invGrowth, { compact: true })} icon="📈" tone="primary" trend={{ dir: "up", text: `${invGrowth > 0 ? "+" : ""}${inr(invGrowth, { compact: true })}`, good: invGrowth >= 0 }} sub="unrealised" onClick={() => go("/investments")} />
+        <KpiCard label="Emergency" value={`${emergencyMonths.toFixed(1)} mo`} icon="🛟" tone={emergencyMonths >= 6 ? "success" : "warning"} sub={`${inr(emergencySaved, { compact: true })}`} onClick={() => go("/savings")} />
+        <KpiCard label="Total EMI" value={inr(totalEmi, { compact: true })} icon="🏦" tone="warning" sub={`${debtToIncome.toFixed(0)}% income`} onClick={() => go("/debt")} />
       </div>
 
       {/* ─── Charts ─── */}
