@@ -8,6 +8,7 @@ import { DonutChart, LineChart, BarChart } from "@/components/ui/Charts";
 import { Table, Tr, Td } from "@/components/ui/Table";
 import { BillToggle } from "@/components/BillToggle";
 import { EmptyDashboard, EmptyTransactions, EmptyBills, EmptyGoals } from "@/components/EmptyState";
+import { FinancialInsights } from "@/components/FinancialInsights";
 import { inr, num, fmtDate, daysUntil } from "@/lib/format";
 
 // Local helpers (no DB)
@@ -263,6 +264,8 @@ export function FilteredDashboard({
           </div>
         </Card>
       </div>
+
+      <FinancialInsights txns={filteredTxns} bills={bills} />
 
       <div className="grid lg:grid-cols-3 gap-4">
         <Card title="Spending by Category" subtitle={hasSelection ? "Filtered" : "This month"}>

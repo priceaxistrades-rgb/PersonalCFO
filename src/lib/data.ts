@@ -175,6 +175,32 @@ export async function computeNetWorth(memberIds: number[] = []) {
   };
 }
 
+export async function syncAccountBalances() {
+  const userId = await uid();
+  const allTxns = await db.select().from(transactions).where(eq(transactions.userId, userId));
+  const allAccs = await db.select().from(accounts).where(eq(accounts.userId, userId));
+  
+  const balances = new Map<number, number>();
+  allAccs.forEach(a => balances.set(a.id, 0));
+
+  for (const t of allTxns) {
+    if (t.accountId) {
+      const amount = num(t.amount);
+      const delta = t.type === "income" ? amount : -amount;
+      balances.set(t.accountId, (balances.get(t.accountId) || 0) + delta);
+    }
+  }
+
+  if (balances.size > 0) {
+    await db.transaction(async (tx) => {
+      for (const [id, bal] of balances.entries()) {
+        await tx.update(accounts).set({ balance: String(bal) }).where(eq(accounts.id, id));
+      }
+    });
+  }
+  return { success: true };
+}
+
 export { estimateTax } from "./tax";
 export type { TaxInput } from "./tax";
 
