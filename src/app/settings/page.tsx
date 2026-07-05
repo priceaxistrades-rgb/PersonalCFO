@@ -10,7 +10,6 @@ import { GoalsManager } from "./GoalsManager";
 import { InsuranceManager } from "./InsuranceManager";
 import { TransactionsManager } from "./TransactionsManager";
 import { AccountDataManager } from "@/components/AccountDataManager";
-import { ProfileManager } from "@/components/ProfileManager";
 
 export const dynamic = "force-dynamic";
 
@@ -36,12 +35,11 @@ export default async function SettingsPage() {
         action={<Badge tone="primary">Admin</Badge>}
       />
 
-      <ProfileManager />
-
       {/* Import Section - Always show for easy access */}
       <Card title="📁 Import Data" subtitle="Upload Excel files to bulk import your financial data">
         <FileUploader />
       </Card>
+
 
 
       <Card title="🛡️ Account Data Safety" subtitle="Privacy controls and data reset">

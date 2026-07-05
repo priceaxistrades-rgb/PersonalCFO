@@ -1,5 +1,6 @@
 "use client";
 
+import { ProfileUploadModal } from "./ProfileUploadModal";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -84,6 +85,8 @@ function ProfileIndicator() {
 
 function AuthButton() {
   const { session, logout, loading } = useSession();
+  const [showUpload, setShowUpload] = useState(false);
+  const router = useRouter();
 
   if (loading) {
     return (
@@ -118,16 +121,21 @@ function AuthButton() {
 
   return (
     <div className="px-4 py-3 border-t" style={{ borderColor: "rgba(128,128,128,0.15)" }}>
-      <div className="flex items-center gap-3 mb-3">
-        <div 
-          className="w-10 h-10 rounded-full overflow-hidden grid place-items-center text-lg font-bold"
-          style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
-        >
-          {session.profileImage ? (
-            <img src={session.profileImage} alt={session.name} className="w-full h-full object-cover" />
-          ) : (
-            session.name.charAt(0).toUpperCase()
-          )}
+      <div className="flex items-center gap-3 mb-3 group cursor-pointer" onClick={() => setShowUpload(true)}>
+        <div className="relative">
+          <div 
+            className="w-10 h-10 rounded-full overflow-hidden grid place-items-center text-lg font-bold border-2 border-transparent group-hover:border-primary transition-all"
+            style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
+          >
+            {session.profileImage ? (
+              <img src={session.profileImage} alt={session.name} className="w-full h-full object-cover" />
+            ) : (
+              session.name.charAt(0).toUpperCase()
+            )}
+          </div>
+          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-white rounded-full border shadow-sm flex items-center justify-center text-[8px]" style={{ color: "var(--primary)" }}>
+            📷
+          </div>
         </div>
         <div className="min-w-0">
           <p className="font-medium truncate" style={{ color: "var(--text)" }}>{session.name}</p>
@@ -141,9 +149,20 @@ function AuthButton() {
       >
         🚪 Sign Out
       </button>
+
+      {showUpload && (
+        <ProfileUploadModal 
+          user={session} 
+          onUploadSuccess={(path) => {
+            setShowUpload(false);
+            router.refresh();
+          }} 
+        />
+      )}
     </div>
   );
 }
+
 
 export function Sidebar() {
   const pathname = usePathname();
