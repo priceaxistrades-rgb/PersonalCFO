@@ -7,6 +7,7 @@ export function Card({
   subtitle,
   action,
   style,
+  onClick,
 }: {
   children: ReactNode;
   className?: string;
@@ -14,11 +15,13 @@ export function Card({
   subtitle?: string;
   action?: ReactNode;
   style?: CSSProperties;
+  onClick?: () => void;
 }) {
   return (
     <section 
       className={`card p-3 sm:p-5 fade-in ${className}`} 
       style={style}
+      onClick={onClick}
     >
       {(title || action) && (
         <header className="flex items-start justify-between mb-3 sm:mb-4 gap-2 sm:gap-3">
