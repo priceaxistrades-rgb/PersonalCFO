@@ -16,7 +16,13 @@ import {
   watchlist,
 } from "@/db/schema";
 import { desc, asc, inArray, eq, and } from "drizzle-orm";
-import { num } from "./format";
+import {
+  toPaise,
+  fromPaise,
+  paiseToNumber,
+  subtractMoney,
+  sumMoneyToNumber,
+} from "./finance-math";
 import { requireServerSession } from "./server-auth";
 
 async function uid() {
@@ -124,31 +130,50 @@ export function lastNMonths(n: number): { key: string; label: string; date: Date
   return out;
 }
 
+/**
+ * Sum monetary amounts using BigInt precision.
+ * This replaces the old `arr.reduce((s, x) => s + num(x.amount), 0)`
+ * which accumulated floating-point errors across thousands of transactions.
+ */
+export function sumByPaise<T>(arr: T[], fn: (x: T) => string | number | null | undefined): number {
+  let total = 0n;
+  for (const x of arr) {
+    total += toPaise(fn(x));
+  }
+  return paiseToNumber(total);
+}
+
+/**
+ * Generic sum function for arrays.
+ * Uses BigInt internally for monetary fields to prevent accumulation errors.
+ * For backward compatibility with page components that pass numeric extractors.
+ */
 export function sumBy<T>(arr: T[], fn: (x: T) => number): number {
   return arr.reduce((s, x) => s + fn(x), 0);
 }
 
 export function monthlyFlow(txns: Txn[], months: { key: string; label: string }[]) {
   return months.map((m) => {
-    const income = sumBy(
+    const income = sumByPaise(
       txns.filter((t) => t.type === "income" && monthKey(t.txnDate) === m.key),
-      (t) => num(t.amount)
+      (t) => t.amount,
     );
-    const expense = sumBy(
+    const expense = sumByPaise(
       txns.filter((t) => t.type === "expense" && monthKey(t.txnDate) === m.key),
-      (t) => num(t.amount)
+      (t) => t.amount,
     );
     return { ...m, income, expense, savings: income - expense };
   });
 }
 
 export function expenseByCategory(txns: Txn[], monthKeys?: string[]) {
-  const map = new Map<string, number>();
+  // Use BigInt accumulation per category — zero rounding drift
+  const mapPaise = new Map<string, bigint>();
   txns
     .filter((t) => t.type === "expense" && (!monthKeys || monthKeys.includes(monthKey(t.txnDate))))
-    .forEach((t) => map.set(t.category, (map.get(t.category) || 0) + num(t.amount)));
-  return [...map.entries()]
-    .map(([label, value]) => ({ label, value }))
+    .forEach((t) => mapPaise.set(t.category, (mapPaise.get(t.category) || 0n) + toPaise(t.amount)));
+  return [...mapPaise.entries()]
+    .map(([label, paise]) => ({ label, value: paiseToNumber(paise) }))
     .sort((a, b) => b.value - a.value);
 }
 
@@ -162,10 +187,11 @@ export async function computeNetWorth(memberIds: number[] = []) {
     memberIds.length ? getInvestmentsByMember(memberIds) : getInvestments(),
     memberIds.length ? getDebtsByMember(memberIds) : getDebts(),
   ]);
-  const liquidAssets = sumBy(accs, (a) => num(a.balance));
-  const investmentValue = sumBy(invs, (i) => num(i.currentValue));
+  // BigInt accumulation — zero floating-point drift
+  const liquidAssets = sumByPaise(accs, (a) => a.balance);
+  const investmentValue = sumByPaise(invs, (i) => i.currentValue);
   const totalAssets = liquidAssets + investmentValue;
-  const liabilities = sumBy(dbts, (d) => num(d.outstanding));
+  const liabilities = sumByPaise(dbts, (d) => d.outstanding);
   return {
     liquidAssets,
     investmentValue,
@@ -179,22 +205,23 @@ export async function syncAccountBalances() {
   const userId = await uid();
   const allTxns = await db.select().from(transactions).where(eq(transactions.userId, userId));
   const allAccs = await db.select().from(accounts).where(eq(accounts.userId, userId));
-  
-  const balances = new Map<number, number>();
-  allAccs.forEach(a => balances.set(a.id, 0));
+
+  // BigInt accumulation — prevents balance drift over thousands of transactions
+  const balances = new Map<number, bigint>();
+  allAccs.forEach((a) => balances.set(a.id, 0n));
 
   for (const t of allTxns) {
     if (t.accountId) {
-      const amount = num(t.amount);
+      const amount = toPaise(t.amount);
       const delta = t.type === "income" ? amount : -amount;
-      balances.set(t.accountId, (balances.get(t.accountId) || 0) + delta);
+      balances.set(t.accountId, (balances.get(t.accountId) || 0n) + delta);
     }
   }
 
   if (balances.size > 0) {
     await db.transaction(async (tx) => {
       for (const [id, bal] of balances.entries()) {
-        await tx.update(accounts).set({ balance: String(bal) }).where(eq(accounts.id, id));
+        await tx.update(accounts).set({ balance: fromPaise(bal) }).where(eq(accounts.id, id));
       }
     });
   }

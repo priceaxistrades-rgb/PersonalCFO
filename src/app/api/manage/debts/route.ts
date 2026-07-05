@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { debts } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { isSession, requireApiSession } from "@/lib/server-auth";
+import { validate, debtCreateSchema, debtUpdateSchema, idDeleteSchema } from "@/lib/validation";
 
 export async function GET(req: Request) {
   const session = requireApiSession(req);
@@ -18,17 +19,21 @@ export async function POST(req: Request) {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
   try {
-    const b = await req.json();
+    const raw = await req.json();
+    const result = validate(debtCreateSchema, raw);
+    if (!result.ok) return result.error;
+    const b = result.data;
+
     const [row] = await db.insert(debts).values({
       userId: session.userId,
       name: b.name,
       type: b.type,
-      principal: String(b.principal || 0),
-      outstanding: String(b.outstanding || 0),
-      interestRate: String(b.interestRate || 0),
-      emi: String(b.emi || 0),
-      tenureMonths: Number(b.tenureMonths || 0),
-      memberId: b.memberId ? Number(b.memberId) : null,
+      principal: b.principal,
+      outstanding: b.outstanding,
+      interestRate: b.interestRate,
+      emi: b.emi,
+      tenureMonths: b.tenureMonths,
+      memberId: b.memberId,
     }).returning();
     return Response.json({ ok: true, row });
   } catch {
@@ -40,15 +45,22 @@ export async function PATCH(req: Request) {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
   try {
-    const { id, userId: _ignoredUserId, ...updates } = await req.json();
-    if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
-    if (updates.principal !== undefined) updates.principal = updates.principal ? String(updates.principal) : "0";
-    if (updates.outstanding !== undefined) updates.outstanding = updates.outstanding ? String(updates.outstanding) : "0";
-    if (updates.interestRate !== undefined) updates.interestRate = updates.interestRate ? String(updates.interestRate) : "0";
-    if (updates.emi !== undefined) updates.emi = updates.emi ? String(updates.emi) : "0";
-    if (updates.tenureMonths !== undefined) updates.tenureMonths = Number(updates.tenureMonths);
-    if (updates.memberId !== undefined) updates.memberId = updates.memberId ? Number(updates.memberId) : null;
-    await db.update(debts).set(updates).where(and(eq(debts.id, Number(id)), eq(debts.userId, session.userId)));
+    const raw = await req.json();
+    const result = validate(debtUpdateSchema, raw);
+    if (!result.ok) return result.error;
+    const { id, ...updates } = result.data;
+
+    const safeUpdates: Record<string, unknown> = {};
+    if (updates.name !== undefined) safeUpdates.name = updates.name;
+    if (updates.type !== undefined) safeUpdates.type = updates.type;
+    if (updates.principal !== undefined) safeUpdates.principal = updates.principal;
+    if (updates.outstanding !== undefined) safeUpdates.outstanding = updates.outstanding;
+    if (updates.interestRate !== undefined) safeUpdates.interestRate = updates.interestRate;
+    if (updates.emi !== undefined) safeUpdates.emi = updates.emi;
+    if (updates.tenureMonths !== undefined) safeUpdates.tenureMonths = updates.tenureMonths;
+    if (updates.memberId !== undefined) safeUpdates.memberId = updates.memberId;
+
+    await db.update(debts).set(safeUpdates).where(and(eq(debts.id, id), eq(debts.userId, session.userId)));
     return Response.json({ ok: true });
   } catch {
     return Response.json({ error: "Server error" }, { status: 500 });
@@ -59,9 +71,12 @@ export async function DELETE(req: Request) {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
   try {
-    const { id } = await req.json();
-    if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
-    await db.delete(debts).where(and(eq(debts.id, Number(id)), eq(debts.userId, session.userId)));
+    const raw = await req.json();
+    const result = validate(idDeleteSchema, raw);
+    if (!result.ok) return result.error;
+    const { id } = result.data;
+
+    await db.delete(debts).where(and(eq(debts.id, id), eq(debts.userId, session.userId)));
     return Response.json({ ok: true });
   } catch {
     return Response.json({ error: "Server error" }, { status: 500 });

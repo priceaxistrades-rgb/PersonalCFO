@@ -8,6 +8,7 @@ import {
   timestamp,
   integer,
   varchar,
+  index,
 } from "drizzle-orm/pg-core";
 
 // Users table for authentication
@@ -28,7 +29,9 @@ export const members = pgTable("members", {
   role: text("role").notNull(), // Self, Spouse, Child, Parent, Household
   color: text("color").notNull().default("#6366f1"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("members_user_id_idx").on(table.userId),
+]);
 
 // Accounts / Assets (cash, bank, gold, property, etc.)
 export const accounts = pgTable("accounts", {
@@ -40,7 +43,10 @@ export const accounts = pgTable("accounts", {
   balance: numeric("balance", { precision: 14, scale: 2 }).notNull().default("0"),
   memberId: integer("member_id"), // Owner of this account
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("accounts_user_id_idx").on(table.userId),
+  index("accounts_member_id_idx").on(table.memberId),
+]);
 
 // Income & Expense transactions
 export const transactions = pgTable("transactions", {
@@ -54,7 +60,13 @@ export const transactions = pgTable("transactions", {
   accountId: integer("account_id"), // Bank/cash/wallet account affected by this transaction
   note: text("note"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("transactions_user_id_idx").on(table.userId),
+  index("transactions_txn_date_idx").on(table.txnDate),
+  index("transactions_type_idx").on(table.type),
+  index("transactions_account_id_idx").on(table.accountId),
+  index("transactions_user_date_idx").on(table.userId, table.txnDate),
+]);
 
 // Monthly budgets per category
 export const budgets = pgTable("budgets", {
@@ -63,7 +75,9 @@ export const budgets = pgTable("budgets", {
   category: text("category").notNull(),
   monthlyLimit: numeric("monthly_limit", { precision: 14, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("budgets_user_id_idx").on(table.userId),
+]);
 
 // Savings goals
 export const goals = pgTable("goals", {
@@ -76,7 +90,9 @@ export const goals = pgTable("goals", {
   deadline: date("deadline"),
   icon: text("icon").notNull().default("🎯"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("goals_user_id_idx").on(table.userId),
+]);
 
 // Investments
 export const investments = pgTable("investments", {
@@ -94,7 +110,10 @@ export const investments = pgTable("investments", {
   startDate: date("start_date"), // first purchase date, used for CAGR
   memberId: integer("member_id"), // Owner of this investment
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("investments_user_id_idx").on(table.userId),
+  index("investments_member_id_idx").on(table.memberId),
+]);
 
 // Watchlist for live market tracking (stocks + mutual funds)
 export const watchlist = pgTable("watchlist", {
@@ -105,7 +124,9 @@ export const watchlist = pgTable("watchlist", {
   schemeCode: text("scheme_code"), // mfapi code for MFs
   label: text("label").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("watchlist_user_id_idx").on(table.userId),
+]);
 
 // Loans / Debts
 export const debts = pgTable("debts", {
@@ -120,7 +141,9 @@ export const debts = pgTable("debts", {
   tenureMonths: integer("tenure_months").notNull(),
   memberId: integer("member_id"), // Primary borrower
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("debts_user_id_idx").on(table.userId),
+]);
 
 // Bills
 export const bills = pgTable("bills", {
@@ -133,7 +156,10 @@ export const bills = pgTable("bills", {
   frequency: text("frequency").notNull().default("Monthly"), // Monthly, Quarterly, Yearly
   paid: boolean("paid").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("bills_user_id_idx").on(table.userId),
+  index("bills_due_date_idx").on(table.dueDate),
+]);
 
 // Insurance policies
 export const insurance = pgTable("insurance", {
@@ -146,7 +172,10 @@ export const insurance = pgTable("insurance", {
   coverage: numeric("coverage", { precision: 14, scale: 2 }).notNull(),
   renewalDate: date("renewal_date").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("insurance_user_id_idx").on(table.userId),
+  index("insurance_renewal_date_idx").on(table.renewalDate),
+]);
 
 // Net worth historical snapshots
 export const netWorthSnapshots = pgTable("net_worth_snapshots", {
@@ -155,7 +184,10 @@ export const netWorthSnapshots = pgTable("net_worth_snapshots", {
   snapshotDate: date("snapshot_date").notNull(),
   assets: numeric("assets", { precision: 14, scale: 2 }).notNull(),
   liabilities: numeric("liabilities", { precision: 14, scale: 2 }).notNull(),
-});
+}, (table) => [
+  index("net_worth_snapshots_user_id_idx").on(table.userId),
+  index("net_worth_snapshots_date_idx").on(table.snapshotDate),
+]);
 
 // Annual plan items
 export const annualPlans = pgTable("annual_plans", {
@@ -167,7 +199,9 @@ export const annualPlans = pgTable("annual_plans", {
   targetAmount: numeric("target_amount", { precision: 14, scale: 2 }).default("0"),
   progress: integer("progress").notNull().default(0), // 0-100
   status: text("status").notNull().default("Planned"), // Planned, InProgress, Done
-});
+}, (table) => [
+  index("annual_plans_user_id_idx").on(table.userId),
+]);
 
 // Single-row tax profile
 export const taxProfile = pgTable("tax_profile", {
@@ -181,7 +215,9 @@ export const taxProfile = pgTable("tax_profile", {
   section80d: numeric("section_80d", { precision: 14, scale: 2 }).notNull().default("0"),
   hraExemption: numeric("hra_exemption", { precision: 14, scale: 2 }).notNull().default("0"),
   homeLoanInterest: numeric("home_loan_interest", { precision: 14, scale: 2 }).notNull().default("0"),
-});
+}, (table) => [
+  index("tax_profile_user_id_idx").on(table.userId),
+]);
 
 // Emergency contacts & documents checklist
 export const emergencyItems = pgTable("emergency_items", {
@@ -191,4 +227,6 @@ export const emergencyItems = pgTable("emergency_items", {
   label: text("label").notNull(),
   detail: text("detail"),
   done: boolean("done").notNull().default(false),
-});
+}, (table) => [
+  index("emergency_items_user_id_idx").on(table.userId),
+]);

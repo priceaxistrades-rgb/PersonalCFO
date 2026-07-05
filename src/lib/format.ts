@@ -1,3 +1,9 @@
+import { moneyToNumber } from "./finance-math";
+
+/**
+ * Format a number as Indian Rupee currency.
+ * Uses moneyToNumber() from finance-math for safe conversion.
+ */
 export function inr(value: number, opts?: { compact?: boolean; decimals?: number }) {
   const n = Number.isFinite(value) ? value : 0;
   if (opts?.compact) {
@@ -14,10 +20,20 @@ export function inr(value: number, opts?: { compact?: boolean; decimals?: number
   }).format(n);
 }
 
+/**
+ * Convert a DB monetary string/number to a JavaScript number for DISPLAY ONLY.
+ *
+ * ⚠️  IMPORTANT: Never use the result of num() for financial arithmetic.
+ *     Use functions from `@/lib/finance-math` instead:
+ *       - sumMoney() / sumMoneyToNumber() for sums
+ *       - addMoney() / subtractMoney() for operations
+ *       - applyPercent() for percentage calculations
+ *
+ * This function is kept for backward compatibility with UI components
+ * that only need a display number.
+ */
 export function num(value: string | number | null | undefined): number {
-  if (value === null || value === undefined) return 0;
-  const n = typeof value === "string" ? parseFloat(value) : value;
-  return Number.isFinite(n) ? n : 0;
+  return moneyToNumber(value);
 }
 
 export function pct(value: number, decimals = 1): string {

@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { budgets } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { isSession, requireApiSession } from "@/lib/server-auth";
+import { validate, budgetCreateSchema, budgetUpdateSchema, idDeleteSchema } from "@/lib/validation";
 
 export async function GET(req: Request) {
   const session = requireApiSession(req);
@@ -18,12 +19,15 @@ export async function POST(req: Request) {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
   try {
-    const b = await req.json();
-    if (!b.category) return Response.json({ error: "Category is required" }, { status: 400 });
+    const raw = await req.json();
+    const result = validate(budgetCreateSchema, raw);
+    if (!result.ok) return result.error;
+    const b = result.data;
+
     const [row] = await db.insert(budgets).values({
       userId: session.userId,
       category: b.category,
-      monthlyLimit: String(b.monthlyLimit || 0),
+      monthlyLimit: b.monthlyLimit,
     }).returning();
     return Response.json({ ok: true, row });
   } catch {
@@ -35,10 +39,16 @@ export async function PATCH(req: Request) {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
   try {
-    const { id, userId: _ignoredUserId, ...updates } = await req.json();
-    if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
-    if (updates.monthlyLimit !== undefined) updates.monthlyLimit = String(updates.monthlyLimit || 0);
-    await db.update(budgets).set(updates).where(and(eq(budgets.id, Number(id)), eq(budgets.userId, session.userId)));
+    const raw = await req.json();
+    const result = validate(budgetUpdateSchema, raw);
+    if (!result.ok) return result.error;
+    const { id, ...updates } = result.data;
+
+    const safeUpdates: Record<string, unknown> = {};
+    if (updates.category !== undefined) safeUpdates.category = updates.category;
+    if (updates.monthlyLimit !== undefined) safeUpdates.monthlyLimit = updates.monthlyLimit;
+
+    await db.update(budgets).set(safeUpdates).where(and(eq(budgets.id, id), eq(budgets.userId, session.userId)));
     return Response.json({ ok: true });
   } catch {
     return Response.json({ error: "Server error" }, { status: 500 });
@@ -49,8 +59,12 @@ export async function DELETE(req: Request) {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
   try {
-    const { id } = await req.json();
-    await db.delete(budgets).where(and(eq(budgets.id, Number(id)), eq(budgets.userId, session.userId)));
+    const raw = await req.json();
+    const result = validate(idDeleteSchema, raw);
+    if (!result.ok) return result.error;
+    const { id } = result.data;
+
+    await db.delete(budgets).where(and(eq(budgets.id, id), eq(budgets.userId, session.userId)));
     return Response.json({ ok: true });
   } catch {
     return Response.json({ error: "Server error" }, { status: 500 });

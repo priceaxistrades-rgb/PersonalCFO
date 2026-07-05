@@ -1,10 +1,7 @@
 import { createUser, normalizeEmail } from "@/lib/auth";
 import { createSessionToken, sessionCookieHeader } from "@/lib/server-auth";
 import { getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
-
-function validEmail(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
+import { validate, signupSchema } from "@/lib/validation";
 
 export async function POST(req: Request) {
   const ip = getClientIp(req);
@@ -12,27 +9,13 @@ export async function POST(req: Request) {
   if (!limited.ok) return rateLimitResponse(limited.resetAt);
 
   try {
-    const { email, password, name } = await req.json();
+    const raw = await req.json();
+    const result = validate(signupSchema, raw);
+    if (!result.ok) return result.error;
+    const { email, password, name } = result.data;
+
     const cleanEmail = normalizeEmail(email);
-    const cleanName = String(name || "").trim();
-
-    if (!cleanEmail || !password || !cleanName) {
-      return Response.json(
-        { error: "Email, password, and name are required" },
-        { status: 400 }
-      );
-    }
-
-    if (!validEmail(cleanEmail)) {
-      return Response.json({ error: "Enter a valid email address" }, { status: 400 });
-    }
-
-    if (password.length < 8) {
-      return Response.json(
-        { error: "Password must be at least 8 characters" },
-        { status: 400 }
-      );
-    }
+    const cleanName = name;
 
     const user = await createUser(cleanEmail, password, cleanName);
     const session = { userId: user.id, email: user.email, name: user.name };

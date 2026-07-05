@@ -17,16 +17,16 @@ import {
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { isSession, requireApiSession } from "@/lib/server-auth";
+import { validate, resetDataSchema } from "@/lib/validation";
 
 export async function DELETE(req: Request) {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
 
   try {
-    const body = await req.json().catch(() => ({}));
-    if (body.confirm !== "RESET MY DATA") {
-      return Response.json({ error: "Confirmation phrase is required" }, { status: 400 });
-    }
+    const raw = await req.json().catch(() => ({}));
+    const result = validate(resetDataSchema, raw);
+    if (!result.ok) return result.error;
 
     const userId = session.userId;
     await db.transaction(async (tx) => {

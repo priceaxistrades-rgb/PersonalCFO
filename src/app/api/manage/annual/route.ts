@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { annualPlans } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { isSession, requireApiSession } from "@/lib/server-auth";
+import { validate, annualPlanCreateSchema, annualPlanUpdateSchema, idDeleteSchema } from "@/lib/validation";
 
 export async function GET(req: Request) {
   const session = requireApiSession(req);
@@ -18,15 +19,19 @@ export async function POST(req: Request) {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
   try {
-    const b = await req.json();
+    const raw = await req.json();
+    const result = validate(annualPlanCreateSchema, raw);
+    if (!result.ok) return result.error;
+    const b = result.data;
+
     const [row] = await db.insert(annualPlans).values({
       userId: session.userId,
-      year: Number(b.year),
+      year: b.year,
       title: b.title,
       category: b.category,
-      targetAmount: String(b.targetAmount || 0),
-      progress: Number(b.progress || 0),
-      status: b.status || "Planned",
+      targetAmount: b.targetAmount,
+      progress: b.progress,
+      status: b.status,
     }).returning();
     return Response.json({ ok: true, row });
   } catch {
@@ -38,12 +43,20 @@ export async function PATCH(req: Request) {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
   try {
-    const { id, userId: _ignoredUserId, ...updates } = await req.json();
-    if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
-    if (updates.targetAmount !== undefined) updates.targetAmount = updates.targetAmount ? String(updates.targetAmount) : "0";
-    if (updates.progress !== undefined) updates.progress = Number(updates.progress);
-    if (updates.year !== undefined) updates.year = Number(updates.year);
-    await db.update(annualPlans).set(updates).where(and(eq(annualPlans.id, Number(id)), eq(annualPlans.userId, session.userId)));
+    const raw = await req.json();
+    const result = validate(annualPlanUpdateSchema, raw);
+    if (!result.ok) return result.error;
+    const { id, ...updates } = result.data;
+
+    const safeUpdates: Record<string, unknown> = {};
+    if (updates.year !== undefined) safeUpdates.year = updates.year;
+    if (updates.title !== undefined) safeUpdates.title = updates.title;
+    if (updates.category !== undefined) safeUpdates.category = updates.category;
+    if (updates.targetAmount !== undefined) safeUpdates.targetAmount = updates.targetAmount;
+    if (updates.progress !== undefined) safeUpdates.progress = updates.progress;
+    if (updates.status !== undefined) safeUpdates.status = updates.status;
+
+    await db.update(annualPlans).set(safeUpdates).where(and(eq(annualPlans.id, id), eq(annualPlans.userId, session.userId)));
     return Response.json({ ok: true });
   } catch {
     return Response.json({ error: "Server error" }, { status: 500 });
@@ -54,9 +67,12 @@ export async function DELETE(req: Request) {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
   try {
-    const { id } = await req.json();
-    if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
-    await db.delete(annualPlans).where(and(eq(annualPlans.id, Number(id)), eq(annualPlans.userId, session.userId)));
+    const raw = await req.json();
+    const result = validate(idDeleteSchema, raw);
+    if (!result.ok) return result.error;
+    const { id } = result.data;
+
+    await db.delete(annualPlans).where(and(eq(annualPlans.id, id), eq(annualPlans.userId, session.userId)));
     return Response.json({ ok: true });
   } catch {
     return Response.json({ error: "Server error" }, { status: 500 });

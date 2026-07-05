@@ -1,6 +1,7 @@
 import { validateUser } from "@/lib/auth";
 import { createSessionToken, sessionCookieHeader } from "@/lib/server-auth";
 import { getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { validate, loginSchema } from "@/lib/validation";
 
 export async function POST(req: Request) {
   const ip = getClientIp(req);
@@ -8,14 +9,10 @@ export async function POST(req: Request) {
   if (!limited.ok) return rateLimitResponse(limited.resetAt);
 
   try {
-    const { email, password } = await req.json();
-
-    if (!email || !password) {
-      return Response.json(
-        { error: "Email and password are required" },
-        { status: 400 }
-      );
-    }
+    const raw = await req.json();
+    const result = validate(loginSchema, raw);
+    if (!result.ok) return result.error;
+    const { email, password } = result.data;
 
     const user = await validateUser(email, password);
     

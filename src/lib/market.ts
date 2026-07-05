@@ -1,5 +1,13 @@
 // Live market data helpers — Indian mutual funds (mfapi.in) & NSE stocks (Yahoo Finance).
 // All fetches are server-side to avoid CORS and keep it key-free.
+//
+// ⚠️  PRECISION NOTE: Market data (stock prices, NAV) arrives as floating-point
+// from external APIs and is inherently approximate. Using parseFloat() here is
+// acceptable because the source data is already float. CAGR uses Math.pow()
+// which is unavoidable for irrational number operations.
+//
+// For USER-ENTERED financial data (transactions, tax, balances), always use
+// the BigInt precision engine in @/lib/finance-math.ts instead.
 
 export type CagrSet = {
   y1: number | null;
