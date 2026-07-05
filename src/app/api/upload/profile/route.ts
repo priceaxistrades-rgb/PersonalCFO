@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(bytes);
 
     // Save image to /home/user/uploads
-    const filename = `profile-${user.id}-${Date.now()}.png`;
+    const filename = `profile-${user.userId}-${Date.now()}.png`;
     const uploadDir = path.join(process.cwd(), "public/uploads");
     
     // Ensure directory exists
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     await db.update(users)
       .set({ profileImage: publicPath })
-      .where(eq(users.id, user.id));
+      .where(eq(users.id, user.userId));
 
     return NextResponse.json({ success: true, path: publicPath });
   } catch (error: any) {
