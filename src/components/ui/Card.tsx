@@ -1,4 +1,4 @@
-import { ReactNode, CSSProperties } from "react";
+import { ReactNode, CSSProperties, MouseEvent } from "react";
 
 export function Card({
   children,
@@ -15,7 +15,7 @@ export function Card({
   subtitle?: string;
   action?: ReactNode;
   style?: CSSProperties;
-  onClick?: () => void;
+  onClick?: (e: MouseEvent<HTMLElement>) => void;
 }) {
   return (
     <section 
