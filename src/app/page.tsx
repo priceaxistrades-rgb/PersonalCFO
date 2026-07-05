@@ -35,7 +35,7 @@ export default async function Dashboard() {
         subtitle={`Welcome back, ${user.name} · ${new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`}
         action={
           <div className="flex items-center gap-2">
-            <Badge tone="primary">Personal CFO</Badge>
+            <PrivacyToggle />
             <ExcelButton compact />
           </div>
         }

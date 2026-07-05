@@ -146,6 +146,8 @@ export async function POST(req: Request) {
           currentValue: String(parseAmount(item.currentValue || item.current || item.value)),
           annualReturn: String(item.return || item.annualReturn || 0),
           symbol: item.symbol || null,
+          units: item.units ? String(parseAmount(item.units)) : null,
+          startDate: item.startDate ? parseExcelDate(item.startDate) : null,
         });
       }
       inserted.investments = results.investments.length;

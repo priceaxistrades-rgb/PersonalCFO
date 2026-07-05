@@ -119,7 +119,13 @@ function MiniChart({ points, chartType, supportsCandles }: { points: ChartPoint[
   );
 }
 
-export function LiveMarkets({ items }: { items: WatchItem[] }) {
+export function LiveMarkets({ 
+  items, 
+  onAddToPortfolio 
+}: { 
+  items: WatchItem[], 
+  onAddToPortfolio: (item: WatchItem) => void 
+}) {
   const router = useRouter();
   const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
   const [loading, setLoading] = useState(true);
@@ -240,11 +246,11 @@ export function LiveMarkets({ items }: { items: WatchItem[] }) {
             <div className="flex justify-end gap-1 no-print">
               {target && (
                 <button
-                  onClick={() => openChart(target)}
+                  onClick={() => onAddToPortfolio(it)}
                   className="text-xs px-2 py-1 rounded-lg"
                   style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
                 >
-                  Chart
+                  + Add
                 </button>
               )}
               {it.source !== "investment" ? (

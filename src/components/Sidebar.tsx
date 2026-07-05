@@ -120,10 +120,14 @@ function AuthButton() {
     <div className="px-4 py-3 border-t" style={{ borderColor: "rgba(128,128,128,0.15)" }}>
       <div className="flex items-center gap-3 mb-3">
         <div 
-          className="w-10 h-10 rounded-full grid place-items-center text-lg font-bold"
+          className="w-10 h-10 rounded-full overflow-hidden grid place-items-center text-lg font-bold"
           style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
         >
-          {session.name.charAt(0).toUpperCase()}
+          {session.profileImage ? (
+            <img src={session.profileImage} alt={session.name} className="w-full h-full object-cover" />
+          ) : (
+            session.name.charAt(0).toUpperCase()
+          )}
         </div>
         <div className="min-w-0">
           <p className="font-medium truncate" style={{ color: "var(--text)" }}>{session.name}</p>
@@ -249,7 +253,7 @@ export function Sidebar() {
                 onClick={() => setTheme(t.id)}
                 title={t.label}
                 aria-label={`Switch to ${t.label}`}
-                className="h-8 rounded-lg border-2 grid place-items-center transition-all"
+                className="theme-btn h-8 rounded-lg border-2 grid place-items-center transition-all"
                 style={{
                   borderColor: theme === t.id ? "var(--primary)" : "var(--border)",
                   background: t.dot,

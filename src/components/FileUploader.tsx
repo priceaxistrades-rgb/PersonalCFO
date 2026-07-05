@@ -97,6 +97,15 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>
           or click to browse (.xlsx, .xls, .csv)
         </p>
+        <div className="mt-4">
+          <a 
+            href="/api/upload/template" 
+            className="text-xs font-medium underline hover:text-primary transition-colors"
+            style={{ color: "var(--primary)" }}
+          >
+            📥 Download Import Template
+          </a>
+        </div>
         
         {uploading && (
           <div className="mt-4 flex justify-center">

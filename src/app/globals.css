@@ -10,8 +10,8 @@
   --surface-3: #f1f5f9;
   --border: #e6eaf2;
   --text: #0f172a;
-  --text-muted: #64748b;
-  --text-faint: #94a3b8;
+  --text-muted: #475569;
+  --text-faint: #64748b;
   --primary: #4f46e5;
   --primary-soft: #eef2ff;
   --accent: #0ea5e9;
@@ -204,8 +204,8 @@ body {
   }
   
   /* Better touch targets */
-  button, 
-  [role="button"],
+  button:not(.theme-btn), 
+  [role="button"]:not(.theme-btn),
   input,
   select,
   a {

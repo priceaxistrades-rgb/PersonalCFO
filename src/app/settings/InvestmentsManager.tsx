@@ -27,10 +27,12 @@ type MfResult = { schemeCode: number; schemeName: string };
 
 export function InvestmentForm({ 
   editingInvestment, 
+  initialData,
   onSave, 
   onCancel 
 }: { 
   editingInvestment: InvestmentRow | null, 
+  initialData?: { name?: string; symbol?: string; schemeCode?: string; type?: string },
   onSave: (form: any) => Promise<void>, 
   onCancel: () => void 
 }) {
@@ -56,12 +58,26 @@ export function InvestmentForm({
       });
       setStockQuery(editingInvestment.symbol || "");
       setMfQuery(editingInvestment.schemeCode || "");
+    } else if (initialData) {
+      setForm({
+        name: initialData.name || "",
+        type: initialData.type || (initialData.schemeCode ? "MutualFunds" : "Stocks"),
+        invested: 0,
+        currentValue: 0,
+        annualReturn: 0,
+        symbol: initialData.symbol || "",
+        schemeCode: initialData.schemeCode || "",
+        units: "",
+        startDate: "",
+      });
+      setStockQuery(initialData.symbol || "");
+      setMfQuery(initialData.schemeCode || "");
     } else {
       setForm({ name: "", type: "Stocks", invested: 0, currentValue: 0, annualReturn: 0, symbol: "", schemeCode: "", units: "", startDate: "" });
       setStockQuery("");
       setMfQuery("");
     }
-  }, [editingInvestment]);
+  }, [editingInvestment, initialData]);
 
   useEffect(() => {
     if (form.type !== "Stocks") return;
