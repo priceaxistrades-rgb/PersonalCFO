@@ -30,15 +30,23 @@ type MfResult = { schemeCode: number; schemeName: string };
  * Strips extra fields (avgPrice, kind, price) that Zod strict mode would reject.
  */
 function buildPayload(form: any): Record<string, unknown> {
+  // Use toFixed() for monetary values to avoid floating-point string artifacts
+  // e.g. String(7.199999999999999) → "7.199999999999999" (fails Zod)
+  //      (7.2).toFixed(2)         → "7.20"               (passes Zod)
+  const invested = Number(form.invested) || 0;
+  const currentValue = Number(form.currentValue) || 0;
+  const annualReturn = Number(form.annualReturn) || 0;
+  const units = form.units ? Number(form.units) : null;
+
   return {
     name: form.name,
     type: form.type,
-    invested: String(form.invested),
-    currentValue: String(form.currentValue),
-    annualReturn: String(form.annualReturn ?? "0"),
+    invested: invested.toFixed(2),
+    currentValue: currentValue.toFixed(2),
+    annualReturn: annualReturn.toFixed(2),
     symbol: form.symbol || null,
     schemeCode: form.schemeCode || null,
-    units: form.units || null,
+    units: units !== null ? units.toString() : null,
     startDate: form.startDate || null,
     memberId: form.memberId ?? null,
   };
@@ -119,8 +127,9 @@ export function InvestmentForm({
 
   const recalcFromUnits = (units: string, avgPrice: number) => {
     const u = Number(units) || 0;
-    const invested = Math.round(u * avgPrice * 100) / 100;
-    const currentValue = livePrice > 0 ? Math.round(u * livePrice * 100) / 100 : invested;
+    // Use toFixed + Number to avoid floating-point drift in display
+    const invested = Number((u * avgPrice).toFixed(2));
+    const currentValue = livePrice > 0 ? Number((u * livePrice).toFixed(2)) : invested;
     return { invested, currentValue };
   };
 
@@ -368,8 +377,20 @@ export function SellInvestmentModal({
 
     try {
       const investedPerUnit = Number(investment.invested) / (currentUnits || 1);
-      const newInvested = isFullSell ? 0 : Math.round(investedPerUnit * remainingUnits * 100) / 100;
-      const newCurrentValue = isFullSell ? 0 : Math.round(form.sellPrice * remainingUnits * 100) / 100;
+
+      // ── Safe number formatting ──
+      // JavaScript floating-point subtraction (e.g. 10.5 - 3.3 = 7.199999999999999)
+      // produces strings that fail Zod's regex. Use toFixed() then clean up.
+      const remainingUnitsNum = Number((currentUnits - Number(form.sellUnits)).toFixed(4));
+      const remainingUnitsStr = remainingUnitsNum.toString(); // clean string, no FP artifacts
+
+      const newInvestedNum = isFullSell ? 0 : Number((investedPerUnit * remainingUnitsNum).toFixed(2));
+      const newCurrentValueNum = isFullSell ? 0 : Number((form.sellPrice * remainingUnitsNum).toFixed(2));
+
+      // Use toFixed() for API strings — guarantees exact decimal places, no FP drift
+      const investedStr = newInvestedNum.toFixed(2);
+      const currentValueStr = newCurrentValueNum.toFixed(2);
+      const sellAmountStr = sellAmount.toFixed(2);
 
       // 1. Update investment (reduce units)
       const invRes = await fetch("/api/manage/investments", {
@@ -377,12 +398,16 @@ export function SellInvestmentModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: investment.id,
-          units: isFullSell ? "0" : String(remainingUnits),
-          invested: String(newInvested),
-          currentValue: String(newCurrentValue),
+          units: isFullSell ? "0" : remainingUnitsStr,
+          invested: investedStr,
+          currentValue: currentValueStr,
         }),
       });
-      if (!invRes.ok) { const d = await invRes.json().catch(() => ({})); throw new Error(d.error || "Failed to update investment"); }
+      if (!invRes.ok) {
+        const d = await invRes.json().catch(() => ({}));
+        const detail = d.details ? ` (${Object.entries(d.details).map(([k,v]) => `${k}: ${v}`).join("; ")})` : "";
+        throw new Error((d.error || "Failed to update investment") + detail);
+      }
 
       // 2. Record income transaction (sale proceeds)
       const txnRes = await fetch("/api/transactions", {
@@ -391,13 +416,17 @@ export function SellInvestmentModal({
         body: JSON.stringify({
           type: "income",
           category: "Investment Sale",
-          amount: String(sellAmount),
-          note: `Sold ${form.sellUnits} units of ${investment.name}${isFullSell ? " (FULL EXIT)" : ` (${remainingUnits} units remaining)`} @ ₹${form.sellPrice}/unit`,
+          amount: sellAmountStr,
+          note: `Sold ${form.sellUnits} units of ${investment.name}${isFullSell ? " (FULL EXIT)" : ` (${remainingUnitsStr} units remaining)`} @ ₹${form.sellPrice}/unit`,
           accountId: Number(form.accountId),
           txnDate: new Date().toISOString().split("T")[0],
         }),
       });
-      if (!txnRes.ok) { const d = await txnRes.json().catch(() => ({})); throw new Error(d.error || "Failed to record sale transaction"); }
+      if (!txnRes.ok) {
+        const d = await txnRes.json().catch(() => ({}));
+        const detail = d.details ? ` (${Object.entries(d.details).map(([k,v]) => `${k}: ${v}`).join("; ")})` : "";
+        throw new Error((d.error || "Failed to record sale transaction") + detail);
+      }
 
       // 3. If settled, update account balance immediately
       if (form.settled) {
