@@ -32,7 +32,7 @@ export function InvestmentForm({
   onCancel 
 }: { 
   editingInvestment: InvestmentRow | null, 
-  initialData?: { name?: string; symbol?: string; schemeCode?: string; type?: string },
+  initialData?: { name?: string; symbol?: string; schemeCode?: string; type?: string; price?: number },
   onSave: (form: any) => Promise<void>, 
   onCancel: () => void 
 }) {
@@ -162,7 +162,21 @@ export function InvestmentForm({
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-[10px] font-bold uppercase opacity-70 px-1">Units / Quantity</label>
-          <input type="number" placeholder="Units / Quantity" value={form.units} onChange={(e) => setForm({ ...form, units: e.target.value })} className="px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
+          <input 
+            type="number" 
+            placeholder="Units / Quantity" 
+            value={form.units} 
+            onChange={(e) => {
+              const val = e.target.value;
+              let curVal = form.currentValue;
+              if (initialData?.price) {
+                curVal = Number(val) * initialData.price;
+              }
+              setForm({ ...form, units: val, currentValue: curVal });
+            }} 
+            className="px-3 py-2 rounded-lg text-sm border" 
+            style={inputStyle} 
+          />
         </div>
       </div>
 

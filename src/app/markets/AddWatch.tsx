@@ -37,12 +37,21 @@ export function AddWatch() {
   }, [stockQ]);
 
   const addInstrument = async (payload: { kind: "stock" | "mf"; symbol?: string; schemeCode?: number | string; label: string }) => {
-    const res = await fetch("/api/watchlist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) router.refresh();
+    try {
+      const res = await fetch("/api/watchlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        router.refresh();
+      } else {
+        const err = await res.json();
+        alert(`Error adding instrument: ${err.error || "Unknown error"}`);
+      }
+    } catch (e) {
+      alert("Failed to connect to server. Please check your internet.");
+    }
   };
 
   const addManualStock = async () => {

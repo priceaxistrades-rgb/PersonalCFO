@@ -54,7 +54,8 @@ export function MarketsClient({
       name: item.label,
       symbol: item.symbol,
       schemeCode: item.schemeCode,
-      kind: item.kind === "stock" ? "stock" : "mf"
+      kind: item.kind === "stock" ? "stock" : "mf",
+      price: item.currentPrice,
     });
     setShowAddModal(true);
   };
@@ -111,13 +112,11 @@ export function MarketsClient({
   );
 }
 
-export default async function MarketsPage({ 
-  watchItemsPromise = Promise.resolve([]), 
-  investmentsPromise = Promise.resolve([]) 
-}: { 
-  watchItemsPromise?: Promise<any[]>, 
-  investmentsPromise?: Promise<any[]> 
-}) {
-  // This is a hack to allow it to be called as a page
+import { getInvestments, getWatchlist } from "@/lib/data";
+
+export default async function MarketsPage() {
+  const watchItemsPromise = getWatchlist();
+  const investmentsPromise = getInvestments();
+
   return <MarketsClient watchItemsPromise={watchItemsPromise} investmentsPromise={investmentsPromise} />;
 }

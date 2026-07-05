@@ -224,9 +224,12 @@ export function LiveMarkets({
           : null;
       return (
         <Tr key={`${it.source || "watchlist"}-${it.id}-${key}`}>
-          <Td strong>
+          <Td strong
+            className="cursor-pointer hover:text-var(--primary) transition-colors"
+            onClick={() => target && openChart(target)}
+          >
             {it.label}
-            <span className="block text-[10px]" style={{ color: "var(--text-faint)" }}>
+            <span className="block text-[10px] font-normal opacity-70" style={{ color: "var(--text-faint)" }}>
               {q?.extra || (it.source === "investment" ? "Synced from investments" : "Watchlist")}
             </span>
           </Td>
@@ -247,7 +250,7 @@ export function LiveMarkets({
             <div className="flex justify-end gap-1 no-print">
               {target && (
                 <button
-                  onClick={() => onAddToPortfolio(it)}
+                  onClick={() => onAddToPortfolio({ ...it, currentPrice: q?.price })}
                   className="text-xs px-2 py-1 rounded-lg"
                   style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
                 >
