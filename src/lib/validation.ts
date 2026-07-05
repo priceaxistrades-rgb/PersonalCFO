@@ -26,6 +26,7 @@ import { z, ZodError } from "zod";
  */
 const moneyStr = z
   .union([z.string(), z.number()])
+  .transform((v) => String(v))
   .pipe(
     z.string()
       .refine((v) => /^-?\d+(\.\d{1,4})?$/.test(v), "Must be a valid monetary amount")
@@ -34,6 +35,7 @@ const moneyStr = z
 /** Non-negative monetary value (for balances, targets, etc.). Accepts string or number. */
 const nonNegMoneyStr = z
   .union([z.string(), z.number()])
+  .transform((v) => String(v))
   .pipe(
     z.string()
       .refine((v) => /^\d+(\.\d{1,4})?$/.test(v), "Must be a non-negative monetary amount")
@@ -54,6 +56,7 @@ const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM
 /** Percentage as string (0–100, up to 2 decimal places). Accepts string or number. */
 const percentStr = z
   .union([z.string(), z.number()])
+  .transform((v) => String(v))
   .pipe(
     z.string()
       .refine((v) => /^\d+(\.\d{1,2})?$/.test(v), "Must be a valid percentage")
@@ -168,7 +171,7 @@ export const investmentCreateSchema = z.object({
   annualReturn: percentStr.default("0"),
   symbol: z.string().trim().max(30).nullable().optional(),
   schemeCode: coercedStrMax(20).nullable().optional(),
-  units: z.union([z.string(), z.number()]).pipe(z.string().refine((v) => /^\d+(\.\d{1,4})?$/.test(v), "Invalid units")).nullable().optional(),
+  units: z.union([z.string(), z.number()]).transform((v) => String(v)).pipe(z.string().refine((v) => /^\d+(\.\d{1,4})?$/.test(v), "Invalid units")).nullable().optional(),
   startDate: dateStr.nullable().optional(),
   memberId: optionalIntId,
 }).strict();
@@ -182,7 +185,7 @@ export const investmentUpdateSchema = z.object({
   annualReturn: percentStr.optional(),
   symbol: z.string().trim().max(30).nullable().optional(),
   schemeCode: coercedStrMax(20).nullable().optional(),
-  units: z.union([z.string(), z.number()]).pipe(z.string().refine((v) => /^\d+(\.\d{1,4})?$/.test(v), "Invalid units")).nullable().optional(),
+  units: z.union([z.string(), z.number()]).transform((v) => String(v)).pipe(z.string().refine((v) => /^\d+(\.\d{1,4})?$/.test(v), "Invalid units")).nullable().optional(),
   startDate: dateStr.nullable().optional(),
   memberId: optionalIntId.optional(),
 }).strict();

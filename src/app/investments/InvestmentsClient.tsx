@@ -18,12 +18,13 @@ import {
   SellInvestmentModal,
   type InvestmentRow,
 } from "../settings/InvestmentsManager";
-import { getAccounts } from "@/lib/data";
 
 export function InvestmentsPageClient({
   initialInvestments,
+  accounts,
 }: {
   initialInvestments: Investment[];
+  accounts: { id: number; name: string; type: string }[];
 }) {
   const router = useRouter();
   const { liveInvestments, loading, updatedAt, error, loadQuotes } = useLiveInvestments(initialInvestments);
@@ -31,12 +32,6 @@ export function InvestmentsPageClient({
   const [showForm, setShowForm] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState<InvestmentRow | null>(null);
   const [sellTarget, setSellTarget] = useState<InvestmentRow | null>(null);
-  const [accounts, setAccounts] = useState<any[]>([]);
-
-  // Load accounts for sell modal
-  useState(() => {
-    getAccounts().then(setAccounts).catch(() => {});
-  });
 
   // Build a price lookup from live data
   const livePriceMap = new Map<number, number>();

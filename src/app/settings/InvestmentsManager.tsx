@@ -391,7 +391,7 @@ export function SellInvestmentModal({
         body: JSON.stringify({
           type: "income",
           category: "Investment Sale",
-          amount: sellAmount,
+          amount: String(sellAmount),
           note: `Sold ${form.sellUnits} units of ${investment.name}${isFullSell ? " (FULL EXIT)" : ` (${remainingUnits} units remaining)`} @ ₹${form.sellPrice}/unit`,
           accountId: Number(form.accountId),
           txnDate: new Date().toISOString().split("T")[0],
