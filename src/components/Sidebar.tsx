@@ -54,7 +54,7 @@ const NAV = [
 const THEMES: { id: Theme; label: string; color: string; gradient: string }[] = [
   { id: "obsidian", label: "Obsidian", color: "#818cf8", gradient: "linear-gradient(135deg, #6366f1, #818cf8)" },
   { id: "aurora",   label: "Aurora",   color: "#6366f1", gradient: "linear-gradient(135deg, #6366f1, #0ea5e9)" },
-  { id: "emerald",  label: "Emerald",  color: "#34d399", gradient: "linear-gradient(135deg, #10b981, #34d399)" },
+  { id: "emerald",  label: "Emerald",  color: "#14b8a6", gradient: "linear-gradient(135deg, #0d9488, #14b8a6)" },
   { id: "royal",    label: "Royal",    color: "#fbbf24", gradient: "linear-gradient(135deg, #f59e0b, #fbbf24)" },
 ];
 
