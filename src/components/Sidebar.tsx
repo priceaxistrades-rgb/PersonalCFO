@@ -2,7 +2,7 @@
 
 import { ProfileUploadModal } from "./ProfileUploadModal";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTheme, Theme } from "@/lib/theme";
 import { useMemberFilter } from "@/lib/filters";
