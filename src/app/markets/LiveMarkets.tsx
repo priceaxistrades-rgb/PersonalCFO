@@ -54,9 +54,32 @@ function Cagr({ v }: { v: number | null }) {
 
 /** Holdings badge shown for investment-linked instruments */
 function HoldingsBadge({ item, livePrice }: { item: WatchItem; livePrice: number | null }) {
+  if (item.source !== "investment") return null;
   const units = Number(item.units) || 0;
-  if (units <= 0 || item.source !== "investment") return null;
   const invested = Number(item.invested) || 0;
+
+  // Show holdings info even without units — just show invested value
+  if (units <= 0) {
+    return (
+      <div
+        className="mt-1.5 p-2 rounded-lg text-[11px] space-y-1"
+        style={{ background: "var(--primary-soft)", border: "1px solid var(--border-accent)" }}
+      >
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="badge badge-primary">📋 Held in portfolio</span>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <span style={{ color: "var(--text-muted)" }}>
+            Invested: <strong style={{ color: "var(--text)" }}>{compactINR(invested)}</strong>
+          </span>
+          <span style={{ color: "var(--text-faint)" }}>
+            Add units for live price tracking
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   const avgPrice = units > 0 ? invested / units : 0;
   const currentVal = livePrice ? livePrice * units : 0;
   const pnl = currentVal - invested;
@@ -271,14 +294,15 @@ export function LiveMarkets({
   const stockItems = items.filter((i) => i.kind === "stock");
   const mfItems = items.filter((i) => i.kind === "mf");
 
-  // Summary stats for investment-linked items
-  const investedItems = items.filter((i) => i.source === "investment" && Number(i.units) > 0);
+  // Summary stats for investment-linked items (include all, even without units)
+  const investedItems = items.filter((i) => i.source === "investment" && (Number(i.invested) > 0 || Number(i.units) > 0));
   const totalInvested = investedItems.reduce((s, i) => s + (Number(i.invested) || 0), 0);
   const totalCurrent = investedItems.reduce((s, i) => {
     const key = i.kind === "stock" ? `stock:${i.symbol}` : `mf:${i.schemeCode}`;
     const q = quotes[key];
     const units = Number(i.units) || 0;
-    return s + (q?.ok && q.price > 0 ? q.price * units : Number(i.invested) || 0);
+    // If we have units + live price, use live value; otherwise use invested as fallback
+    return s + (q?.ok && q.price > 0 && units > 0 ? q.price * units : Number(i.invested) || 0);
   }, 0);
   const totalPnl = totalCurrent - totalInvested;
 
@@ -292,7 +316,7 @@ export function LiveMarkets({
         : it.kind === "mf" && it.schemeCode
           ? { kind: "mf" as const, id: it.schemeCode, label: it.label }
           : null;
-      const isHeld = it.source === "investment" && Number(it.units) > 0;
+      const isHeld = it.source === "investment" && (Number(it.units) > 0 || Number(it.invested) > 0);
 
       return (
         <Tr key={`${it.source || "watchlist"}-${it.id}-${key}`}>

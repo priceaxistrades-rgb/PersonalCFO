@@ -357,51 +357,72 @@ export function SellInvestmentModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const currentUnits = Number(investment.units) || 0;
+  const hasUnits = currentUnits > 0;
+  const currentInvested = Number(investment.invested) || 0;
+  const currentValue = Number(investment.currentValue) || 0;
   const [form, setForm] = useState({
     sellUnits: currentUnits,
-    sellPrice: livePrice || Number(investment.currentValue) / (currentUnits || 1),
+    sellPrice: livePrice || (hasUnits ? currentValue / currentUnits : 0),
+    sellAmount: currentValue, // for non-unit investments
     accountId: accounts[0]?.id || "",
     settled: false,
   });
 
-  const sellAmount = Math.round((Number(form.sellUnits) * form.sellPrice) * 100) / 100;
+  const sellAmount = hasUnits
+    ? Number((Number(form.sellUnits) * form.sellPrice).toFixed(2))
+    : Number(form.sellAmount) || 0;
   const remainingUnits = currentUnits - Number(form.sellUnits);
-  const isFullSell = remainingUnits <= 0;
+  const isFullSell = hasUnits ? remainingUnits <= 0 : Number(form.sellAmount) >= currentValue;
 
   const handleSell = async () => {
-    if (!form.sellUnits || form.sellUnits <= 0) { setError("Enter units to sell"); return; }
-    if (form.sellUnits > currentUnits) { setError(`You only have ${currentUnits} units`); return; }
+    if (hasUnits && (!form.sellUnits || form.sellUnits <= 0)) { setError("Enter units to sell"); return; }
+    if (hasUnits && form.sellUnits > currentUnits) { setError(`You only have ${currentUnits} units`); return; }
+    if (!hasUnits && (!form.sellAmount || Number(form.sellAmount) <= 0)) { setError("Enter amount to sell"); return; }
+    if (!hasUnits && Number(form.sellAmount) > currentValue) { setError(`Current value is only ₹${currentValue.toFixed(2)}`); return; }
     if (accounts.length > 0 && !form.accountId) { setError("Select a bank account to receive proceeds"); return; }
     setLoading(true);
     setError("");
 
     try {
-      const investedPerUnit = Number(investment.invested) / (currentUnits || 1);
-
       // ── Safe number formatting ──
       // JavaScript floating-point subtraction (e.g. 10.5 - 3.3 = 7.199999999999999)
       // produces strings that fail Zod's regex. Use toFixed() then clean up.
-      const remainingUnitsNum = Number((currentUnits - Number(form.sellUnits)).toFixed(4));
-      const remainingUnitsStr = remainingUnitsNum.toString(); // clean string, no FP artifacts
+      let remainingUnitsStr: string;
+      let investedStr: string;
+      let currentValueStr: string;
+      let sellAmountStr: string;
 
-      const newInvestedNum = isFullSell ? 0 : Number((investedPerUnit * remainingUnitsNum).toFixed(2));
-      const newCurrentValueNum = isFullSell ? 0 : Number((form.sellPrice * remainingUnitsNum).toFixed(2));
+      if (hasUnits) {
+        const investedPerUnit = Number(investment.invested) / (currentUnits || 1);
+        const remainingUnitsNum = Number((currentUnits - Number(form.sellUnits)).toFixed(4));
+        remainingUnitsStr = remainingUnitsNum.toString();
+        const newInvestedNum = isFullSell ? 0 : Number((investedPerUnit * remainingUnitsNum).toFixed(2));
+        const newCurrentValueNum = isFullSell ? 0 : Number((form.sellPrice * remainingUnitsNum).toFixed(2));
+        investedStr = newInvestedNum.toFixed(2);
+        currentValueStr = newCurrentValueNum.toFixed(2);
+        sellAmountStr = sellAmount.toFixed(2);
+      } else {
+        // No units tracked — sell by amount
+        const sellPortion = Number(form.sellAmount) / currentValue; // fraction being sold
+        remainingUnitsStr = "0";
+        investedStr = isFullSell ? "0.00" : Number((currentInvested * (1 - sellPortion)).toFixed(2)).toFixed(2);
+        currentValueStr = isFullSell ? "0.00" : Number((currentValue * (1 - sellPortion)).toFixed(2)).toFixed(2);
+        sellAmountStr = Number(form.sellAmount).toFixed(2);
+      }
 
-      // Use toFixed() for API strings — guarantees exact decimal places, no FP drift
-      const investedStr = newInvestedNum.toFixed(2);
-      const currentValueStr = newCurrentValueNum.toFixed(2);
-      const sellAmountStr = sellAmount.toFixed(2);
-
-      // 1. Update investment (reduce units)
+      // 1. Update investment (reduce units/value)
+      const invPayload: Record<string, unknown> = {
+        id: investment.id,
+        invested: investedStr,
+        currentValue: currentValueStr,
+      };
+      if (hasUnits) {
+        invPayload.units = isFullSell ? "0" : remainingUnitsStr;
+      }
       const invRes = await fetch("/api/manage/investments", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: investment.id,
-          units: isFullSell ? "0" : remainingUnitsStr,
-          invested: investedStr,
-          currentValue: currentValueStr,
-        }),
+        body: JSON.stringify(invPayload),
       });
       if (!invRes.ok) {
         const d = await invRes.json().catch(() => ({}));
@@ -417,7 +438,9 @@ export function SellInvestmentModal({
           type: "income",
           category: "Investment Sale",
           amount: sellAmountStr,
-          note: `Sold ${form.sellUnits} units of ${investment.name}${isFullSell ? " (FULL EXIT)" : ` (${remainingUnitsStr} units remaining)`} @ ₹${form.sellPrice}/unit`,
+          note: hasUnits
+            ? `Sold ${form.sellUnits} units of ${investment.name}${isFullSell ? " (FULL EXIT)" : ` (${remainingUnitsStr} units remaining)`} @ ₹${form.sellPrice}/unit`
+            : `Sold ${isFullSell ? "full" : "partial"} holding of ${investment.name} for ₹${sellAmountStr}`,
           accountId: form.accountId ? Number(form.accountId) : null,
           txnDate: new Date().toISOString().split("T")[0],
         }),
@@ -464,7 +487,11 @@ export function SellInvestmentModal({
           <p className="font-semibold" style={{ color: "var(--text-heading)" }}>{investment.name}</p>
           <div className="flex gap-2 mt-1 flex-wrap">
             <span className="badge badge-neutral">{investment.type}</span>
-            <span className="badge badge-primary">{currentUnits} units held</span>
+            {hasUnits ? (
+              <span className="badge badge-primary">{currentUnits} units held</span>
+            ) : (
+              <span className="badge badge-primary">₹{currentInvested.toLocaleString("en-IN", { maximumFractionDigits: 2 })} invested</span>
+            )}
             {livePrice ? <span className="badge badge-success">Live: ₹{livePrice.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span> : null}
           </div>
         </div>
@@ -472,20 +499,36 @@ export function SellInvestmentModal({
         {error && <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: "var(--danger-soft)", color: "var(--danger)" }}>{error}</div>}
 
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Units to Sell</label>
-              <input type="number" step="0.0001" value={form.sellUnits} onChange={(e) => setForm({ ...form, sellUnits: Number(e.target.value) })} className="input" max={currentUnits} />
-              <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>Max: {currentUnits} units</p>
+          {hasUnits ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Units to Sell</label>
+                <input type="number" step="0.0001" value={form.sellUnits} onChange={(e) => setForm({ ...form, sellUnits: Number(e.target.value) })} className="input" max={currentUnits} />
+                <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>Max: {currentUnits} units</p>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Sell Price (₹/unit)</label>
+                <input type="number" step="0.01" value={form.sellPrice} onChange={(e) => setForm({ ...form, sellPrice: Number(e.target.value) })} className="input" />
+                <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>
+                  {livePrice ? "Pre-filled from live price" : "Enter actual sell price"}
+                </p>
+              </div>
             </div>
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Sell Price (₹/unit)</label>
-              <input type="number" step="0.01" value={form.sellPrice} onChange={(e) => setForm({ ...form, sellPrice: Number(e.target.value) })} className="input" />
-              <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>
-                {livePrice ? "Pre-filled from live price" : "Enter actual sell price"}
-              </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Amount to Sell (₹)</label>
+                <input type="number" step="0.01" value={form.sellAmount} onChange={(e) => setForm({ ...form, sellAmount: Number(e.target.value) })} className="input" />
+                <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>Max: ₹{currentValue.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</p>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Current Value</label>
+                <div className="input" style={{ background: "var(--primary-soft)", color: "var(--primary)", fontWeight: 700 }}>
+                  ₹{currentValue.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Receive In (Bank Account)</label>
@@ -534,7 +577,7 @@ export function SellInvestmentModal({
               <div>
                 <p className="text-[10px] font-bold uppercase" style={{ color: "var(--text-faint)" }}>Remaining</p>
                 <p className="font-bold" style={{ color: "var(--text-heading)" }}>
-                  {isFullSell ? "Full exit" : `${remainingUnits} units`}
+                  {isFullSell ? "Full exit" : hasUnits ? `${remainingUnits} units` : `₹${(currentValue - sellAmount).toFixed(2)}`}
                 </p>
               </div>
               <div>
@@ -552,7 +595,7 @@ export function SellInvestmentModal({
 
           <div className="flex gap-2">
             <button onClick={handleSell} disabled={loading} className="btn btn-danger flex-1 py-3 disabled:opacity-50">
-              {loading ? "Processing..." : isFullSell ? "📉 Sell All & Exit" : `📉 Sell ${form.sellUnits} Units`}
+              {loading ? "Processing..." : isFullSell ? "📉 Sell All & Exit" : hasUnits ? `📉 Sell ${form.sellUnits} Units` : `📉 Sell ₹${Number(form.sellAmount).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`}
             </button>
             <button onClick={onClose} className="btn btn-secondary px-5 py-3">Cancel</button>
           </div>
@@ -590,7 +633,7 @@ export function InvestmentManagementTable({
             <Td right muted>{i.units || "—"}</Td>
             <Td right>
               <div className="flex gap-1 justify-end no-print">
-                {onSell && Number(i.units || 0) > 0 && (
+                {onSell && (Number(i.units || 0) > 0 || Number(i.invested || 0) > 0) && (
                   <button onClick={() => onSell(i)} className="btn btn-ghost text-[11px] px-2 py-1" style={{ color: "var(--warning)" }}>📉 Sell</button>
                 )}
                 <button onClick={() => onEdit(i)} className="btn btn-ghost text-[11px] px-2 py-1">Edit</button>
