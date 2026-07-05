@@ -3,6 +3,7 @@ import { FilteredDashboard } from "@/components/FilteredDashboard";
 import { ExcelButton } from "@/components/ExcelButton";
 import { MemberSelectorClient } from "@/components/MemberSelectorClient";
 import { QuickActionCenter } from "@/components/QuickActionCenter";
+import { PrivacyToggle } from "@/components/PrivacyToggle";
 import {
   getTransactions,
   getBills,
