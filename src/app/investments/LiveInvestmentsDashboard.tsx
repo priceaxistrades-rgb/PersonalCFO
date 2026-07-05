@@ -261,7 +261,7 @@ export function InvestmentHoldings({ liveInvestments, onSell }: { liveInvestment
               <Td right><span style={{ color: (i.liveCagr5Y ?? 0) >= 0 ? "var(--success)" : "var(--danger)" }}>{displayPct(i.liveCagr5Y)}</span></Td>
               <Td right>
                 <div className="flex gap-1 justify-end no-print">
-                  {onSell && (i.type === "Stocks" || i.type === "MutualFunds") && Number(i.units) > 0 && (
+                  {onSell && Number(i.units || 0) > 0 && (
                     <button onClick={() => onSell(i)} className="btn btn-ghost text-[11px] px-2 py-1" style={{ color: "var(--warning)" }}>📉 Sell</button>
                   )}
                   {chart ? (

@@ -100,7 +100,7 @@ export function InvestmentsPageClient({
         investments={initialInvestments as unknown as InvestmentRow[]}
         onEdit={startEdit}
         onDelete={handleDelete}
-        onSell={accounts.length > 0 ? (i) => setSellTarget(i) : undefined}
+        onSell={(i) => setSellTarget(i)}
       />
 
       {sellTarget && (

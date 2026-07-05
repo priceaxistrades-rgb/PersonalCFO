@@ -371,7 +371,7 @@ export function SellInvestmentModal({
   const handleSell = async () => {
     if (!form.sellUnits || form.sellUnits <= 0) { setError("Enter units to sell"); return; }
     if (form.sellUnits > currentUnits) { setError(`You only have ${currentUnits} units`); return; }
-    if (!form.accountId) { setError("Select a bank account to receive proceeds"); return; }
+    if (accounts.length > 0 && !form.accountId) { setError("Select a bank account to receive proceeds"); return; }
     setLoading(true);
     setError("");
 
@@ -418,7 +418,7 @@ export function SellInvestmentModal({
           category: "Investment Sale",
           amount: sellAmountStr,
           note: `Sold ${form.sellUnits} units of ${investment.name}${isFullSell ? " (FULL EXIT)" : ` (${remainingUnitsStr} units remaining)`} @ ₹${form.sellPrice}/unit`,
-          accountId: Number(form.accountId),
+          accountId: form.accountId ? Number(form.accountId) : null,
           txnDate: new Date().toISOString().split("T")[0],
         }),
       });
@@ -489,10 +489,16 @@ export function SellInvestmentModal({
 
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Receive In (Bank Account)</label>
-            <select value={form.accountId} onChange={(e) => setForm({ ...form, accountId: e.target.value })} className="input">
-              <option value="">— Select account —</option>
-              {accounts.map((a) => (<option key={a.id} value={a.id}>{a.name} ({a.type})</option>))}
-            </select>
+            {accounts.length > 0 ? (
+              <select value={form.accountId} onChange={(e) => setForm({ ...form, accountId: e.target.value })} className="input">
+                <option value="">— Select account —</option>
+                {accounts.map((a) => (<option key={a.id} value={a.id}>{a.name} ({a.type})</option>))}
+              </select>
+            ) : (
+              <div className="input" style={{ background: "var(--warning-soft)", color: "var(--warning)", fontWeight: 600 }}>
+                ⚠️ No accounts yet — add a Bank account in Settings first
+              </div>
+            )}
             <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>
               Sale proceeds will be recorded as income to this account
             </p>
@@ -584,7 +590,7 @@ export function InvestmentManagementTable({
             <Td right muted>{i.units || "—"}</Td>
             <Td right>
               <div className="flex gap-1 justify-end no-print">
-                {onSell && (i.type === "Stocks" || i.type === "MutualFunds") && Number(i.units) > 0 && (
+                {onSell && Number(i.units || 0) > 0 && (
                   <button onClick={() => onSell(i)} className="btn btn-ghost text-[11px] px-2 py-1" style={{ color: "var(--warning)" }}>📉 Sell</button>
                 )}
                 <button onClick={() => onEdit(i)} className="btn btn-ghost text-[11px] px-2 py-1">Edit</button>
@@ -635,7 +641,7 @@ export function InvestmentsManager({ investments, accounts }: { investments: Inv
         investments={investments}
         onEdit={(i) => { setEditing(i); setShowAdd(true); }}
         onDelete={handleDelete}
-        onSell={accounts?.length ? (i) => setSellTarget(i) : undefined}
+        onSell={(i) => setSellTarget(i)}
       />
       {sellTarget && (
         <SellInvestmentModal
