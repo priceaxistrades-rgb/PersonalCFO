@@ -205,7 +205,7 @@ export function InvestmentKpis({
   );
 }
 
-export function InvestmentHoldings({ liveInvestments }: { liveInvestments: LiveInvestment[] }) {
+export function InvestmentHoldings({ liveInvestments, onSell }: { liveInvestments: LiveInvestment[]; onSell?: (i: LiveInvestment) => void }) {
   const rows = [...liveInvestments].sort((a, b) => b.liveCurrentValue - a.liveCurrentValue);
 
   return (
@@ -260,7 +260,11 @@ export function InvestmentHoldings({ liveInvestments }: { liveInvestments: LiveI
               <Td right><span style={{ color: (i.liveCagr3Y ?? 0) >= 0 ? "var(--success)" : "var(--danger)" }}>{displayPct(i.liveCagr3Y)}</span></Td>
               <Td right><span style={{ color: (i.liveCagr5Y ?? 0) >= 0 ? "var(--success)" : "var(--danger)" }}>{displayPct(i.liveCagr5Y)}</span></Td>
               <Td right>
-                {chart ? (
+                <div className="flex gap-1 justify-end no-print">
+                  {onSell && (i.type === "Stocks" || i.type === "MutualFunds") && Number(i.units) > 0 && (
+                    <button onClick={() => onSell(i)} className="btn btn-ghost text-[11px] px-2 py-1" style={{ color: "var(--warning)" }}>📉 Sell</button>
+                  )}
+                  {chart ? (
                   <a
                     href={chart}
                     target="_blank"
@@ -273,6 +277,7 @@ export function InvestmentHoldings({ liveInvestments }: { liveInvestments: LiveI
                 ) : (
                   <span style={{ color: "var(--text-faint)" }}>—</span>
                 )}
+                </div>
               </Td>
             </Tr>
           );

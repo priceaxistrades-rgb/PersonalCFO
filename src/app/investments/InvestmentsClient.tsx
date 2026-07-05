@@ -3,47 +3,58 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SectionTitle } from "@/components/ui/Card";
-import { 
-  useLiveInvestments, 
-  InvestmentKpis, 
-  InvestmentHoldings, 
-  InvestmentAllocation, 
-  InvestmentFooter, 
-  type Investment, 
-  type LiveInvestment 
+import {
+  useLiveInvestments,
+  InvestmentKpis,
+  InvestmentHoldings,
+  InvestmentAllocation,
+  InvestmentFooter,
+  type Investment,
+  type LiveInvestment,
 } from "./LiveInvestmentsDashboard";
-import { 
-  InvestmentForm, 
-  InvestmentManagementTable, 
-  type InvestmentRow 
+import {
+  InvestmentForm,
+  InvestmentManagementTable,
+  SellInvestmentModal,
+  type InvestmentRow,
 } from "../settings/InvestmentsManager";
+import { getAccounts } from "@/lib/data";
 
-export function InvestmentsPageClient({ 
-  initialInvestments 
-}: { 
-  initialInvestments: Investment[] 
+export function InvestmentsPageClient({
+  initialInvestments,
+}: {
+  initialInvestments: Investment[];
 }) {
   const router = useRouter();
   const { liveInvestments, loading, updatedAt, error, loadQuotes } = useLiveInvestments(initialInvestments);
-  
+
   const [showForm, setShowForm] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState<InvestmentRow | null>(null);
+  const [sellTarget, setSellTarget] = useState<InvestmentRow | null>(null);
+  const [accounts, setAccounts] = useState<any[]>([]);
 
-  const handleSave = async (form: any) => {
-    const payload = { 
-      ...form, 
-      symbol: form.symbol || null, 
-      schemeCode: form.schemeCode || null, 
-      units: form.units || null, 
-      startDate: form.startDate || null 
-    };
-    
-    await fetch("/api/manage/investments", {
+  // Load accounts for sell modal
+  useState(() => {
+    getAccounts().then(setAccounts).catch(() => {});
+  });
+
+  // Build a price lookup from live data
+  const livePriceMap = new Map<number, number>();
+  liveInvestments.forEach((li) => {
+    if (li.livePrice) livePriceMap.set(li.id, li.livePrice);
+  });
+
+  const handleSave = async (payload: Record<string, unknown>) => {
+    const res = await fetch("/api/manage/investments", {
       method: editingInvestment ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(editingInvestment ? { id: editingInvestment.id, ...payload } : payload),
     });
-    
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(`Error: ${err.error || "Could not save investment"}`);
+      return;
+    }
     setShowForm(false);
     setEditingInvestment(null);
     router.refresh();
@@ -51,11 +62,7 @@ export function InvestmentsPageClient({
 
   const handleDelete = async (id: number) => {
     if (!confirm("Delete this investment?")) return;
-    await fetch("/api/manage/investments", { 
-      method: "DELETE", 
-      headers: { "Content-Type": "application/json" }, 
-      body: JSON.stringify({ id }) 
-    });
+    await fetch("/api/manage/investments", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
     router.refresh();
   };
 
@@ -71,54 +78,45 @@ export function InvestmentsPageClient({
         subtitle="Live portfolio value synced from stock prices and mutual fund NAVs"
       />
 
-      {/* 1. KPIs */}
-      <InvestmentKpis 
-        liveInvestments={liveInvestments} 
-        loading={loading} 
-        updatedAt={updatedAt} 
-        error={error} 
-        loadQuotes={loadQuotes} 
-      />
+      <InvestmentKpis liveInvestments={liveInvestments} loading={loading} updatedAt={updatedAt} error={error} loadQuotes={loadQuotes} />
 
-      {/* 2. Add/Edit Investment Form */}
       <div className="flex justify-end mb-2 no-print">
-        <button 
-          onClick={() => { 
-            setShowForm(!showForm); 
-            setEditingInvestment(null); 
-          }} 
-          className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90" 
-          style={{ background: "var(--primary)" }}
-        >
+        <button onClick={() => { setShowForm(!showForm); setEditingInvestment(null); }} className="btn btn-primary text-sm">
           {showForm ? "Cancel" : "+ Add Investment"}
         </button>
       </div>
-      
+
       {showForm && (
-        <InvestmentForm 
-          editingInvestment={editingInvestment} 
-          onSave={handleSave} 
-          onCancel={() => {
-            setShowForm(false);
-            setEditingInvestment(null);
-          }} 
-        />
+        <InvestmentForm editingInvestment={editingInvestment} onSave={handleSave} onCancel={() => { setShowForm(false); setEditingInvestment(null); }} />
       )}
 
-      {/* 3. Live Holdings Table */}
-      <InvestmentHoldings liveInvestments={liveInvestments} />
+      <InvestmentHoldings
+        liveInvestments={liveInvestments}
+        onSell={(li: LiveInvestment) => {
+          setSellTarget(li as unknown as InvestmentRow);
+        }}
+      />
 
-      {/* 4. Asset Allocation Chart */}
       <InvestmentAllocation liveInvestments={liveInvestments} />
 
       <InvestmentFooter />
 
-      {/* 5. Management Table (Edit/Delete) */}
-      <InvestmentManagementTable 
-        investments={initialInvestments as unknown as InvestmentRow[]} 
-        onEdit={startEdit} 
-        onDelete={handleDelete} 
+      <InvestmentManagementTable
+        investments={initialInvestments as unknown as InvestmentRow[]}
+        onEdit={startEdit}
+        onDelete={handleDelete}
+        onSell={accounts.length > 0 ? (i) => setSellTarget(i) : undefined}
       />
+
+      {sellTarget && (
+        <SellInvestmentModal
+          investment={sellTarget}
+          livePrice={livePriceMap.get(sellTarget.id) || null}
+          accounts={accounts}
+          onClose={() => setSellTarget(null)}
+          onSold={() => { setSellTarget(null); router.refresh(); }}
+        />
+      )}
     </div>
   );
 }

@@ -99,12 +99,17 @@ export function MarketsClient({
             <InvestmentForm
               editingInvestment={null}
               initialData={selectedItem}
-              onSave={async (form) => {
-                await fetch("/api/manage/investments", {
+              onSave={async (payload) => {
+                const res = await fetch("/api/manage/investments", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(form),
+                  body: JSON.stringify(payload),
                 });
+                if (!res.ok) {
+                  const err = await res.json().catch(() => ({}));
+                  alert(`Error: ${err.error || "Could not add investment"}`);
+                  return;
+                }
                 setShowAddModal(false);
                 router.refresh();
               }}
