@@ -101,7 +101,7 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
       )}
 
       {/* ─── KPI Row 1 ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 stagger">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 kpi-scroll lg:grid stagger">
         <KpiCard label="Net Worth" value={inr(netWorth, { compact: true })} icon="💎" tone="primary" sub="Assets − Liabilities" onClick={() => go("/networth")} />
         <KpiCard label="Cash" value={inr(liquidAssets, { compact: true })} icon="💵" tone="accent" sub="Liquid funds" onClick={() => go("/networth")} />
         <KpiCard label="Income" value={inr(income, { compact: true })} icon="💰" tone="success" trend={{ dir: income >= prevMonth.income ? "up" : "down", text: inr(Math.abs(income - prevMonth.income), { compact: true }), good: income >= prevMonth.income }} sub="vs last mo" onClick={() => go("/income")} />
@@ -109,7 +109,7 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
       </div>
 
       {/* ─── KPI Row 2 ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 stagger mt-2 sm:mt-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 kpi-scroll lg:grid stagger mt-2 sm:mt-4">
         <KpiCard label="Savings %" value={`${savingsRate.toFixed(0)}%`} icon="🐖" tone="success" trend={{ dir: savingsRate >= 20 ? "up" : "down", text: `${savingsRate.toFixed(0)}%`, good: savingsRate >= 20 }} sub="of income" onClick={() => go("/reports")} />
         <KpiCard label="Inv. Growth" value={inr(invGrowth, { compact: true })} icon="📈" tone="primary" trend={{ dir: "up", text: `${invGrowth > 0 ? "+" : ""}${inr(invGrowth, { compact: true })}`, good: invGrowth >= 0 }} sub="unrealised" onClick={() => go("/investments")} />
         <KpiCard label="Emergency" value={`${emergencyMonths.toFixed(1)} mo`} icon="🛟" tone={emergencyMonths >= 6 ? "success" : "warning"} sub={`${inr(emergencySaved, { compact: true })}`} onClick={() => go("/savings")} />

@@ -39,9 +39,57 @@ function fmtNum(n: number, currency = "INR") {
   }).format(n);
 }
 
+function compactINR(n: number): string {
+  const abs = Math.abs(n);
+  if (abs >= 1e7) return `₹${(n / 1e7).toFixed(2)} Cr`;
+  if (abs >= 1e5) return `₹${(n / 1e5).toFixed(2)} L`;
+  if (abs >= 1e3) return `₹${(n / 1e3).toFixed(1)} K`;
+  return `₹${n.toFixed(0)}`;
+}
+
 function Cagr({ v }: { v: number | null }) {
   if (v === null || v === undefined) return <span style={{ color: "var(--text-faint)" }}>—</span>;
   return <span style={{ color: v >= 0 ? "var(--success)" : "var(--danger)" }}>{v >= 0 ? "+" : ""}{v.toFixed(1)}%</span>;
+}
+
+/** Holdings badge shown for investment-linked instruments */
+function HoldingsBadge({ item, livePrice }: { item: WatchItem; livePrice: number | null }) {
+  const units = Number(item.units) || 0;
+  if (units <= 0 || item.source !== "investment") return null;
+  const invested = Number(item.invested) || 0;
+  const avgPrice = units > 0 ? invested / units : 0;
+  const currentVal = livePrice ? livePrice * units : 0;
+  const pnl = currentVal - invested;
+  const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0;
+
+  return (
+    <div
+      className="mt-1.5 p-2 rounded-lg text-[11px] space-y-1"
+      style={{ background: "var(--primary-soft)", border: "1px solid var(--border-accent)" }}
+    >
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span className="badge badge-primary">📋 {units} units held</span>
+        <span style={{ color: "var(--text-muted)" }}>Avg ₹{avgPrice.toFixed(2)}</span>
+      </div>
+      <div className="flex items-center gap-3 flex-wrap">
+        <span style={{ color: "var(--text-muted)" }}>
+          Invested: <strong style={{ color: "var(--text)" }}>{compactINR(invested)}</strong>
+        </span>
+        {livePrice ? (
+          <>
+            <span style={{ color: "var(--text-muted)" }}>
+              Current: <strong style={{ color: "var(--text)" }}>{compactINR(currentVal)}</strong>
+            </span>
+            <span style={{ color: pnl >= 0 ? "var(--success)" : "var(--danger)", fontWeight: 700 }}>
+              {pnl >= 0 ? "▲" : "▼"} {compactINR(Math.abs(pnl))} ({pnlPct.toFixed(1)}%)
+            </span>
+          </>
+        ) : (
+          <span style={{ color: "var(--text-faint)" }}>Current value updates with live price</span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function MiniChart({ points, chartType, supportsCandles }: { points: ChartPoint[]; chartType: ChartType; supportsCandles: boolean }) {
@@ -223,15 +271,29 @@ export function LiveMarkets({
   const stockItems = items.filter((i) => i.kind === "stock");
   const mfItems = items.filter((i) => i.kind === "mf");
 
+  // Summary stats for investment-linked items
+  const investedItems = items.filter((i) => i.source === "investment" && Number(i.units) > 0);
+  const totalInvested = investedItems.reduce((s, i) => s + (Number(i.invested) || 0), 0);
+  const totalCurrent = investedItems.reduce((s, i) => {
+    const key = i.kind === "stock" ? `stock:${i.symbol}` : `mf:${i.schemeCode}`;
+    const q = quotes[key];
+    const units = Number(i.units) || 0;
+    return s + (q?.ok && q.price > 0 ? q.price * units : Number(i.invested) || 0);
+  }, 0);
+  const totalPnl = totalCurrent - totalInvested;
+
   const renderRows = (list: WatchItem[]) =>
     list.map((it) => {
       const key = it.kind === "stock" ? `stock:${it.symbol}` : `mf:${it.schemeCode}`;
       const q = quotes[key];
+      const livePrice = q?.ok ? q.price : null;
       const target = it.kind === "stock" && it.symbol
         ? { kind: "stock" as const, id: it.symbol, label: it.label }
         : it.kind === "mf" && it.schemeCode
           ? { kind: "mf" as const, id: it.schemeCode, label: it.label }
           : null;
+      const isHeld = it.source === "investment" && Number(it.units) > 0;
+
       return (
         <Tr key={`${it.source || "watchlist"}-${it.id}-${key}`}>
           <Td strong>
@@ -239,16 +301,23 @@ export function LiveMarkets({
               className="flex items-center gap-2 cursor-pointer group" 
               onClick={() => target && openChart(target)}
             >
-              <span className="group-hover:text-var(--primary) transition-colors">
-                {it.label}
-              </span>
-              <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--primary)" }}>
-                📊 View Chart
-              </span>
-              <span className="block text-[10px] font-normal opacity-70" style={{ color: "var(--text-faint)" }}>
-                {q?.extra || (it.source === "investment" ? "Synced from investments" : "Watchlist")}
-              </span>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="group-hover:opacity-80 transition-opacity">
+                    {it.label}
+                  </span>
+                  {isHeld && <span className="badge badge-primary text-[9px]">HELD</span>}
+                  <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--primary)" }}>
+                    📊
+                  </span>
+                </div>
+                <span className="block text-[10px] font-normal opacity-70" style={{ color: "var(--text-faint)" }}>
+                  {q?.extra || (it.source === "investment" ? "Synced from portfolio" : "Watchlist")}
+                </span>
+              </div>
             </div>
+            {/* Holdings sync info */}
+            <HoldingsBadge item={it} livePrice={livePrice} />
           </Td>
           <Td right strong>{q?.ok ? fmtNum(q.price, q.currency) : q ? "—" : "…"}</Td>
           <Td right>
@@ -265,7 +334,7 @@ export function LiveMarkets({
           <Td right><Cagr v={q?.cagr.y5 ?? null} /></Td>
           <Td right>
             <div className="flex justify-end gap-1 no-print">
-              {target && (
+              {target && !isHeld && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -313,6 +382,26 @@ export function LiveMarkets({
           🔄 Refresh
         </button>
       </div>
+
+      {/* Portfolio sync summary */}
+      {investedItems.length > 0 && (
+        <div className="grid grid-cols-3 gap-3 p-3 rounded-xl fade-in" style={{ background: "var(--surface-2)", border: "1px solid var(--border-accent)" }}>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Invested</p>
+            <p className="text-sm font-bold" style={{ color: "var(--text-heading)" }}>{compactINR(totalInvested)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Current Value</p>
+            <p className="text-sm font-bold" style={{ color: "var(--text-heading)" }}>{compactINR(totalCurrent)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Live P&L</p>
+            <p className="text-sm font-bold" style={{ color: totalPnl >= 0 ? "var(--success)" : "var(--danger)" }}>
+              {totalPnl >= 0 ? "+" : ""}{compactINR(totalPnl)} ({totalInvested > 0 ? ((totalPnl / totalInvested) * 100).toFixed(1) : "0"}%)
+            </p>
+          </div>
+        </div>
+      )}
 
       {chartTarget && (
         <Card

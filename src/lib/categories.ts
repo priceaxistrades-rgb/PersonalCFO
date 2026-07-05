@@ -10,8 +10,29 @@ export const CATEGORY_GROUPS = {
   ],
   Other: [
     "Miscellaneous", "Adjustment"
-  ]
+  ],
 };
+
+export const BILL_CATEGORIES = [
+  "Rent",
+  "Electricity",
+  "Gas",
+  "Water",
+  "Internet",
+  "Phone / Mobile",
+  "DTH / Cable",
+  "Insurance Premium",
+  "EMI",
+  "Subscription",
+  "Gym / Fitness",
+  "Education Fee",
+  "Maintenance",
+  "Society / HOA",
+  "Taxes",
+  "Medical",
+  "Transport",
+  "Other",
+] as const;
 
 export function getGroupForCategory(category: string): string {
   for (const [group, cats] of Object.entries(CATEGORY_GROUPS)) {
@@ -25,6 +46,6 @@ export function getGroupColors(): Record<string, string> {
     Essential: "var(--danger)",
     Lifestyle: "var(--warning)",
     Savings: "var(--success)",
-    Other: "var(--text-muted)"
+    Other: "var(--text-muted)",
   };
 }

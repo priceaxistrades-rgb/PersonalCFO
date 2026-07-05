@@ -38,7 +38,7 @@ export default async function BudgetPage() {
     <div className="space-y-6">
       <SectionTitle title="Budget Planner" subtitle="Planned vs actual spending this month" />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 kpi-scroll lg:grid stagger">
         <KpiCard label="Monthly Budget" value={inr(totalBudget, { compact: true })} icon="📊" tone="primary" />
         <KpiCard label="Spent So Far" value={inr(totalSpent, { compact: true })} icon="🧾" tone="danger" sub={`${usedPct.toFixed(0)}% used`} />
         <KpiCard label="Remaining" value={inr(totalLeft, { compact: true })} icon="💵" tone={totalLeft >= 0 ? "success" : "danger"} />

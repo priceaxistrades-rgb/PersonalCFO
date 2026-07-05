@@ -18,7 +18,7 @@ export default async function AnnualPage() {
     <div className="space-y-6">
       <SectionTitle title="Annual Financial Planner" subtitle="Set yearly goals and track milestones" />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 kpi-scroll lg:grid stagger">
         <KpiCard label="Total Goals" value={String(plans.length)} icon="🗓️" tone="primary" />
         <KpiCard label="Completed" value={String(done)} icon="✅" tone="success" />
         <KpiCard label="In Progress" value={String(inProgress)} icon="⏳" tone="warning" />

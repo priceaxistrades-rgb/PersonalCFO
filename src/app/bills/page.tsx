@@ -21,7 +21,7 @@ export default async function BillsPage() {
     <div className="space-y-6">
       <SectionTitle title="Bill Tracker" subtitle="Never miss a due date again" />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 kpi-scroll lg:grid stagger">
         <KpiCard label="Outstanding" value={inr(totalDue, { compact: true })} icon="🔔" tone="warning" sub={`${unpaid.length} bills`} />
         <KpiCard label="Paid This Cycle" value={inr(totalPaid, { compact: true })} icon="✅" tone="success" sub={`${paid.length} bills`} />
         <KpiCard label="Due Within 7 Days" value={String(dueSoon.length)} icon="⏰" tone="primary" />
@@ -43,33 +43,6 @@ export default async function BillsPage() {
       )}
 
       <BillsManager bills={bills} />
-
-      <Card title="All Bills" subtitle="Sorted by due date">
-        <Table headers={["Bill", "Category", "Frequency", "Due Date", "Amount", "Status"]} right={[4, 5]}>
-          {bills.map((b) => {
-            const dleft = daysUntil(b.dueDate);
-            const late = !b.paid && dleft < 0;
-            const soon = !b.paid && dleft >= 0 && dleft <= 7;
-            return (
-              <Tr key={b.id}>
-                <Td strong>{b.name}</Td>
-                <Td muted>{b.category}</Td>
-                <Td><Badge>{b.frequency}</Badge></Td>
-                <Td muted>
-                  {fmtDate(b.dueDate)}{" "}
-                  {!b.paid && (
-                    <span style={{ color: late ? "var(--danger)" : soon ? "var(--warning)" : "var(--text-faint)" }}>
-                      ({dleft < 0 ? `${-dleft}d late` : `${dleft}d`})
-                    </span>
-                  )}
-                </Td>
-                <Td right strong>{inr(num(b.amount))}</Td>
-                <Td right><BillToggle id={b.id} paid={b.paid} /></Td>
-              </Tr>
-            );
-          })}
-        </Table>
-      </Card>
     </div>
   );
 }

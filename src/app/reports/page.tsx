@@ -55,7 +55,7 @@ export default async function ReportsPage() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 kpi-scroll lg:grid stagger">
         <KpiCard label="6-Mo Income" value={inr(totalIncome, { compact: true })} icon="💰" tone="success" />
         <KpiCard label="6-Mo Expenses" value={inr(totalExpense, { compact: true })} icon="🧾" tone="danger" />
         <KpiCard label="6-Mo Savings" value={inr(totalSavings, { compact: true })} icon="🐖" tone="primary" />

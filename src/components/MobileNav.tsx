@@ -34,10 +34,10 @@ export function MobileNav() {
     <>
       {/* ─── Bottom Tab Bar ─── */}
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t safe-area-bottom"
         style={{ background: "var(--surface)", borderColor: "var(--border)" }}
       >
-        <div className="flex items-center justify-around h-16 safe-area-bottom">
+        <div className="flex items-center justify-around h-16">
           {MOBILE_NAV.map((item) => {
             const active = isActive(item.href);
             return (
@@ -47,7 +47,7 @@ export function MobileNav() {
                 className={`mobile-nav-item flex flex-col items-center justify-center flex-1 h-full ${active ? "active" : ""}`}
                 style={{ color: active ? "var(--primary)" : "var(--text-faint)" }}
               >
-                <span className="text-lg mb-0.5 transition-transform duration-200" style={{ transform: active ? "scale(1.2)" : "scale(1)" }}>
+                <span className="text-lg mb-0.5 transition-transform duration-150" style={{ transform: active ? "scale(1.15)" : "scale(1)" }}>
                   {item.icon}
                 </span>
                 <span className="text-[10px] font-semibold" style={{ fontWeight: active ? 700 : 500 }}>{item.label}</span>
@@ -83,7 +83,7 @@ export function MobileNav() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setShowMore(false)}
-                  className="flex flex-col items-center p-3 rounded-xl transition-all duration-200 active:scale-95"
+                  className="flex flex-col items-center p-3 rounded-xl transition-all duration-150 active:scale-95"
                   style={{
                     background: isActive(link.href) ? "var(--primary-soft)" : "var(--surface-2)",
                     color: isActive(link.href) ? "var(--primary)" : "var(--text)",

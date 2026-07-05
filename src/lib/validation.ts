@@ -84,7 +84,7 @@ const INVESTMENT_TYPES = [
 ] as const;
 const DEBT_TYPES = ["HomeLoan", "CarLoan", "EducationLoan", "CreditCard", "PersonalLoan"] as const;
 const MEMBER_ROLES = ["Self", "Spouse", "Child", "Parent", "Household"] as const;
-const BILL_FREQUENCIES = ["Monthly", "Quarterly", "Yearly"] as const;
+const BILL_FREQUENCIES = ["Monthly", "Quarterly", "Yearly", "One-time"] as const;
 const INSURANCE_TYPES = ["Health", "Life", "Vehicle", "Property"] as const;
 const GOAL_CATEGORIES = [
   "Emergency", "Vacation", "House", "Car", "Education",

@@ -541,6 +541,25 @@ html.theme-transition *::after {
   .hide-scrollbar::-webkit-scrollbar { display: none; }
   /* Prevent KPI grid from overflowing */
   .kpi-card { min-width: 0; }
+  /* KPI horizontal scroll on mobile */
+  .kpi-scroll {
+    display: flex !important;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 0.75rem;
+    padding-bottom: 0.5rem;
+  }
+  .kpi-scroll > * {
+    scroll-snap-align: start;
+    flex: 0 0 70%;
+    min-width: 200px;
+    max-width: 300px;
+  }
+  /* Table: make rows tappable */
+  .table-scroll tbody tr { min-height: 48px; }
+  /* Cards: stack vertically on small screens */
+  .mobile-card-stack > * { margin-bottom: 0.75rem; }
 }
 
 @media (max-width: 640px) {
@@ -548,6 +567,16 @@ html.theme-transition *::after {
   input, select, textarea { font-size: 16px !important; }
   /* Tighter grid gaps on small screens */
   .grid.grid-cols-2 { gap: 0.5rem; }
+  /* Full-width KPI scroll items on very small screens */
+  .kpi-scroll > * {
+    flex: 0 0 80%;
+    min-width: 180px;
+  }
+  /* Reduce padding on cards for more content visibility */
+  .card { padding-left: 0.875rem !important; padding-right: 0.875rem !important; }
+  .card header { margin-bottom: 0.75rem !important; }
+  /* Make bottom nav more touchable */
+  .mobile-nav-item { min-height: 56px; }
 }
 
 @supports (padding-top: env(safe-area-inset-top)) {

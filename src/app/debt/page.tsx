@@ -39,7 +39,7 @@ export default async function DebtPage() {
     <div className="space-y-6">
       <SectionTitle title="Debt & Loan Dashboard" subtitle="Track balances, EMIs and payoff timelines" />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 kpi-scroll lg:grid stagger">
         <KpiCard label="Total Outstanding" value={inr(totalOutstanding, { compact: true })} icon="🏦" tone="danger" />
         <KpiCard label="Monthly EMI" value={inr(totalEmi, { compact: true })} icon="📅" tone="warning" />
         <KpiCard label="Already Repaid" value={inr(paidOff, { compact: true })} icon="✅" tone="success" sub={`of ${inr(totalPrincipal, { compact: true })}`} />

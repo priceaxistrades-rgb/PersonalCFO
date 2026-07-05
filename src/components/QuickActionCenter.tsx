@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
-import { CATEGORY_GROUPS } from "@/lib/categories";
+import { CATEGORY_GROUPS, BILL_CATEGORIES } from "@/lib/categories";
 
 const inputStyle: React.CSSProperties = { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" };
 
@@ -29,7 +29,7 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
     amount: "", category: "", accountId: accounts[0]?.id || "", note: "",
     name: "", type: "Stocks", symbol: "", schemeCode: "", units: "",
     goalName: "", goalCategory: "Emergency",
-    billName: "", billCategory: "Utilities", dueDate: new Date().toISOString().split("T")[0],
+    billName: "", billCategory: "Electricity", dueDate: new Date().toISOString().split("T")[0],
     debtName: "", debtType: "PersonalLoan", principal: "", outstanding: "", rate: "", emi: "",
     insuranceName: "", insuranceType: "Health", premium: "", coverage: "", renewalDate: new Date().toISOString().split("T")[0],
     annualTitle: "", annualCategory: "Financial", annualTarget: "",
@@ -168,7 +168,7 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
             ) : formType === "bill" ? (
               <div className="grid sm:grid-cols-2 gap-4 mb-4">
                 <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Bill Name</label><input placeholder="Electricity" value={form.billName} onChange={(e) => setForm({ ...form, billName: e.target.value })} className="input" /></div>
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Category</label><select value={form.billCategory} onChange={(e) => setForm({ ...form, billCategory: e.target.value })} className="input"><option value="Utilities">Utilities</option><option value="Rent">Rent</option><option value="Subscription">Subscription</option><option value="Other">Other</option></select></div>
+                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Category</label><select value={form.billCategory} onChange={(e) => setForm({ ...form, billCategory: e.target.value })} className="input">{BILL_CATEGORIES.map((c: string) => <option key={c} value={c}>{c}</option>)}</select></div>
                 <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Due Date</label><input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} className="input" /></div>
               </div>
             ) : formType === "debt" ? (

@@ -36,7 +36,7 @@ export default async function FamilyPage() {
     <div className="space-y-6">
       <SectionTitle title="Family Budget Planner" subtitle="Spending tracked per family member" />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 kpi-scroll lg:grid stagger">
         <KpiCard label="Family Spend" value={inr(total, { compact: true })} icon="👨‍👩‍👧‍👦" tone="primary" sub="this month" />
         <KpiCard label="Members" value={String(members.length)} icon="🧑‍🤝‍🧑" tone="accent" />
         <KpiCard label="Top Spender" value={topSpender?.name.split(" ")[0] ?? "—"} icon="📌" tone="warning" sub={inr(topSpender?.spend ?? 0, { compact: true })} />
