@@ -3,14 +3,14 @@ import { KpiCard, Progress } from "@/components/ui/Kpi";
 import { DonutChart } from "@/components/ui/Charts";
 import { Table, Tr, Td } from "@/components/ui/Table";
 import { inr, num } from "@/lib/format";
-import { getTransactions, getMembers, currentMonthKey, monthKey, sumBy } from "@/lib/data";
+import { getAllTransactions, getMembers, currentMonthKey, monthKey, sumBy } from "@/lib/data";
 import { MembersManager } from "../settings/MembersManager";
 import { TransactionsManager } from "../settings/TransactionsManager";
 
 export const dynamic = "force-dynamic";
 
 export default async function FamilyPage() {
-  const [txns, members] = await Promise.all([getTransactions(), getMembers()]);
+  const [txns, members] = await Promise.all([getAllTransactions(), getMembers()]);
   const cm = currentMonthKey();
   const monthExpenses = txns.filter((t) => t.type === "expense" && monthKey(t.txnDate) === cm);
   const total = sumBy(monthExpenses, (t) => num(t.amount));

@@ -1,3 +1,4 @@
+import { catchErr } from "@/lib/catch";
 import { isSession, requireApiSession } from "@/lib/server-auth";
 import { syncAccountBalances } from "@/lib/data";
 
@@ -8,6 +9,6 @@ export async function POST(req: Request) {
     await syncAccountBalances();
     return Response.json({ ok: true, message: "Account balances synchronized with transaction history." });
   } catch (err) {
-    return Response.json({ error: "Failed to sync balances" }, { status: 500 });
+    return catchErr("manage_sync", err, session.userId);
   }
 }

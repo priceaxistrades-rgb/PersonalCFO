@@ -1,6 +1,6 @@
 import { Card, SectionTitle, Badge } from "@/components/ui/Card";
 import { FileUploader } from "@/components/FileUploader";
-import { getMembers, getAccounts, getInvestments, getDebts, getBills, getGoals, getInsurance, getTransactions } from "@/lib/data";
+import { getMembers, getAccounts, getInvestments, getDebts, getBills, getGoals, getInsurance, getAllTransactions } from "@/lib/data";
 import { MembersManager } from "./MembersManager";
 import { AccountsManager } from "./AccountsManager";
 import { InvestmentsManager } from "./InvestmentsManager";
@@ -9,6 +9,7 @@ import { BillsManager } from "./BillsManager";
 import { GoalsManager } from "./GoalsManager";
 import { InsuranceManager } from "./InsuranceManager";
 import { TransactionsManager } from "./TransactionsManager";
+import { AICFOFeature } from "./AICFOFeature";
 import { AccountDataManager } from "@/components/AccountDataManager";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ export default async function SettingsPage() {
     getBills(),
     getGoals(),
     getInsurance(),
-    getTransactions(),
+    getAllTransactions(),
   ]);
 
   const hasAnyData = transactions.length > 0 || accounts.length > 0 || investments.length > 0;
@@ -75,6 +76,7 @@ export default async function SettingsPage() {
         <GoalsManager goals={goals} />
         <BillsManager bills={bills} />
         <InsuranceManager insurance={insurance} />
+        <AICFOFeature />
       </div>
     </div>
   );

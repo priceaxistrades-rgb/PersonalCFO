@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card } from "@/components/ui/Card";
-import { CATEGORY_GROUPS, BILL_CATEGORIES } from "@/lib/categories";
+import { CATEGORY_GROUPS, BILL_CATEGORIES, INCOME_CATEGORIES } from "@/lib/categories";
+import { InvestmentForm, SellInvestmentModal } from "@/app/settings/InvestmentsManager";
+import type { InvestmentRow, AccountOption } from "@/lib/types";
 
 const inputStyle: React.CSSProperties = { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" };
 
@@ -35,11 +38,17 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
     annualTitle: "", annualCategory: "Financial", annualTarget: "",
   });
 
+  // Investment form state — uses the full InvestmentForm component
+  const [investmentFormKey, setInvestmentFormKey] = useState(0);
+
+  const INCOME_CATS = INCOME_CATEGORIES;
+  const EXPENSE_CATEGORIES = Object.values(CATEGORY_GROUPS).flat();
+
   const handleTypeChange = (type: QuickAddType) => {
     setFormType(type);
     if (type === "expense") setForm({ ...form, category: "Food" });
     if (type === "income") setForm({ ...form, category: "Salary" });
-    if (type === "investment") setForm({ ...form, name: "", type: "Stocks" });
+    if (type === "investment") setInvestmentFormKey((k) => k + 1);
     if (type === "goal") setForm({ ...form, goalName: "", goalCategory: "Emergency" });
     if (type === "bill") setForm({ ...form, billName: "", billCategory: "Utilities" });
     if (type === "debt") setForm({ ...form, debtName: "", debtType: "PersonalLoan" });
@@ -57,9 +66,6 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
       if (formType === "income" || formType === "expense") {
         endpoint = "/api/transactions";
         body = { ...body, type: formType, category: form.category, txnDate: new Date().toISOString().split("T")[0] };
-      } else if (formType === "investment") {
-        endpoint = "/api/manage/investments";
-        body = { name: form.name, type: form.type, invested: Number(form.amount), currentValue: Number(form.amount), annualReturn: 0, symbol: form.symbol || null, schemeCode: form.schemeCode || null, units: form.units || null, startDate: new Date().toISOString().split("T")[0] };
       } else if (formType === "goal") {
         endpoint = "/api/manage/goals";
         body = { name: form.goalName, category: form.goalCategory, target: Number(form.amount), saved: 0, icon: "🎯" };
@@ -82,6 +88,12 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
+
+  const accountOptions: AccountOption[] = accounts.map((a) => ({
+    id: a.id,
+    name: a.name,
+    type: a.type,
+  }));
 
   return (
     <div className="relative mb-6">
@@ -119,82 +131,114 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
               ))}
             </div>
 
-            {/* Amount + Account */}
-            <div className="grid sm:grid-cols-2 gap-4 mb-4">
+            {/* ─── INVESTMENT: Full InvestmentForm with stock/MF search ─── */}
+            {formType === "investment" ? (
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Amount (₹)</label>
-                <input type="number" placeholder="0.00" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="input" autoFocus />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Account</label>
-                <select value={form.accountId} onChange={(e) => setForm({ ...form, accountId: Number(e.target.value) })} className="input">
-                  {accounts.map((a) => (<option key={a.id} value={a.id}>{a.name} ({a.type})</option>))}
-                </select>
-              </div>
-            </div>
-
-            {/* Dynamic fields */}
-            {formType === "income" || formType === "expense" ? (
-              <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Category</label>
-                  <div className="flex gap-2">
-                    <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="input flex-1">
-                      {Object.values(CATEGORY_GROUPS).flat().map(cat => (<option key={cat} value={cat}>{cat}</option>))}
-                      <option value="custom">Custom...</option>
-                    </select>
-                    {form.category === "custom" && (
-                      <input placeholder="Custom" className="input flex-1" onChange={(e) => setForm({ ...form, category: e.target.value })} />
-                    )}
-                  </div>
+                <InvestmentForm
+                  key={investmentFormKey}
+                  editingInvestment={null}
+                  onSave={async (payload) => {
+                    const res = await fetch("/api/manage/investments", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(payload),
+                    });
+                    if (!res.ok) {
+                      const err = await res.json().catch(() => ({}));
+                      alert(`Error: ${err.error || "Could not add investment"}`);
+                      return;
+                    }
+                    setIsOpen(false);
+                    setInvestmentFormKey((k) => k + 1);
+                    router.refresh();
+                  }}
+                  onCancel={() => setIsOpen(false)}
+                />
+                <div className="mt-3 p-3 rounded-lg" style={{ background: "var(--primary-soft)", border: "1px solid var(--border-accent)" }}>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    💡 Investments with a <strong>stock symbol</strong> or <strong>MF scheme code</strong> will automatically sync with the{" "}
+                    <Link href="/markets" className="font-semibold" style={{ color: "var(--primary)" }}>Live Markets</Link> page and{" "}
+                    <Link href="/investments" className="font-semibold" style={{ color: "var(--primary)" }}>Investment Dashboard</Link>.
+                    Use the search fields above to find & link your holding.
+                  </p>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Note</label>
-                  <input placeholder="Optional" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className="input" />
-                </div>
-              </div>
-            ) : formType === "investment" ? (
-              <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Asset Name</label><input placeholder="HDFC Index Fund" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input" /></div>
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Type</label><select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="input"><option value="Stocks">Stocks</option><option value="MutualFunds">Mutual Funds</option><option value="Gold">Gold</option><option value="Other">Other</option></select></div>
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Symbol / Code</label><input placeholder="RELIANCE.NS" value={form.symbol} onChange={(e) => setForm({ ...form, symbol: e.target.value })} className="input" /></div>
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Units</label><input type="number" placeholder="Qty" value={form.units} onChange={(e) => setForm({ ...form, units: e.target.value })} className="input" /></div>
-              </div>
-            ) : formType === "goal" ? (
-              <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Goal Name</label><input placeholder="New Car" value={form.goalName} onChange={(e) => setForm({ ...form, goalName: e.target.value })} className="input" /></div>
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Category</label><select value={form.goalCategory} onChange={(e) => setForm({ ...form, goalCategory: e.target.value })} className="input"><option value="Emergency">Emergency</option><option value="Vacation">Vacation</option><option value="House">House</option><option value="Car">Car</option><option value="Education">Education</option><option value="Wedding">Wedding</option><option value="Retirement">Retirement</option><option value="Custom">Custom</option></select></div>
-              </div>
-            ) : formType === "bill" ? (
-              <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Bill Name</label><input placeholder="Electricity" value={form.billName} onChange={(e) => setForm({ ...form, billName: e.target.value })} className="input" /></div>
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Category</label><select value={form.billCategory} onChange={(e) => setForm({ ...form, billCategory: e.target.value })} className="input">{BILL_CATEGORIES.map((c: string) => <option key={c} value={c}>{c}</option>)}</select></div>
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Due Date</label><input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} className="input" /></div>
-              </div>
-            ) : formType === "debt" ? (
-              <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Loan Name</label><input placeholder="Car Loan" value={form.debtName} onChange={(e) => setForm({ ...form, debtName: e.target.value })} className="input" /></div>
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Type</label><select value={form.debtType} onChange={(e) => setForm({ ...form, debtType: e.target.value })} className="input"><option value="HomeLoan">Home Loan</option><option value="CarLoan">Car Loan</option><option value="EducationLoan">Education Loan</option><option value="PersonalLoan">Personal Loan</option><option value="CreditCard">Credit Card</option></select></div>
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Interest (%)</label><input type="number" placeholder="8.5" value={form.rate} onChange={(e) => setForm({ ...form, rate: e.target.value })} className="input" /></div>
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>EMI (₹)</label><input type="number" placeholder="Monthly EMI" value={form.emi} onChange={(e) => setForm({ ...form, emi: e.target.value })} className="input" /></div>
-              </div>
-            ) : formType === "insurance" ? (
-              <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Policy Name</label><input placeholder="HDFC Life" value={form.insuranceName} onChange={(e) => setForm({ ...form, insuranceName: e.target.value })} className="input" /></div>
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Type</label><select value={form.insuranceType} onChange={(e) => setForm({ ...form, insuranceType: e.target.value })} className="input"><option value="Health">Health</option><option value="Life">Life</option><option value="Vehicle">Vehicle</option><option value="Property">Property</option></select></div>
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Coverage (₹)</label><input type="number" placeholder="500000" value={form.coverage} onChange={(e) => setForm({ ...form, coverage: e.target.value })} className="input" /></div>
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Renewal</label><input type="date" value={form.renewalDate} onChange={(e) => setForm({ ...form, renewalDate: e.target.value })} className="input" /></div>
               </div>
             ) : (
-              <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Plan Title</label><input placeholder="Buy House" value={form.annualTitle} onChange={(e) => setForm({ ...form, annualTitle: e.target.value })} className="input" /></div>
-                <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Category</label><select value={form.annualCategory} onChange={(e) => setForm({ ...form, annualCategory: e.target.value })} className="input"><option value="Financial">Financial</option><option value="Savings">Savings</option><option value="Investment">Investment</option><option value="Tax">Tax</option><option value="Purchase">Purchase</option></select></div>
-              </div>
-            )}
+              <>
+                {/* Amount + Account (non-investment types) */}
+                <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Amount (₹)</label>
+                    <input type="number" placeholder="0.00" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="input" autoFocus />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Account</label>
+                    <select value={form.accountId} onChange={(e) => setForm({ ...form, accountId: Number(e.target.value) })} className="input">
+                      {accounts.map((a) => (<option key={a.id} value={a.id}>{a.name} ({a.type})</option>))}
+                    </select>
+                  </div>
+                </div>
 
-            <button onClick={submit} disabled={loading || !form.amount} className="quick-add-btn w-full py-3 rounded-xl text-sm disabled:opacity-40">
-              {loading ? "Saving..." : `Save ${formType.charAt(0).toUpperCase() + formType.slice(1)}`}
-            </button>
+                {/* Dynamic fields for non-investment types */}
+                {formType === "income" || formType === "expense" ? (
+                  <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Category</label>
+                      <div className="flex gap-2">
+                        <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="input flex-1">
+                          {formType === "income"
+                            ? INCOME_CATS.map(cat => (<option key={cat} value={cat}>{cat}</option>))
+                            : EXPENSE_CATEGORIES.map(cat => (<option key={cat} value={cat}>{cat}</option>))
+                          }
+                          <option value="custom">Custom...</option>
+                        </select>
+                        {form.category === "custom" && (
+                          <input placeholder="Custom" className="input flex-1" onChange={(e) => setForm({ ...form, category: e.target.value })} />
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Note</label>
+                      <input placeholder="Optional" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className="input" />
+                    </div>
+                  </div>
+                ) : formType === "goal" ? (
+                  <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                    <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Goal Name</label><input placeholder="New Car" value={form.goalName} onChange={(e) => setForm({ ...form, goalName: e.target.value })} className="input" /></div>
+                    <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Category</label><select value={form.goalCategory} onChange={(e) => setForm({ ...form, goalCategory: e.target.value })} className="input"><option value="Emergency">Emergency</option><option value="Vacation">Vacation</option><option value="House">House</option><option value="Car">Car</option><option value="Education">Education</option><option value="Wedding">Wedding</option><option value="Retirement">Retirement</option><option value="Custom">Custom</option></select></div>
+                  </div>
+                ) : formType === "bill" ? (
+                  <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                    <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Bill Name</label><input placeholder="Electricity" value={form.billName} onChange={(e) => setForm({ ...form, billName: e.target.value })} className="input" /></div>
+                    <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Category</label><select value={form.billCategory} onChange={(e) => setForm({ ...form, billCategory: e.target.value })} className="input">{BILL_CATEGORIES.map((c: string) => <option key={c} value={c}>{c}</option>)}</select></div>
+                    <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Due Date</label><input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} className="input" /></div>
+                  </div>
+                ) : formType === "debt" ? (
+                  <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                    <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Loan Name</label><input placeholder="Car Loan" value={form.debtName} onChange={(e) => setForm({ ...form, debtName: e.target.value })} className="input" /></div>
+                    <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Type</label><select value={form.debtType} onChange={(e) => setForm({ ...form, debtType: e.target.value })} className="input"><option value="HomeLoan">Home Loan</option><option value="CarLoan">Car Loan</option><option value="EducationLoan">Education Loan</option><option value="PersonalLoan">Personal Loan</option><option value="CreditCard">Credit Card</option></select></div>
+                    <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Interest (%)</label><input type="number" placeholder="8.5" value={form.rate} onChange={(e) => setForm({ ...form, rate: e.target.value })} className="input" /></div>
+                    <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>EMI (₹)</label><input type="number" placeholder="Monthly EMI" value={form.emi} onChange={(e) => setForm({ ...form, emi: e.target.value })} className="input" /></div>
+                  </div>
+                ) : formType === "insurance" ? (
+                  <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                    <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Policy Name</label><input placeholder="HDFC Life" value={form.insuranceName} onChange={(e) => setForm({ ...form, insuranceName: e.target.value })} className="input" /></div>
+                    <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Type</label><select value={form.insuranceType} onChange={(e) => setForm({ ...form, insuranceType: e.target.value })} className="input"><option value="Health">Health</option><option value="Life">Life</option><option value="Vehicle">Vehicle</option><option value="Property">Property</option></select></div>
+                    <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Coverage (₹)</label><input type="number" placeholder="500000" value={form.coverage} onChange={(e) => setForm({ ...form, coverage: e.target.value })} className="input" /></div>
+                    <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Renewal</label><input type="date" value={form.renewalDate} onChange={(e) => setForm({ ...form, renewalDate: e.target.value })} className="input" /></div>
+                  </div>
+                ) : (
+                  <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                    <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Plan Title</label><input placeholder="Buy House" value={form.annualTitle} onChange={(e) => setForm({ ...form, annualTitle: e.target.value })} className="input" /></div>
+                    <div><label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Category</label><select value={form.annualCategory} onChange={(e) => setForm({ ...form, annualCategory: e.target.value })} className="input"><option value="Financial">Financial</option><option value="Savings">Savings</option><option value="Investment">Investment</option><option value="Tax">Tax</option><option value="Purchase">Purchase</option></select></div>
+                  </div>
+                )}
+
+                <button onClick={submit} disabled={loading || !form.amount} className="quick-add-btn w-full py-3 rounded-xl text-sm disabled:opacity-40">
+                  {loading ? "Saving..." : `Save ${formType.charAt(0).toUpperCase() + formType.slice(1)}`}
+                </button>
+              </>
+            )}
           </Card>
         </div>
       )}

@@ -102,11 +102,12 @@ export function KpiCard({
         <button
           type="button"
           aria-label={hidden ? `Show ${label}` : `Hide ${label}`}
+          title={hidden ? "Click to reveal value" : "Click to hide value (privacy mode)"}
           onClick={(e) => { e.stopPropagation(); toggle(key, privacyMode); }}
-          className="absolute top-3 right-3 w-7 h-7 rounded-lg grid place-items-center text-xs no-print opacity-0 hover:opacity-100 transition-opacity"
-          style={{ background: "var(--surface-3)", color: "var(--text-muted)", ...(clickable ? { opacity: 0.5 } : {}) }}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = clickable ? "0.5" : "0"; }}
+          className="absolute top-3 right-3 w-7 h-7 rounded-lg grid place-items-center text-xs no-print transition-opacity duration-200"
+          style={{ background: hidden ? "var(--warning-soft)" : "var(--surface-3)", color: hidden ? "var(--warning)" : "var(--text-muted)", opacity: clickable ? 0.6 : 0.3 }}
+          onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "scale(1.15)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.opacity = clickable ? "0.6" : "0.3"; e.currentTarget.style.transform = "scale(1)"; }}
         >
           {hidden ? "🙈" : "👁️"}
         </button>

@@ -1,3 +1,4 @@
+import { catchErr } from "@/lib/catch";
 import { db } from "@/db";
 import { transactions, accounts, investments, debts, bills, goals, members } from "@/db/schema";
 import { isSession, requireApiSession } from "@/lib/server-auth";

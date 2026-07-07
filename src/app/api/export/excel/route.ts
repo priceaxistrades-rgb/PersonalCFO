@@ -1,3 +1,4 @@
+import { catchErr } from "@/lib/catch";
 import { buildWorkbook } from "@/lib/excel";
 import { isSession, requireApiSession } from "@/lib/server-auth";
 

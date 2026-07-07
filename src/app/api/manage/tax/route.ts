@@ -1,3 +1,4 @@
+import { catchErr } from "@/lib/catch";
 import { db } from "@/db";
 import { taxProfile } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -10,8 +11,8 @@ export async function GET(req: Request) {
   try {
     const rows = await db.select().from(taxProfile).where(eq(taxProfile.userId, session.userId));
     return Response.json({ ok: true, row: rows[0] || null });
-  } catch {
-    return Response.json({ error: "Server error" }, { status: 500 });
+  } catch (err) {
+    return catchErr("manage_tax", err, session?.userId);
   }
 }
 
@@ -37,8 +38,8 @@ export async function POST(req: Request) {
       homeLoanInterest: b.homeLoanInterest,
     }).returning();
     return Response.json({ ok: true, row });
-  } catch {
-    return Response.json({ error: "Server error" }, { status: 500 });
+  } catch (err) {
+    return catchErr("manage_tax", err, session?.userId);
   }
 }
 
@@ -68,8 +69,8 @@ export async function PATCH(req: Request) {
       });
     }
     return Response.json({ ok: true });
-  } catch {
-    return Response.json({ error: "Server error" }, { status: 500 });
+  } catch (err) {
+    return catchErr("manage_tax", err, session?.userId);
   }
 }
 
@@ -79,7 +80,7 @@ export async function DELETE(req: Request) {
   try {
     await db.delete(taxProfile).where(eq(taxProfile.userId, session.userId));
     return Response.json({ ok: true });
-  } catch {
-    return Response.json({ error: "Server error" }, { status: 500 });
+  } catch (err) {
+    return catchErr("manage_tax", err, session?.userId);
   }
 }

@@ -1,3 +1,4 @@
+import { catchErr } from "@/lib/catch";
 import { db } from "@/db";
 import { watchlist } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -24,8 +25,8 @@ export async function POST(req: Request) {
       })
       .returning();
     return Response.json({ ok: true, row });
-  } catch {
-    return Response.json({ error: "Server error" }, { status: 500 });
+  } catch (err) {
+    return catchErr("watchlist", err, session?.userId);
   }
 }
 
@@ -40,7 +41,7 @@ export async function DELETE(req: Request) {
 
     await db.delete(watchlist).where(and(eq(watchlist.id, id), eq(watchlist.userId, session.userId)));
     return Response.json({ ok: true });
-  } catch {
-    return Response.json({ error: "Server error" }, { status: 500 });
+  } catch (err) {
+    return catchErr("watchlist", err, session?.userId);
   }
 }

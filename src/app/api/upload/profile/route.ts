@@ -1,3 +1,4 @@
+import { catchErr } from "@/lib/catch";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { users } from "@/db/schema";
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
     const uploadDir = path.join(process.cwd(), "public/uploads");
     try {
       await mkdir(uploadDir, { recursive: true });
-    } catch {
+    } catch (err) {
       // Directory may already exist
     }
 

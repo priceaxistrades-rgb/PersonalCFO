@@ -1,3 +1,4 @@
+import { catchErr } from "@/lib/catch";
 import { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";

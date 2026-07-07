@@ -112,8 +112,15 @@ export function useLiveInvestments(investments: Investment[]) {
       const key = instrumentKey(i);
       const q = key ? quotes[key] : undefined;
       const units = num(i.units);
+      const invested = num(i.invested);
+      const storedCurrent = num(i.currentValue);
       const hasLiveValue = Boolean(q?.ok && q.price > 0 && units > 0);
-      const liveCurrentValue = hasLiveValue ? q!.price * units : num(i.currentValue);
+      // Live value: prefer live price × units; fallback to stored currentValue; lastly invested
+      const liveCurrentValue = hasLiveValue
+        ? q!.price * units
+        : storedCurrent > 0
+          ? storedCurrent
+          : invested;
       return {
         ...i,
         liveCurrentValue,
@@ -249,19 +256,23 @@ export function InvestmentHoldings({ liveInvestments, onSell }: { liveInvestment
                   </span>
                 )}
               </Td>
-              <Td right muted>{inr(inv, { compact: true })}</Td>
+              <Td right muted>{inv > 0 ? inr(inv, { compact: true }) : "—"}</Td>
               <Td right strong>{inr(cur, { compact: true })}</Td>
               <Td right>
-                <span style={{ color: p >= 0 ? "var(--success)" : "var(--danger)" }}>
-                  {p >= 0 ? "+" : "−"}{inr(Math.abs(p), { compact: true })} ({pp.toFixed(1)}%)
-                </span>
+                {inv > 0 ? (
+                  <span style={{ color: p >= 0 ? "var(--success)" : "var(--danger)" }}>
+                    {p >= 0 ? "+" : "−"}{inr(Math.abs(p), { compact: true })} ({pp.toFixed(1)}%)
+                  </span>
+                ) : (
+                  <span style={{ color: "var(--text-faint)" }}>Set avg price</span>
+                )}
               </Td>
               <Td right><span style={{ color: (i.liveCagr1Y ?? 0) >= 0 ? "var(--success)" : "var(--danger)" }}>{displayPct(i.liveCagr1Y)}</span></Td>
               <Td right><span style={{ color: (i.liveCagr3Y ?? 0) >= 0 ? "var(--success)" : "var(--danger)" }}>{displayPct(i.liveCagr3Y)}</span></Td>
               <Td right><span style={{ color: (i.liveCagr5Y ?? 0) >= 0 ? "var(--success)" : "var(--danger)" }}>{displayPct(i.liveCagr5Y)}</span></Td>
               <Td right>
                 <div className="flex gap-1 justify-end no-print">
-                  {onSell && (Number(i.units || 0) > 0 || Number(i.invested || 0) > 0) && (
+                  {onSell && (Number(i.units || 0) > 0 || Number(i.invested || 0) > 0 || Number(i.currentValue || 0) > 0) && (
                     <button onClick={() => onSell(i)} className="btn btn-ghost text-[11px] px-2 py-1" style={{ color: "var(--warning)" }}>📉 Sell</button>
                   )}
                   {chart ? (
@@ -304,10 +315,22 @@ export function InvestmentAllocation({ liveInvestments }: { liveInvestments: Liv
 
 export function InvestmentFooter() {
   return (
-    <Card className="!p-4">
-      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-        🔗 <span className="font-semibold" style={{ color: "var(--text)" }}>Auto-sync rule:</span> For stocks and mutual funds, enter symbol/scheme code plus units. Current value is then calculated as live price/NAV × units on the Investments page. FD, PPF, real estate and other assets remain manual because they do not have live exchange prices.
-      </p>
+    <Card className="!p-4" style={{ border: "1px solid var(--border-accent)" }}>
+      <div className="flex items-start gap-3">
+        <span className="text-lg flex-shrink-0">🔗</span>
+        <div className="space-y-1.5">
+          <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>Auto-Sync Note</p>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            <strong style={{ color: "var(--success)" }}>Stocks & Mutual Funds:</strong> Enter symbol/scheme code + units + avg buy price → Current value auto-calculates as live price/NAV × units every 60 seconds.
+          </p>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            <strong style={{ color: "var(--primary)" }}>FD, PPF, EPF, Real Estate, etc.:</strong> These do not have live exchange prices. Enter invested & current value manually — update when needed.
+          </p>
+          <p className="text-xs font-medium" style={{ color: "var(--warning)" }}>
+            💡 Tip: Always enter average buy price when adding stocks/MFs. This ensures accurate P&L tracking and invested amount display across Live Markets & Investment Dashboard.
+          </p>
+        </div>
+      </div>
     </Card>
   );
 }

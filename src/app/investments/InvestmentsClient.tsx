@@ -16,8 +16,8 @@ import {
   InvestmentForm,
   InvestmentManagementTable,
   SellInvestmentModal,
-  type InvestmentRow,
 } from "../settings/InvestmentsManager";
+import type { InvestmentRow } from "@/lib/types";
 
 export function InvestmentsPageClient({
   initialInvestments,
@@ -73,6 +73,7 @@ export function InvestmentsPageClient({
         subtitle="Live portfolio value synced from stock prices and mutual fund NAVs"
       />
 
+      {/* Auto-sync status banner */}
       <InvestmentKpis liveInvestments={liveInvestments} loading={loading} updatedAt={updatedAt} error={error} loadQuotes={loadQuotes} />
 
       <div className="flex justify-end mb-2 no-print">
@@ -85,6 +86,7 @@ export function InvestmentsPageClient({
         <InvestmentForm editingInvestment={editingInvestment} onSave={handleSave} onCancel={() => { setShowForm(false); setEditingInvestment(null); }} />
       )}
 
+      {/* 1. Live Holdings table */}
       <InvestmentHoldings
         liveInvestments={liveInvestments}
         onSell={(li: LiveInvestment) => {
@@ -92,16 +94,19 @@ export function InvestmentsPageClient({
         }}
       />
 
+      {/* 2. Asset Allocation chart */}
       <InvestmentAllocation liveInvestments={liveInvestments} />
 
-      <InvestmentFooter />
-
+      {/* 3. Investment Management table — below Asset Allocation as requested */}
       <InvestmentManagementTable
         investments={initialInvestments as unknown as InvestmentRow[]}
         onEdit={startEdit}
         onDelete={handleDelete}
         onSell={(i) => setSellTarget(i)}
       />
+
+      {/* 4. Auto-sync note at the bottom */}
+      <InvestmentFooter />
 
       {sellTarget && (
         <SellInvestmentModal

@@ -12,8 +12,18 @@ const MOBILE_NAV = [
 ];
 
 const MORE_LINKS = [
+  { href: "/brief", label: "Morning Brief", icon: "☀️" },
+  { href: "/simulator", label: "Life Simulator", icon: "🔬" },
+  { href: "/opportunities", label: "Opportunities", icon: "🔍" },
+  { href: "/stress", label: "Stress Meter", icon: "😰" },
+  { href: "/coach", label: "Wealth Coach", icon: "🧠" },
+  { href: "/dreams", label: "Dreams", icon: "✨" },
+  { href: "/control", label: "Control", icon: "🚀" },
+  { href: "/health", label: "Health Score", icon: "❤️" },
+  { href: "/ai", label: "AI Twin", icon: "🤖" },
   { href: "/budget", label: "Budget", icon: "📊" },
   { href: "/savings", label: "Savings", icon: "🐖" },
+  { href: "/wealth", label: "Wealth Map", icon: "🗺️" },
   { href: "/investments", label: "Invest", icon: "💎" },
   { href: "/debt", label: "Loans", icon: "🏦" },
   { href: "/networth", label: "Net Worth", icon: "💎" },
@@ -94,6 +104,11 @@ export function MobileNav() {
                 </Link>
               ))}
             </div>
+
+            {/* Hint: theme is in sidebar */}
+            <p className="text-[11px] text-center mt-4 pt-3 border-t" style={{ color: "var(--text-faint)", borderColor: "var(--border)" }}>
+              🎨 To change theme, tap <strong>☰ Menu</strong> → see <strong>Theme</strong> above Net Worth
+            </p>
           </div>
         </div>
       )}

@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 import { num } from "./format";
+import { logger } from "./logger";
 import {
   getAccounts,
   getAnnualPlans,
@@ -13,7 +14,7 @@ import {
   getMembers,
   getSnapshots,
   getTaxProfile,
-  getTransactions,
+  getAllTransactions,
   getWatchlist,
 } from "./data";
 
@@ -86,9 +87,18 @@ function moneyCell(ws: ExcelJS.Worksheet, r: number, c: number, value: number, c
 
 // ── Main builder ──────────────────────────────────────────────
 export async function buildWorkbook(): Promise<ExcelJS.Buffer> {
+  try {
+    return await buildWorkbookInner();
+  } catch (err) {
+    logger.error("Excel export failed", err);
+    throw new Error("Failed to generate Excel file. Please try again.");
+  }
+}
+
+async function buildWorkbookInner(): Promise<ExcelJS.Buffer> {
   const [members, accounts, txns, budgets, goals, investments, debts, bills, insurance, snaps, annual, tax, emergency, watch] =
     await Promise.all([
-      getMembers(), getAccounts(), getTransactions(), getBudgets(), getGoals(),
+      getMembers(), getAccounts(), getAllTransactions(), getBudgets(), getGoals(),
       getInvestments(), getDebts(), getBills(), getInsurance(), getSnapshots(),
       getAnnualPlans(), getTaxProfile(), getEmergencyItems(), getWatchlist(),
     ]);

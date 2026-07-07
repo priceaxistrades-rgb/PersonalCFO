@@ -1,3 +1,4 @@
+import { catchErr } from "@/lib/catch";
 import { clearSessionCookieHeader } from "@/lib/server-auth";
 
 export async function POST() {

@@ -6,7 +6,7 @@ import { PrintButton } from "@/components/PrintButton";
 import { ExcelButton } from "@/components/ExcelButton";
 import { inr, num } from "@/lib/format";
 import {
-  getTransactions,
+  getAllTransactions,
   getSnapshots,
   getInvestments,
   lastNMonths,
@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
   const [txns, snaps, invs] = await Promise.all([
-    getTransactions(),
+    getAllTransactions(),
     getSnapshots(),
     getInvestments(),
   ]);

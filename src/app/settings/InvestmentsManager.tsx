@@ -1,38 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Badge } from "@/components/ui/Card";
 import { Table, Tr, Td } from "@/components/ui/Table";
+import { AccessibleModal } from "@/components/AccessibleModal";
 import { inr } from "@/lib/format";
+import type { InvestmentRow, AccountOption, SellFormState, InvestmentFormData, InvestmentInitialData } from "@/lib/types";
 
 const inputStyle = { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" };
 export const TYPES = ["Stocks", "MutualFunds", "PPF", "EPF", "NPS", "FD", "RD", "Gold", "Silver", "Bonds", "Crypto", "RealEstate", "Other"];
 
-export type InvestmentRow = {
-  id: number;
-  name: string;
-  type: string;
-  invested: string;
-  currentValue: string;
-  annualReturn: string | null;
-  symbol: string | null;
-  schemeCode: string | null;
-  units: string | null;
-  startDate: string | null;
-};
-
-type StockResult = { symbol: string; name: string; exchange: string; sector?: string };
-type MfResult = { schemeCode: number; schemeName: string };
-
 /**
  * Build a clean API payload from the form state.
  * Strips extra fields (avgPrice, kind, price) that Zod strict mode would reject.
+ * Uses toFixed() for monetary values to avoid floating-point string artifacts.
  */
-function buildPayload(form: any): Record<string, unknown> {
-  // Use toFixed() for monetary values to avoid floating-point string artifacts
-  // e.g. String(7.199999999999999) → "7.199999999999999" (fails Zod)
-  //      (7.2).toFixed(2)         → "7.20"               (passes Zod)
+function buildPayload(form: InvestmentFormData): Record<string, unknown> {
   const invested = Number(form.invested) || 0;
   const currentValue = Number(form.currentValue) || 0;
   const annualReturn = Number(form.annualReturn) || 0;
@@ -59,16 +43,16 @@ export function InvestmentForm({
   onCancel,
 }: {
   editingInvestment: InvestmentRow | null;
-  initialData?: { name?: string; symbol?: string; schemeCode?: string; type?: string; price?: number; kind?: string };
+  initialData?: InvestmentInitialData;
   onSave: (payload: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
 }) {
   const [stockQuery, setStockQuery] = useState("");
-  const [stockResults, setStockResults] = useState<StockResult[]>([]);
+  const [stockResults, setStockResults] = useState<{ symbol: string; name: string; exchange: string; sector?: string }[]>([]);
   const [mfQuery, setMfQuery] = useState("");
-  const [mfResults, setMfResults] = useState<MfResult[]>([]);
+  const [mfResults, setMfResults] = useState<{ schemeCode: number; schemeName: string }[]>([]);
   const [searching, setSearching] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<InvestmentFormData>({
     name: "",
     type: "Stocks",
     avgPrice: 0,
@@ -127,7 +111,6 @@ export function InvestmentForm({
 
   const recalcFromUnits = (units: string, avgPrice: number) => {
     const u = Number(units) || 0;
-    // Use toFixed + Number to avoid floating-point drift in display
     const invested = Number((u * avgPrice).toFixed(2));
     const currentValue = livePrice > 0 ? Number((u * livePrice).toFixed(2)) : invested;
     return { invested, currentValue };
@@ -146,7 +129,7 @@ export function InvestmentForm({
   useEffect(() => {
     if (form.type !== "Stocks") return;
     const q = stockQuery.trim();
-    if (!q) { const t = setTimeout(() => setStockResults([]), 0); return () => clearTimeout(t); }
+    if (!q) { setStockResults([]); return; }
     let active = true;
     const timer = setTimeout(() => {
       setSearching(true);
@@ -162,7 +145,7 @@ export function InvestmentForm({
   useEffect(() => {
     if (form.type !== "MutualFunds") return;
     const q = mfQuery.trim();
-    if (q.length < 2) { const t = setTimeout(() => setMfResults([]), 0); return () => clearTimeout(t); }
+    if (q.length < 2) { setMfResults([]); return; }
     let active = true;
     const timer = setTimeout(() => {
       setSearching(true);
@@ -175,13 +158,13 @@ export function InvestmentForm({
     return () => { active = false; clearTimeout(timer); };
   }, [mfQuery, form.type]);
 
-  const chooseStock = (stock: StockResult) => {
+  const chooseStock = (stock: { symbol: string; name: string; exchange: string; sector?: string }) => {
     setForm({ ...form, type: "Stocks", symbol: stock.symbol, schemeCode: "", name: form.name || stock.name });
     setStockQuery(`${stock.symbol} · ${stock.name}`);
     setStockResults([]);
   };
 
-  const chooseMf = (fund: MfResult) => {
+  const chooseMf = (fund: { schemeCode: number; schemeName: string }) => {
     setForm({ ...form, type: "MutualFunds", schemeCode: String(fund.schemeCode), symbol: "", name: form.name || fund.schemeName });
     setMfQuery(`${fund.schemeCode} · ${fund.schemeName}`);
     setMfResults([]);
@@ -190,7 +173,16 @@ export function InvestmentForm({
   const hasLivePrice = livePrice > 0;
 
   const handleSave = () => {
-    const payload = buildPayload(form);
+    const finalForm = { ...form };
+    const u = Number(finalForm.units) || 0;
+    if (u > 0 && Number(finalForm.invested) <= 0) {
+      const effectiveAvgPrice = finalForm.avgPrice > 0 ? finalForm.avgPrice : livePrice;
+      if (effectiveAvgPrice > 0) {
+        finalForm.invested = Number((u * effectiveAvgPrice).toFixed(2));
+        finalForm.currentValue = livePrice > 0 ? Number((u * livePrice).toFixed(2)) : finalForm.invested;
+      }
+    }
+    const payload = buildPayload(finalForm);
     if (editingInvestment) {
       (payload as any).id = editingInvestment.id;
     }
@@ -198,29 +190,34 @@ export function InvestmentForm({
   };
 
   return (
-    <div className="card p-5 space-y-4 fade-in-up">
+    <div className="card p-5 space-y-4 fade-in-up" role="form" aria-label="Investment form">
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Holding Name</label>
-          <input placeholder="e.g. Reliance Industries" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input" />
+          <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="inv-name">Holding Name</label>
+          <input id="inv-name" placeholder="e.g. Reliance Industries" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input" />
         </div>
         <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Category</label>
-          <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value, symbol: "", schemeCode: "" })} className="input">
+          <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="inv-type">Category</label>
+          <select id="inv-type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value, symbol: "", schemeCode: "" })} className="input">
             {TYPES.map((t) => (<option key={t}>{t}</option>))}
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Units / Quantity</label>
-          <input type="number" placeholder="e.g. 10" value={form.units} onChange={(e) => handleUnitsChange(e.target.value)} className="input" autoFocus={!editingInvestment && !!initialData} />
+          <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="inv-units">Units / Quantity</label>
+          <input id="inv-units" type="number" placeholder="e.g. 10" value={form.units} onChange={(e) => handleUnitsChange(e.target.value)} className="input" autoFocus={!editingInvestment && !!initialData} />
         </div>
       </div>
 
       {/* Average Price */}
       <div className="grid sm:grid-cols-2 gap-4">
+        {Number(form.units) > 0 && form.avgPrice <= 0 && (
+          <div className="sm:col-span-2 p-2.5 rounded-lg text-xs font-medium" style={{ background: "var(--warning-soft)", color: "var(--warning)", border: "1px solid var(--warning)" }} role="alert">
+            ⚠️ Enter average buy price to track invested amount & P&L. Without it, invested will default to live price × units.
+          </div>
+        )}
         <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Average Buy Price (₹ per unit)</label>
-          <input type="number" step="0.01" placeholder="e.g. 2450.50" value={form.avgPrice || ""} onChange={(e) => handleAvgPriceChange(Number(e.target.value))} className="input" />
+          <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="inv-avg-price">Average Buy Price (₹ per unit)</label>
+          <input id="inv-avg-price" type="number" step="0.01" placeholder="e.g. 2450.50" value={form.avgPrice || ""} onChange={(e) => handleAvgPriceChange(Number(e.target.value))} className="input" />
           <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>
             Invested = avg price × units
             {form.units && form.avgPrice ? ` = ₹${(Number(form.units) * form.avgPrice).toLocaleString("en-IN", { maximumFractionDigits: 2 })}` : ""}
@@ -243,12 +240,13 @@ export function InvestmentForm({
       {/* Stock / MF search */}
       {form.type === "Stocks" && (
         <div className="relative">
-          <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Link to Stock</label>
-          <input placeholder="Search e.g. Reliance, TCS, HDFC" value={stockQuery} onChange={(e) => { setStockQuery(e.target.value); setForm({ ...form, symbol: e.target.value.toUpperCase() }); }} className="input" />
+          <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="inv-stock-search">Link to Stock</label>
+          <input id="inv-stock-search" placeholder="Search e.g. Reliance, TCS, HDFC" value={stockQuery} onChange={(e) => { setStockQuery(e.target.value); setForm({ ...form, symbol: e.target.value.toUpperCase() }); }} className="input" aria-describedby="stock-results-desc" />
+          <span id="stock-results-desc" className="sr-only">{stockResults.length > 0 ? `${stockResults.length} results found` : "No results"}</span>
           {stockResults.length > 0 && (
-            <div className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto rounded-xl border shadow-xl" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+            <div className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto rounded-xl border shadow-xl" style={{ background: "var(--surface)", borderColor: "var(--border)" }} role="listbox" aria-label="Stock search results">
               {stockResults.map((s) => (
-                <button key={s.symbol} onClick={() => chooseStock(s)} className="w-full text-left px-3 py-2.5 border-b text-sm hover:opacity-80 transition-opacity" style={{ borderColor: "var(--border)", color: "var(--text)" }}>
+                <button key={s.symbol} onClick={() => chooseStock(s)} className="w-full text-left px-3 py-2.5 border-b text-sm hover:opacity-80 transition-opacity" style={{ borderColor: "var(--border)", color: "var(--text)" }} role="option" aria-label={`${s.name} (${s.symbol})`}>
                   <span className="font-medium">{s.name}</span>
                   <span className="block text-[11px]" style={{ color: "var(--text-faint)" }}>{s.symbol} · {s.exchange}{s.sector ? ` · ${s.sector}` : ""}</span>
                 </button>
@@ -260,12 +258,12 @@ export function InvestmentForm({
 
       {form.type === "MutualFunds" && (
         <div className="relative">
-          <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Link to Mutual Fund</label>
-          <input placeholder="Search e.g. Parag Parikh, Nifty Index" value={mfQuery} onChange={(e) => { setMfQuery(e.target.value); setForm({ ...form, schemeCode: e.target.value }); }} className="input" />
+          <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="inv-mf-search">Link to Mutual Fund</label>
+          <input id="inv-mf-search" placeholder="Search e.g. Parag Parikh, Nifty Index" value={mfQuery} onChange={(e) => { setMfQuery(e.target.value); setForm({ ...form, schemeCode: e.target.value }); }} className="input" />
           {mfResults.length > 0 && (
-            <div className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto rounded-xl border shadow-xl" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+            <div className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto rounded-xl border shadow-xl" style={{ background: "var(--surface)", borderColor: "var(--border)" }} role="listbox" aria-label="Mutual fund search results">
               {mfResults.map((m) => (
-                <button key={m.schemeCode} onClick={() => chooseMf(m)} className="w-full text-left px-3 py-2.5 border-b text-sm hover:opacity-80 transition-opacity" style={{ borderColor: "var(--border)", color: "var(--text)" }}>
+                <button key={m.schemeCode} onClick={() => chooseMf(m)} className="w-full text-left px-3 py-2.5 border-b text-sm hover:opacity-80 transition-opacity" style={{ borderColor: "var(--border)", color: "var(--text)" }} role="option" aria-label={m.schemeName}>
                   <span className="font-medium">{m.schemeName}</span>
                   <span className="block text-[11px]" style={{ color: "var(--text-faint)" }}>Scheme Code: {m.schemeCode}</span>
                 </button>
@@ -275,7 +273,7 @@ export function InvestmentForm({
         </div>
       )}
 
-      {searching && <p className="text-xs" style={{ color: "var(--text-muted)" }}>Searching live instruments...</p>}
+      {searching && <p className="text-xs" style={{ color: "var(--text-muted)" }} aria-live="polite">Searching live instruments...</p>}
 
       {/* Computed values preview */}
       {(form.units && (form.avgPrice || hasLivePrice)) && (
@@ -302,28 +300,28 @@ export function InvestmentForm({
         <summary className="text-[11px] font-semibold cursor-pointer" style={{ color: "var(--text-faint)" }}>⚙️ Advanced: Override values & set dates</summary>
         <div className="grid sm:grid-cols-3 gap-3 mt-3">
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Override Invested (₹)</label>
-            <input type="number" value={form.invested} onChange={(e) => setForm({ ...form, invested: Number(e.target.value) })} className="input" />
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="inv-override-invested">Override Invested (₹)</label>
+            <input id="inv-override-invested" type="number" value={form.invested} onChange={(e) => setForm({ ...form, invested: Number(e.target.value) })} className="input" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Override Current Value (₹)</label>
-            <input type="number" value={form.currentValue} onChange={(e) => setForm({ ...form, currentValue: Number(e.target.value) })} className="input" />
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="inv-override-current">Override Current Value (₹)</label>
+            <input id="inv-override-current" type="number" value={form.currentValue} onChange={(e) => setForm({ ...form, currentValue: Number(e.target.value) })} className="input" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Annual Return %</label>
-            <input type="number" step="0.01" value={form.annualReturn} onChange={(e) => setForm({ ...form, annualReturn: Number(e.target.value) })} className="input" />
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="inv-return">Annual Return %</label>
+            <input id="inv-return" type="number" step="0.01" value={form.annualReturn} onChange={(e) => setForm({ ...form, annualReturn: Number(e.target.value) })} className="input" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Purchase Date</label>
-            <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="input" />
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="inv-date">Purchase Date</label>
+            <input id="inv-date" type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="input" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Stock Symbol</label>
-            <input value={form.symbol} onChange={(e) => setForm({ ...form, symbol: e.target.value.toUpperCase() })} className="input" />
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="inv-symbol">Stock Symbol</label>
+            <input id="inv-symbol" value={form.symbol} onChange={(e) => setForm({ ...form, symbol: e.target.value.toUpperCase() })} className="input" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>MF Scheme Code</label>
-            <input value={form.schemeCode} onChange={(e) => setForm({ ...form, schemeCode: e.target.value })} className="input" />
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="inv-scheme">MF Scheme Code</label>
+            <input id="inv-scheme" value={form.schemeCode} onChange={(e) => setForm({ ...form, schemeCode: e.target.value })} className="input" />
           </div>
         </div>
       </details>
@@ -337,7 +335,7 @@ export function InvestmentForm({
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SELL / REDEEM MODAL
+   SELL / REDEEM MODAL — Accessible with focus trap
    ═══════════════════════════════════════════════════════════════ */
 
 export function SellInvestmentModal({
@@ -349,7 +347,7 @@ export function SellInvestmentModal({
 }: {
   investment: InvestmentRow;
   livePrice: number | null;
-  accounts: { id: number; name: string; type: string }[];
+  accounts: AccountOption[];
   onClose: () => void;
   onSold: () => void;
 }) {
@@ -360,11 +358,12 @@ export function SellInvestmentModal({
   const hasUnits = currentUnits > 0;
   const currentInvested = Number(investment.invested) || 0;
   const currentValue = Number(investment.currentValue) || 0;
-  const [form, setForm] = useState({
+  const effectiveValue = currentValue > 0 ? currentValue : currentInvested;
+  const [form, setForm] = useState<SellFormState>({
     sellUnits: currentUnits,
-    sellPrice: livePrice || (hasUnits ? currentValue / currentUnits : 0),
-    sellAmount: currentValue, // for non-unit investments
-    accountId: accounts[0]?.id || "",
+    sellPrice: livePrice || (hasUnits ? effectiveValue / currentUnits : 0),
+    sellAmount: effectiveValue,
+    accountId: accounts[0]?.id ? String(accounts[0].id) : "",
     settled: false,
   });
 
@@ -372,25 +371,22 @@ export function SellInvestmentModal({
     ? Number((Number(form.sellUnits) * form.sellPrice).toFixed(2))
     : Number(form.sellAmount) || 0;
   const remainingUnits = currentUnits - Number(form.sellUnits);
-  const isFullSell = hasUnits ? remainingUnits <= 0 : Number(form.sellAmount) >= currentValue;
+  const isFullSell = hasUnits ? remainingUnits <= 0 : Number(form.sellAmount) >= effectiveValue;
 
   const handleSell = async () => {
     if (hasUnits && (!form.sellUnits || form.sellUnits <= 0)) { setError("Enter units to sell"); return; }
     if (hasUnits && form.sellUnits > currentUnits) { setError(`You only have ${currentUnits} units`); return; }
     if (!hasUnits && (!form.sellAmount || Number(form.sellAmount) <= 0)) { setError("Enter amount to sell"); return; }
-    if (!hasUnits && Number(form.sellAmount) > currentValue) { setError(`Current value is only ₹${currentValue.toFixed(2)}`); return; }
+    if (!hasUnits && Number(form.sellAmount) > effectiveValue) { setError(`Current value is only ₹${effectiveValue.toFixed(2)}`); return; }
     if (accounts.length > 0 && !form.accountId) { setError("Select a bank account to receive proceeds"); return; }
     setLoading(true);
     setError("");
 
     try {
-      // ── Safe number formatting ──
-      // JavaScript floating-point subtraction (e.g. 10.5 - 3.3 = 7.199999999999999)
-      // produces strings that fail Zod's regex. Use toFixed() then clean up.
-      let remainingUnitsStr: string;
       let investedStr: string;
       let currentValueStr: string;
       let sellAmountStr: string;
+      let remainingUnitsStr: string;
 
       if (hasUnits) {
         const investedPerUnit = Number(investment.invested) / (currentUnits || 1);
@@ -402,15 +398,14 @@ export function SellInvestmentModal({
         currentValueStr = newCurrentValueNum.toFixed(2);
         sellAmountStr = sellAmount.toFixed(2);
       } else {
-        // No units tracked — sell by amount
-        const sellPortion = Number(form.sellAmount) / currentValue; // fraction being sold
+        const sellPortion = Number(form.sellAmount) / effectiveValue;
         remainingUnitsStr = "0";
         investedStr = isFullSell ? "0.00" : Number((currentInvested * (1 - sellPortion)).toFixed(2)).toFixed(2);
-        currentValueStr = isFullSell ? "0.00" : Number((currentValue * (1 - sellPortion)).toFixed(2)).toFixed(2);
+        currentValueStr = isFullSell ? "0.00" : Number((effectiveValue * (1 - sellPortion)).toFixed(2)).toFixed(2);
         sellAmountStr = Number(form.sellAmount).toFixed(2);
       }
 
-      // 1. Update investment (reduce units/value)
+      // Update investment (reduce units/value)
       const invPayload: Record<string, unknown> = {
         id: investment.id,
         invested: investedStr,
@@ -426,11 +421,11 @@ export function SellInvestmentModal({
       });
       if (!invRes.ok) {
         const d = await invRes.json().catch(() => ({}));
-        const detail = d.details ? ` (${Object.entries(d.details).map(([k,v]) => `${k}: ${v}`).join("; ")})` : "";
+        const detail = d.details ? ` (${Object.entries(d.details).map(([k, v]) => `${k}: ${v}`).join("; ")})` : "";
         throw new Error((d.error || "Failed to update investment") + detail);
       }
 
-      // 2. Record income transaction (sale proceeds)
+      // Record income transaction (sale proceeds)
       const txnRes = await fetch("/api/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -447,19 +442,8 @@ export function SellInvestmentModal({
       });
       if (!txnRes.ok) {
         const d = await txnRes.json().catch(() => ({}));
-        const detail = d.details ? ` (${Object.entries(d.details).map(([k,v]) => `${k}: ${v}`).join("; ")})` : "";
+        const detail = d.details ? ` (${Object.entries(d.details).map(([k, v]) => `${k}: ${v}`).join("; ")})` : "";
         throw new Error((d.error || "Failed to record sale transaction") + detail);
-      }
-
-      // 3. If settled, update account balance immediately
-      if (form.settled) {
-        const acct = accounts.find((a) => a.id === Number(form.accountId));
-        if (acct) {
-          // Use a deposit-style approach via the accounts API
-          // The transaction already recorded it, but we also need to update the balance
-          // The transaction POST with accountId should auto-update balance if that hook exists,
-          // but if not, we can do it manually. Let's just mark it settled.
-        }
       }
 
       onSold();
@@ -473,135 +457,134 @@ export function SellInvestmentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <Card variant="glass" className="w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto scale-in" style={{ borderColor: "var(--border-accent)" }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-5">
-          <h3 className="font-bold text-lg flex items-center gap-2" style={{ color: "var(--text-heading)" }}>
-            <span className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: "linear-gradient(135deg, var(--warning), var(--danger))" }}>📉</span>
-            Sell / Redeem
-          </h3>
-          <button onClick={onClose} className="btn btn-ghost w-8 h-8 rounded-full text-xs">✕</button>
-        </div>
+    <AccessibleModal isOpen={true} onClose={onClose} title="Sell / Redeem" size="md">
+      <div className="flex justify-between items-center mb-5">
+        <h3 id="modal-title" className="font-bold text-lg flex items-center gap-2" style={{ color: "var(--text-heading)" }}>
+          <span className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: "linear-gradient(135deg, var(--warning), var(--danger))" }} aria-hidden="true">📉</span>
+          Sell / Redeem
+        </h3>
+        <button onClick={onClose} className="btn btn-ghost w-8 h-8 rounded-full text-xs" aria-label="Close sell modal">✕</button>
+      </div>
 
-        <div className="p-3 rounded-lg mb-4" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
-          <p className="font-semibold" style={{ color: "var(--text-heading)" }}>{investment.name}</p>
-          <div className="flex gap-2 mt-1 flex-wrap">
-            <span className="badge badge-neutral">{investment.type}</span>
-            {hasUnits ? (
-              <span className="badge badge-primary">{currentUnits} units held</span>
-            ) : (
-              <span className="badge badge-primary">₹{currentInvested.toLocaleString("en-IN", { maximumFractionDigits: 2 })} invested</span>
-            )}
-            {livePrice ? <span className="badge badge-success">Live: ₹{livePrice.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span> : null}
-          </div>
-        </div>
-
-        {error && <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: "var(--danger-soft)", color: "var(--danger)" }}>{error}</div>}
-
-        <div className="space-y-4">
+      <div className="p-3 rounded-lg mb-4" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+        <p className="font-semibold" style={{ color: "var(--text-heading)" }}>{investment.name}</p>
+        <div className="flex gap-2 mt-1 flex-wrap">
+          <span className="badge badge-neutral">{investment.type}</span>
           {hasUnits ? (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Units to Sell</label>
-                <input type="number" step="0.0001" value={form.sellUnits} onChange={(e) => setForm({ ...form, sellUnits: Number(e.target.value) })} className="input" max={currentUnits} />
-                <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>Max: {currentUnits} units</p>
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Sell Price (₹/unit)</label>
-                <input type="number" step="0.01" value={form.sellPrice} onChange={(e) => setForm({ ...form, sellPrice: Number(e.target.value) })} className="input" />
-                <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>
-                  {livePrice ? "Pre-filled from live price" : "Enter actual sell price"}
-                </p>
+            <span className="badge badge-primary">{currentUnits} units held</span>
+          ) : (
+            <span className="badge badge-primary">₹{effectiveValue.toLocaleString("en-IN", { maximumFractionDigits: 2 })} current value</span>
+          )}
+          {livePrice ? <span className="badge badge-success">Live: ₹{livePrice.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span> : null}
+        </div>
+      </div>
+
+      {error && <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: "var(--danger-soft)", color: "var(--danger)" }} role="alert">{error}</div>}
+
+      <div className="space-y-4">
+        {hasUnits ? (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="sell-units">Units to Sell</label>
+              <input id="sell-units" type="number" step="0.0001" value={form.sellUnits} onChange={(e) => setForm({ ...form, sellUnits: Number(e.target.value) })} className="input" max={currentUnits} />
+              <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>Max: {currentUnits} units</p>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="sell-price">Sell Price (₹/unit)</label>
+              <input id="sell-price" type="number" step="0.01" value={form.sellPrice} onChange={(e) => setForm({ ...form, sellPrice: Number(e.target.value) })} className="input" />
+              <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>
+                {livePrice ? "Pre-filled from live price" : "Enter actual sell price"}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="sell-amount">Amount to Sell (₹)</label>
+              <input id="sell-amount" type="number" step="0.01" value={form.sellAmount} onChange={(e) => setForm({ ...form, sellAmount: Number(e.target.value) })} className="input" />
+              <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>Max: ₹{effectiveValue.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</p>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Current Value</label>
+              <div className="input" style={{ background: "var(--primary-soft)", color: "var(--primary)", fontWeight: 700 }}>
+                ₹{effectiveValue.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
               </div>
             </div>
+          </div>
+        )}
+
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="sell-account">Receive In (Bank Account)</label>
+          {accounts.length > 0 ? (
+            <select id="sell-account" value={form.accountId} onChange={(e) => setForm({ ...form, accountId: e.target.value })} className="input">
+              <option value="">— Select account —</option>
+              {accounts.map((a) => (<option key={a.id} value={a.id}>{a.name} ({a.type})</option>))}
+            </select>
           ) : (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Amount to Sell (₹)</label>
-                <input type="number" step="0.01" value={form.sellAmount} onChange={(e) => setForm({ ...form, sellAmount: Number(e.target.value) })} className="input" />
-                <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>Max: ₹{currentValue.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</p>
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Current Value</label>
-                <div className="input" style={{ background: "var(--primary-soft)", color: "var(--primary)", fontWeight: 700 }}>
-                  ₹{currentValue.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
-                </div>
-              </div>
+            <div className="input" style={{ background: "var(--warning-soft)", color: "var(--warning)", fontWeight: 600 }}>
+              ⚠️ No accounts yet — add a Bank account in Settings first
             </div>
           )}
+          <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>
+            Sale proceeds will be recorded as income to this account
+          </p>
+        </div>
 
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Receive In (Bank Account)</label>
-            {accounts.length > 0 ? (
-              <select value={form.accountId} onChange={(e) => setForm({ ...form, accountId: e.target.value })} className="input">
-                <option value="">— Select account —</option>
-                {accounts.map((a) => (<option key={a.id} value={a.id}>{a.name} ({a.type})</option>))}
-              </select>
-            ) : (
-              <div className="input" style={{ background: "var(--warning-soft)", color: "var(--warning)", fontWeight: 600 }}>
-                ⚠️ No accounts yet — add a Bank account in Settings first
-              </div>
-            )}
-            <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>
-              Sale proceeds will be recorded as income to this account
-            </p>
-          </div>
+        {/* Settlement toggle */}
+        <div className="p-3 rounded-lg" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              id="sell-settled"
+              type="checkbox"
+              checked={form.settled}
+              onChange={(e) => setForm({ ...form, settled: e.target.checked })}
+              className="mt-0.5 w-5 h-5 rounded"
+            />
+            <div>
+              <p className="text-sm font-semibold" style={{ color: "var(--text-heading)" }}>
+                💰 Amount already credited to my account
+              </p>
+              <p className="text-[11px] mt-0.5" style={{ color: "var(--text-faint)" }}>
+                Stock/MF sales typically take T+1 or T+2 days to settle. Only check this if the money has already appeared in your bank account.
+              </p>
+            </div>
+          </label>
+        </div>
 
-          {/* Settlement toggle */}
-          <div className="p-3 rounded-lg" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.settled}
-                onChange={(e) => setForm({ ...form, settled: e.target.checked })}
-                className="mt-0.5 w-5 h-5 rounded"
-              />
-              <div>
-                <p className="text-sm font-semibold" style={{ color: "var(--text-heading)" }}>
-                  💰 Amount already credited to my account
-                </p>
-                <p className="text-[11px] mt-0.5" style={{ color: "var(--text-faint)" }}>
-                  Stock/MF sales typically take T+1 or T+2 days to settle. Only check this if the money has already appeared in your bank account.
-                </p>
-              </div>
-            </label>
-          </div>
-
-          {/* Summary */}
-          <div className="p-3 rounded-lg" style={{ background: "var(--primary-soft)", border: "1px solid var(--border-accent)" }}>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <p className="text-[10px] font-bold uppercase" style={{ color: "var(--text-faint)" }}>Sale Amount</p>
-                <p className="font-bold" style={{ color: "var(--text-heading)" }}>₹{sellAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase" style={{ color: "var(--text-faint)" }}>Remaining</p>
-                <p className="font-bold" style={{ color: "var(--text-heading)" }}>
-                  {isFullSell ? "Full exit" : hasUnits ? `${remainingUnits} units` : `₹${(currentValue - sellAmount).toFixed(2)}`}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase" style={{ color: "var(--text-faint)" }}>Status</p>
-                <p className="font-bold" style={{ color: form.settled ? "var(--success)" : "var(--warning)" }}>
-                  {form.settled ? "✓ Settled" : "⏳ Pending settlement"}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase" style={{ color: "var(--text-faint)" }}>Recorded as</p>
-                <p className="font-bold" style={{ color: "var(--text-heading)" }}>Income</p>
-              </div>
+        {/* Summary */}
+        <div className="p-3 rounded-lg" style={{ background: "var(--primary-soft)", border: "1px solid var(--border-accent)" }} role="status" aria-label="Sale summary">
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p className="text-[10px] font-bold uppercase" style={{ color: "var(--text-faint)" }}>Sale Amount</p>
+              <p className="font-bold" style={{ color: "var(--text-heading)" }}>₹{sellAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase" style={{ color: "var(--text-faint)" }}>Remaining</p>
+              <p className="font-bold" style={{ color: "var(--text-heading)" }}>
+                {isFullSell ? "Full exit" : hasUnits ? `${remainingUnits} units` : `₹${(effectiveValue - sellAmount).toFixed(2)}`}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase" style={{ color: "var(--text-faint)" }}>Status</p>
+              <p className="font-bold" style={{ color: form.settled ? "var(--success)" : "var(--warning)" }}>
+                {form.settled ? "✓ Settled" : "⏳ Pending settlement"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase" style={{ color: "var(--text-faint)" }}>Recorded as</p>
+              <p className="font-bold" style={{ color: "var(--text-heading)" }}>Income</p>
             </div>
           </div>
-
-          <div className="flex gap-2">
-            <button onClick={handleSell} disabled={loading} className="btn btn-danger flex-1 py-3 disabled:opacity-50">
-              {loading ? "Processing..." : isFullSell ? "📉 Sell All & Exit" : hasUnits ? `📉 Sell ${form.sellUnits} Units` : `📉 Sell ₹${Number(form.sellAmount).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`}
-            </button>
-            <button onClick={onClose} className="btn btn-secondary px-5 py-3">Cancel</button>
-          </div>
         </div>
-      </Card>
-    </div>
+
+        <div className="flex gap-2">
+          <button onClick={handleSell} disabled={loading} className="btn btn-danger flex-1 py-3 disabled:opacity-50" aria-label={isFullSell ? "Sell all and exit" : hasUnits ? `Sell ${form.sellUnits} units` : `Sell ₹${Number(form.sellAmount).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`}>
+            {loading ? "Processing..." : isFullSell ? "📉 Sell All & Exit" : hasUnits ? `📉 Sell ${form.sellUnits} Units` : `📉 Sell ₹${Number(form.sellAmount).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`}
+          </button>
+          <button onClick={onClose} className="btn btn-secondary px-5 py-3">Cancel</button>
+        </div>
+      </div>
+    </AccessibleModal>
   );
 }
 
@@ -633,11 +616,11 @@ export function InvestmentManagementTable({
             <Td right muted>{i.units || "—"}</Td>
             <Td right>
               <div className="flex gap-1 justify-end no-print">
-                {onSell && (Number(i.units || 0) > 0 || Number(i.invested || 0) > 0) && (
-                  <button onClick={() => onSell(i)} className="btn btn-ghost text-[11px] px-2 py-1" style={{ color: "var(--warning)" }}>📉 Sell</button>
+                {onSell && (Number(i.units || 0) > 0 || Number(i.invested || 0) > 0 || Number(i.currentValue || 0) > 0) && (
+                  <button onClick={() => onSell(i)} className="btn btn-ghost text-[11px] px-2 py-1" style={{ color: "var(--warning)" }} aria-label={`Sell ${i.name}`}>📉 Sell</button>
                 )}
-                <button onClick={() => onEdit(i)} className="btn btn-ghost text-[11px] px-2 py-1">Edit</button>
-                <button onClick={() => onDelete(i.id)} className="btn btn-danger text-[11px] px-2 py-1">Delete</button>
+                <button onClick={() => onEdit(i)} className="btn btn-ghost text-[11px] px-2 py-1" aria-label={`Edit ${i.name}`}>Edit</button>
+                <button onClick={() => onDelete(i.id)} className="btn btn-danger text-[11px] px-2 py-1" aria-label={`Delete ${i.name}`}>Delete</button>
               </div>
             </Td>
           </Tr>
@@ -647,7 +630,7 @@ export function InvestmentManagementTable({
   );
 }
 
-export function InvestmentsManager({ investments, accounts }: { investments: InvestmentRow[]; accounts?: any[] }) {
+export function InvestmentsManager({ investments, accounts }: { investments: InvestmentRow[]; accounts?: AccountOption[] }) {
   const router = useRouter();
   const [editing, setEditing] = useState<InvestmentRow | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -673,7 +656,7 @@ export function InvestmentsManager({ investments, accounts }: { investments: Inv
   return (
     <div className="space-y-4">
       <div className="flex justify-end no-print">
-        <button onClick={() => { setShowAdd(!showAdd); setEditing(null); }} className="btn btn-primary text-sm">
+        <button onClick={() => { setShowAdd(!showAdd); setEditing(null); }} className="btn btn-primary text-sm" aria-label={showAdd ? "Cancel adding investment" : "Add new investment"}>
           {showAdd ? "Cancel" : "+ Add Investment"}
         </button>
       </div>

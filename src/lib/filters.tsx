@@ -10,7 +10,7 @@ export type MemberFilterContextType = {
   selectIds: (ids: number[]) => void;
   selectOnly: (id: number) => void;
   clear: () => void;
-  isSelected: (id: number) => boolean;
+  isSelected: (id: number | null) => boolean;
   hasSelection: boolean;
   quickFilter: QuickFilter;
   setQuickFilter: (filter: QuickFilter) => void;
@@ -71,7 +71,7 @@ export function MemberFilterProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isSelected = useCallback(
-    (id: number) => selectedIds.length === 0 || selectedIds.includes(id),
+    (id: number | null) => selectedIds.length === 0 || (id !== null && selectedIds.includes(id)),
     [selectedIds]
   );
 

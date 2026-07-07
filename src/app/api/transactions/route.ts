@@ -4,6 +4,9 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { isSession, requireApiSession } from "@/lib/server-auth";
 import { validate, transactionCreateSchema, transactionUpdateSchema, transactionDeleteSchema } from "@/lib/validation";
 import { toPaise, fromPaise } from "@/lib/finance-math";
+import { apiHandler, apiSuccess, apiError, parsePagination, paginatedResponse } from "@/lib/api-utils";
+import { writeAuditLog } from "@/lib/audit";
+import { sanitize, isSafeInput } from "@/lib/sanitize";
 
 /**
  * Apply account balance impact using PostgreSQL NUMERIC arithmetic.
@@ -17,7 +20,6 @@ async function applyAccountImpact(
 ) {
   if (!input.accountId) return;
 
-  // Compute delta as a string using BigInt paise arithmetic
   const amountPaise = toPaise(input.amountStr);
   const deltaPaise = input.type === "income" ? amountPaise * BigInt(multiplier) : -amountPaise * BigInt(multiplier);
   const deltaStr = fromPaise(deltaPaise);
@@ -28,9 +30,35 @@ async function applyAccountImpact(
     .where(and(eq(accounts.id, input.accountId), eq(accounts.userId, input.userId)));
 }
 
-export async function POST(req: Request) {
+export const GET = apiHandler(async (req, { log }) => {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
+
+  const url = new URL(req.url);
+  const pagination = parsePagination({
+    page: url.searchParams.get("page"),
+    limit: url.searchParams.get("limit"),
+  });
+  const type = url.searchParams.get("type") || undefined;
+  const from = url.searchParams.get("from") || undefined;
+  const to = url.searchParams.get("to") || undefined;
+
+  try {
+    // Import data function dynamically to avoid circular deps
+    const { getTransactions } = await import("@/lib/data");
+    const result = await getTransactions({ ...pagination, type, from, to });
+    log.info("Fetched transactions", { page: pagination.page, limit: pagination.limit, total: result.total });
+    return apiSuccess(result);
+  } catch (err) {
+    log.error("Failed to fetch transactions", err);
+    return apiError("Failed to fetch transactions", 500, undefined, err);
+  }
+});
+
+export const POST = apiHandler(async (req, { log }) => {
+  const session = requireApiSession(req);
+  if (!isSession(session)) return session;
+
   try {
     const raw = await req.json();
     const result = validate(transactionCreateSchema, raw);
@@ -39,11 +67,16 @@ export async function POST(req: Request) {
 
     const amount = Number(b.amount);
     if (!Number.isFinite(amount) || amount <= 0) {
-      return Response.json({ error: "Invalid amount", details: { amount: "Must be a positive number" } }, { status: 400 });
+      return apiError("Invalid amount", 400, { amount: "Must be a positive number" });
     }
 
     const accountId = b.accountId ? Number(b.accountId) : null;
 
+    // Input sanitization — prevent XSS in note/category
+    if (b.note && !isSafeInput(b.note)) return apiError("Note contains disallowed content", 400);
+    if (b.category && !isSafeInput(b.category)) return apiError("Invalid category", 400);
+
+    // Single transaction: create txn + update account balance atomically
     const [row] = await db.transaction(async (tx) => {
       const [created] = await tx
         .insert(transactions)
@@ -58,30 +91,32 @@ export async function POST(req: Request) {
           note: b.note ?? null,
         })
         .returning();
-      return [created];
-    });
 
-    // Apply account impact in a separate transaction using the stored string amount
-    if (accountId) {
-      await db.transaction(async (tx) => {
+      // Apply account impact within the same transaction
+      if (accountId) {
         await applyAccountImpact(tx, {
           accountId,
           type: b.type,
           amountStr: b.amount,
           userId: session.userId,
         }, 1);
-      });
-    }
+      }
 
-    return Response.json({ ok: true, row });
-  } catch {
-    return Response.json({ error: "Server error" }, { status: 500 });
+      return [created];
+    });
+
+    log.info("Transaction created", { id: row.id, type: b.type, amount: b.amount });
+    writeAuditLog({ userId: session.userId, action: "create", table: "transactions", recordId: row.id, changes: { type: b.type, amount: b.amount, category: b.category } });
+    return apiSuccess({ row });
+  } catch (err) {
+    return apiError("Failed to create transaction", 500, undefined, err);
   }
-}
+});
 
-export async function PATCH(req: Request) {
+export const PATCH = apiHandler(async (req, { log }) => {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
+
   try {
     const raw = await req.json();
     const result = validate(transactionUpdateSchema, raw);
@@ -93,7 +128,7 @@ export async function PATCH(req: Request) {
       .from(transactions)
       .where(and(eq(transactions.id, id), eq(transactions.userId, session.userId)));
 
-    if (!existing) return Response.json({ error: "Transaction not found" }, { status: 404 });
+    if (!existing) return apiError("Transaction not found", 404);
 
     const nextType = updates.type ?? existing.type;
     const nextAmount = updates.amount !== undefined ? updates.amount : existing.amount;
@@ -101,7 +136,7 @@ export async function PATCH(req: Request) {
 
     const nextAmountNum = Number(nextAmount);
     if (!Number.isFinite(nextAmountNum) || nextAmountNum <= 0) {
-      return Response.json({ error: "Invalid amount", details: { amount: "Must be a positive number" } }, { status: 400 });
+      return apiError("Invalid amount", 400, { amount: "Must be a positive number" });
     }
 
     // Build safe update object — only whitelisted fields
@@ -114,6 +149,7 @@ export async function PATCH(req: Request) {
     if (updates.accountId !== undefined) safeUpdates.accountId = nextAccountId;
     if (updates.note !== undefined) safeUpdates.note = updates.note;
 
+    // Atomic: reverse old + apply new in one transaction
     await db.transaction(async (tx) => {
       // Reverse the old impact
       await applyAccountImpact(tx, {
@@ -137,15 +173,18 @@ export async function PATCH(req: Request) {
       }, 1);
     });
 
-    return Response.json({ ok: true });
-  } catch {
-    return Response.json({ error: "Server error" }, { status: 500 });
+    log.info("Transaction updated", { id });
+    writeAuditLog({ userId: session.userId, action: "update", table: "transactions", recordId: id, changes: safeUpdates });
+    return apiSuccess();
+  } catch (err) {
+    return apiError("Failed to update transaction", 500, undefined, err);
   }
-}
+});
 
-export async function DELETE(req: Request) {
+export const DELETE = apiHandler(async (req, { log }) => {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
+
   try {
     const raw = await req.json();
     const result = validate(transactionDeleteSchema, raw);
@@ -160,19 +199,23 @@ export async function DELETE(req: Request) {
         }
         await tx.delete(transactions).where(and(eq(transactions.userId, session.userId), inArray(transactions.id, ids)));
       });
+      log.info("Bulk transactions deleted", { count: ids.length });
+      writeAuditLog({ userId: session.userId, action: "delete", table: "transactions", changes: { count: ids.length } });
     } else if (id) {
       const [row] = await db.select().from(transactions).where(and(eq(transactions.id, id), eq(transactions.userId, session.userId)));
-      if (!row) return Response.json({ error: "Transaction not found" }, { status: 404 });
+      if (!row) return apiError("Transaction not found", 404);
       await db.transaction(async (tx) => {
         await applyAccountImpact(tx, { accountId: row.accountId, type: row.type, amountStr: row.amount, userId: session.userId }, -1);
         await tx.delete(transactions).where(and(eq(transactions.id, id), eq(transactions.userId, session.userId)));
       });
+      log.info("Transaction deleted", { id });
+      writeAuditLog({ userId: session.userId, action: "delete", table: "transactions", recordId: id });
     } else {
-      return Response.json({ error: "No id or ids provided" }, { status: 400 });
+      return apiError("No id or ids provided", 400);
     }
 
-    return Response.json({ ok: true });
-  } catch {
-    return Response.json({ error: "Server error" }, { status: 500 });
+    return apiSuccess();
+  } catch (err) {
+    return apiError("Failed to delete transaction", 500, undefined, err);
   }
-}
+});

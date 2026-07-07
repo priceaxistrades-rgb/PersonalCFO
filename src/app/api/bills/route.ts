@@ -1,3 +1,4 @@
+import { catchErr } from "@/lib/catch";
 import { db } from "@/db";
 import { bills } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -10,7 +11,7 @@ export async function PATCH(req: Request) {
     const { id, paid } = await req.json();
     await db.update(bills).set({ paid: Boolean(paid) }).where(and(eq(bills.id, Number(id)), eq(bills.userId, session.userId)));
     return Response.json({ ok: true });
-  } catch {
-    return Response.json({ error: "Server error" }, { status: 500 });
+  } catch (err) {
+    return catchErr("bills", err, session?.userId);
   }
 }

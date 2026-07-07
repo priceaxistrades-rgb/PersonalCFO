@@ -2,7 +2,7 @@ import { Card, SectionTitle } from "@/components/ui/Card";
 import { KpiCard, Progress } from "@/components/ui/Kpi";
 import { EmergencyCheck } from "@/components/EmergencyCheck";
 import { inr, num } from "@/lib/format";
-import { getEmergencyItems, getGoals, getInsurance, getTransactions, currentMonthKey, monthKey, sumBy } from "@/lib/data";
+import { getEmergencyItems, getGoals, getInsurance, getAllTransactions, currentMonthKey, monthKey, sumBy } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ export default async function EmergencyPage() {
     getEmergencyItems(),
     getGoals(),
     getInsurance(),
-    getTransactions(),
+    getAllTransactions(),
   ]);
 
   const contacts = items.filter((i) => i.kind === "contact");

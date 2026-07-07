@@ -1,3 +1,23 @@
+export const INCOME_CATEGORIES = [
+  "Salary",
+  "Freelancing",
+  "Business",
+  "Rental Income",
+  "Dividends",
+  "Interest",
+  "Capital Gains",
+  "Gift",
+  "Refund",
+  "Other Income",
+] as const;
+
+export const EXPENSE_CATEGORIES = [
+  "Housing", "Food", "Groceries", "Electricity", "Water", "Gas", "Internet",
+  "Mobile", "Transportation", "Fuel", "Insurance", "Medical", "Education",
+  "Shopping", "Entertainment", "Subscriptions", "Travel", "Gifts",
+  "Investments", "Miscellaneous",
+] as const;
+
 export const CATEGORY_GROUPS = {
   Essential: [
     "Rent", "Mortgage", "Utilities", "Groceries", "Health", "Insurance", "Education", "Transport", "EMI", "Taxes"

@@ -7,6 +7,8 @@ import { SessionProvider } from "@/lib/session";
 import { PrivacyProvider } from "@/lib/privacy";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ClientInit } from "@/components/ClientInit";
 
 export const metadata: Metadata = {
   title: "Personal CFO — Indian Family Financial Planner",
@@ -38,11 +40,23 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <SessionProvider>
             <PrivacyProvider>
               <MemberFilterProvider>
+                <ClientInit />
+                <a
+                  href="#main-content"
+                  className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[200] focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-bold"
+                  style={{ background: "var(--primary)", color: "#fff" }}
+                >
+                  Skip to main content
+                </a>
                 <div className="flex min-h-screen">
-                  <Sidebar />
-                  <div className="flex-1 min-w-0 lg:min-h-screen overflow-x-hidden">
+                  <nav aria-label="Main navigation">
+                    <Sidebar />
+                  </nav>
+                  <div className="flex-1 min-w-0 min-h-screen overflow-x-hidden" id="main-content" role="main">
                     <main className="px-4 sm:px-6 lg:px-10 pt-[4.5rem] lg:pt-8 pb-24 lg:pb-10 max-w-[1500px] mx-auto w-full">
-                      {children}
+                      <ErrorBoundary name="Main Content">
+                        {children}
+                      </ErrorBoundary>
                     </main>
                   </div>
                 </div>

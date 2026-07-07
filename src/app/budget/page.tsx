@@ -3,7 +3,7 @@ import { KpiCard, Progress } from "@/components/ui/Kpi";
 import { Table, Tr, Td } from "@/components/ui/Table";
 import { inr, num } from "@/lib/format";
 import {
-  getTransactions,
+  getAllTransactions,
   getBudgets,
   currentMonthKey,
   expenseByCategory,
@@ -14,7 +14,7 @@ import { BudgetsManager } from "./BudgetsManager";
 export const dynamic = "force-dynamic";
 
 export default async function BudgetPage() {
-  const [txns, budgets] = await Promise.all([getTransactions(), getBudgets()]);
+  const [txns, budgets] = await Promise.all([getAllTransactions(), getBudgets()]);
   const cm = currentMonthKey();
   const spent = new Map(expenseByCategory(txns, [cm]).map((c) => [c.label, c.value]));
 

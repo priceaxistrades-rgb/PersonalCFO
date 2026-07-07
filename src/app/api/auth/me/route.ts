@@ -1,3 +1,4 @@
+import { catchErr } from "@/lib/catch";
 import { getApiSession } from "@/lib/server-auth";
 
 export async function GET(req: Request) {

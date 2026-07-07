@@ -1,3 +1,4 @@
+import { catchErr } from "@/lib/catch";
 import { createSessionToken, sessionCookieHeader } from "@/lib/server-auth";
 import { ensureDemoUserWithData } from "@/lib/demo";
 import { getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
       { ok: true, session },
       { headers: { "Set-Cookie": sessionCookieHeader(createSessionToken(session)) } },
     );
-  } catch {
+  } catch (err) {
     return Response.json({ error: "Demo setup failed" }, { status: 500 });
   }
 }

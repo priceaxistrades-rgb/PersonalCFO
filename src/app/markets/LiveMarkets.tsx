@@ -60,9 +60,12 @@ function HoldingsBadge({ item, livePrice }: { item: WatchItem; livePrice: number
   if (item.source !== "investment") return null;
   const units = Number(item.units) || 0;
   const invested = Number(item.invested) || 0;
-  const manualCurrentValue = Number(item.currentValue) || invested; // fallback to invested if no currentValue
+  const manualCurrentValue = Number(item.currentValue) || 0;
+  // Effective display values — use currentValue when invested is 0
+  const displayInvested = invested > 0 ? invested : manualCurrentValue;
+  const displayCurrent = livePrice && units > 0 ? livePrice * units : (manualCurrentValue > 0 ? manualCurrentValue : invested);
 
-  // Show holdings info even without units — just show invested value
+  // Show holdings info even without units — show invested/current value
   if (units <= 0) {
     return (
       <div
@@ -73,16 +76,23 @@ function HoldingsBadge({ item, livePrice }: { item: WatchItem; livePrice: number
           <span className="badge badge-primary">📋 Held in portfolio</span>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <span style={{ color: "var(--text-muted)" }}>
-            Invested: <strong style={{ color: "var(--text)" }}>{compactINR(invested)}</strong>
-          </span>
-          {manualCurrentValue > invested && (
+          {invested > 0 && (
+            <span style={{ color: "var(--text-muted)" }}>
+              Invested: <strong style={{ color: "var(--text)" }}>{compactINR(invested)}</strong>
+            </span>
+          )}
+          {manualCurrentValue > 0 && (
             <span style={{ color: "var(--success)", fontWeight: 600 }}>
               Current: {compactINR(manualCurrentValue)}
             </span>
           )}
+          {invested <= 0 && manualCurrentValue <= 0 && (
+            <span style={{ color: "var(--warning)", fontWeight: 500 }}>
+              ⚠️ Set invested amount or units for tracking
+            </span>
+          )}
           <span style={{ color: "var(--text-faint)" }}>
-            Add units for live price tracking
+            Add units + avg price for live price tracking
           </span>
         </div>
       </div>
@@ -90,9 +100,9 @@ function HoldingsBadge({ item, livePrice }: { item: WatchItem; livePrice: number
   }
 
   const avgPrice = units > 0 ? invested / units : 0;
-  const currentVal = livePrice ? livePrice * units : manualCurrentValue;
-  const pnl = currentVal - invested;
-  const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0;
+  const currentVal = livePrice ? livePrice * units : displayCurrent;
+  const pnl = currentVal - displayInvested;
+  const pnlPct = displayInvested > 0 ? (pnl / displayInvested) * 100 : 0;
 
   return (
     <div
@@ -101,11 +111,12 @@ function HoldingsBadge({ item, livePrice }: { item: WatchItem; livePrice: number
     >
       <div className="flex items-center gap-1.5 flex-wrap">
         <span className="badge badge-primary">📋 {units} units held</span>
-        <span style={{ color: "var(--text-muted)" }}>Avg ₹{avgPrice.toFixed(2)}</span>
+        {invested > 0 && <span style={{ color: "var(--text-muted)" }}>Avg ₹{avgPrice.toFixed(2)}</span>}
+        {invested <= 0 && <span style={{ color: "var(--warning)", fontWeight: 500 }}>⚠️ Set avg price for P&L</span>}
       </div>
       <div className="flex items-center gap-3 flex-wrap">
         <span style={{ color: "var(--text-muted)" }}>
-          Invested: <strong style={{ color: "var(--text)" }}>{compactINR(invested)}</strong>
+          Invested: <strong style={{ color: "var(--text)" }}>{compactINR(displayInvested)}</strong>
         </span>
         {livePrice ? (
           <>
@@ -221,9 +232,20 @@ export function LiveMarkets({
   const [chartLoading, setChartLoading] = useState(false);
   const [chartError, setChartError] = useState("");
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastLoadTime = useRef<Date>(new Date());
 
   const stocks = useMemo(() => items.filter((i) => i.kind === "stock" && i.symbol).map((i) => i.symbol!), [items]);
   const mfs = useMemo(() => items.filter((i) => i.kind === "mf" && i.schemeCode).map((i) => i.schemeCode!), [items]);
+
+  // "X seconds ago" display
+  const [secondsAgo, setSecondsAgo] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const diff = Math.floor((Date.now() - lastLoadTime.current.getTime()) / 1000);
+      setSecondsAgo(diff);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const load = useCallback(async () => {
     if (!items.length) {
@@ -238,6 +260,7 @@ export function LiveMarkets({
       const res = await fetch(`/api/market/quote?${params.toString()}`, { cache: "no-store" });
       const json = await res.json();
       setQuotes(json.quotes || {});
+      lastLoadTime.current = new Date();
       setUpdated(new Date().toLocaleTimeString("en-IN"));
     } catch {
       // Keep previous prices on transient API errors.
@@ -247,7 +270,7 @@ export function LiveMarkets({
 
   useEffect(() => {
     const start = setTimeout(() => void load(), 0);
-    timer.current = setInterval(() => void load(), 30000);
+    timer.current = setInterval(() => void load(), 5000); // Refresh every 5 seconds for near-real-time
     return () => {
       clearTimeout(start);
       if (timer.current) clearInterval(timer.current);
@@ -305,15 +328,19 @@ export function LiveMarkets({
   const stockItems = items.filter((i) => i.kind === "stock");
   const mfItems = items.filter((i) => i.kind === "mf");
 
-  // Summary stats for investment-linked items (include all, even without units)
-  const investedItems = items.filter((i) => i.source === "investment" && (Number(i.invested) > 0 || Number(i.units) > 0));
+  // Summary stats for investment-linked items (include all with any value, even without units)
+  const investedItems = items.filter((i) => i.source === "investment" && (Number(i.invested) > 0 || Number(i.units) > 0 || Number(i.currentValue) > 0));
   const totalInvested = investedItems.reduce((s, i) => s + (Number(i.invested) || 0), 0);
   const totalCurrent = investedItems.reduce((s, i) => {
     const key = i.kind === "stock" ? `stock:${i.symbol}` : `mf:${i.schemeCode}`;
     const q = quotes[key];
     const units = Number(i.units) || 0;
-    // If we have units + live price, use live value; otherwise use invested as fallback
-    return s + (q?.ok && q.price > 0 && units > 0 ? q.price * units : Number(i.invested) || 0);
+    const invested = Number(i.invested) || 0;
+    const cv = Number(i.currentValue) || 0;
+    // If we have units + live price, use live value; otherwise use currentValue, then invested as fallback
+    if (q?.ok && q.price > 0 && units > 0) return s + (q.price * units);
+    if (cv > 0) return s + cv;
+    return s + invested;
   }, 0);
   const totalPnl = totalCurrent - totalInvested;
 
@@ -327,7 +354,7 @@ export function LiveMarkets({
         : it.kind === "mf" && it.schemeCode
           ? { kind: "mf" as const, id: it.schemeCode, label: it.label }
           : null;
-      const isHeld = it.source === "investment" && (Number(it.units) > 0 || Number(it.invested) > 0);
+      const isHeld = it.source === "investment" && (Number(it.units) > 0 || Number(it.invested) > 0 || Number(it.currentValue) > 0);
 
       return (
         <Tr key={`${it.source || "watchlist"}-${it.id}-${key}`}>
@@ -434,7 +461,7 @@ export function LiveMarkets({
             <span className="relative inline-flex rounded-full h-2.5 w-2.5" style={{ background: loading ? "var(--warning)" : "var(--success)" }} />
           </span>
           <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-            {loading ? "Fetching live prices…" : `Live · updated ${updated}`}
+            {loading ? "Fetching live prices…" : updated ? `Live · Last updated ${secondsAgo < 60 ? `${secondsAgo}s ago` : `${Math.floor(secondsAgo / 60)}m ago`}` : "Live sync ready"}
           </span>
         </div>
         <button onClick={load} className="text-xs font-medium no-print px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5" style={{ background: "var(--surface-3)", color: "var(--text)" }}>

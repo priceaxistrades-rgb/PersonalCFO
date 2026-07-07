@@ -9,7 +9,7 @@ import { useMemberFilter } from "@/lib/filters";
 import { useSession } from "@/lib/session";
 
 const NAV = [
-  { group: "Overview", items: [{ href: "/", label: "Dashboard", icon: "🏠" }] },
+  { group: "Overview", items: [{ href: "/", label: "Dashboard", icon: "🏠" }, { href: "/control", label: "Mission Control", icon: "🚀" }, { href: "/brief", label: "Morning Brief", icon: "☀️" }, { href: "/health", label: "Health Score", icon: "❤️" }] },
   {
     group: "Money Flow",
     items: [
@@ -24,6 +24,7 @@ const NAV = [
     group: "Wealth",
     items: [
       { href: "/savings", label: "Savings", icon: "🐖" },
+      { href: "/wealth", label: "Wealth Timeline", icon: "🗺️" },
       { href: "/investments", label: "Investments", icon: "📈" },
       { href: "/markets", label: "Markets", icon: "🛰️" },
       { href: "/debt", label: "Debt", icon: "🏦" },
@@ -33,6 +34,12 @@ const NAV = [
   {
     group: "Planning",
     items: [
+      { href: "/ai", label: "AI Twin", icon: "🤖" },
+      { href: "/simulator", label: "Life Simulator", icon: "🔬" },
+      { href: "/opportunities", label: "Opportunities", icon: "🔍" },
+      { href: "/stress", label: "Stress Meter", icon: "😰" },
+      { href: "/coach", label: "Wealth Coach", icon: "🧠" },
+      { href: "/dreams", label: "Dream Planner", icon: "✨" },
       { href: "/annual", label: "Annual", icon: "🗓️" },
       { href: "/tax", label: "Tax", icon: "🧮" },
       { href: "/insurance", label: "Insurance", icon: "🛡️" },
@@ -51,24 +58,24 @@ const NAV = [
   },
 ];
 
-const THEMES: { id: Theme; label: string; color: string; gradient: string }[] = [
-  { id: "obsidian", label: "Obsidian", color: "#818cf8", gradient: "linear-gradient(135deg, #6366f1, #818cf8)" },
-  { id: "aurora",   label: "Aurora",   color: "#6366f1", gradient: "linear-gradient(135deg, #6366f1, #0ea5e9)" },
-  { id: "emerald",  label: "Emerald",  color: "#14b8a6", gradient: "linear-gradient(135deg, #0d9488, #14b8a6)" },
-  { id: "royal",    label: "Royal",    color: "#fbbf24", gradient: "linear-gradient(135deg, #f59e0b, #fbbf24)" },
+const THEMES: { id: Theme; label: string; emoji: string; color: string; gradient: string }[] = [
+  { id: "obsidian", label: "Obsidian", emoji: "🌙", color: "#818cf8", gradient: "linear-gradient(135deg, #6366f1, #818cf8)" },
+  { id: "aurora",   label: "Aurora",   emoji: "🌅", color: "#6366f1", gradient: "linear-gradient(135deg, #6366f1, #0ea5e9)" },
+  { id: "emerald",  label: "Emerald",  emoji: "🌿", color: "#14b8a6", gradient: "linear-gradient(135deg, #0d9488, #14b8a6)" },
+  { id: "royal",    label: "Royal",    emoji: "👑", color: "#fbbf24", gradient: "linear-gradient(135deg, #f59e0b, #fbbf24)" },
 ];
 
 function ProfileIndicator() {
   const { hasSelection, activeProfile, selectedIds, clear } = useMemberFilter();
   if (!hasSelection) return null;
   return (
-    <div className="px-5 py-3 border-t hidden lg:block" style={{ borderColor: "var(--border)" }}>
-      <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "var(--text-faint)" }}>Profile</p>
-      <div className="flex items-center justify-between px-3 py-2 rounded-lg" style={{ background: "var(--primary-soft)" }}>
-        <span className="text-sm font-medium truncate" style={{ color: "var(--primary)" }}>
+    <div className="px-4 py-3 border-t hidden lg:block" style={{ borderColor: "var(--border)" }}>
+      <p className="text-[9px] font-bold uppercase tracking-widest mb-2" style={{ color: "var(--text-faint)" }}>Profile</p>
+      <div className="flex items-center justify-between px-2 py-1.5 rounded-lg" style={{ background: "var(--primary-soft)" }}>
+        <span className="text-xs font-medium truncate" style={{ color: "var(--primary)" }}>
           👤 {activeProfile || `${selectedIds.length} selected`}
         </span>
-        <button onClick={clear} className="btn btn-ghost text-[11px] px-2 py-1">Reset</button>
+        <button onClick={clear} className="btn btn-ghost text-[10px] px-1.5 py-0.5">Reset</button>
       </div>
     </div>
   );
@@ -81,31 +88,28 @@ function AuthButton() {
 
   if (loading) {
     return (
-      <div className="px-5 py-4 border-t" style={{ borderColor: "var(--border)" }}>
-        <div className="h-10 rounded-lg shimmer" />
+      <div className="px-4 py-3 border-t" style={{ borderColor: "var(--border)" }}>
+        <div className="h-8 rounded-lg shimmer" />
       </div>
     );
   }
 
   if (!session) {
     return (
-      <div className="px-5 py-4 border-t" style={{ borderColor: "var(--border)" }}>
-        <Link href="/login" className="btn btn-primary w-full py-3">
+      <div className="px-4 py-3 border-t" style={{ borderColor: "var(--border)" }}>
+        <Link href="/login" className="btn btn-primary w-full py-2 text-xs">
           🔐 Sign In
         </Link>
-        <p className="text-[11px] text-center mt-2" style={{ color: "var(--text-faint)" }}>
-          New user? <Link href="/signup" style={{ color: "var(--primary)" }} className="font-semibold">Create account</Link>
-        </p>
       </div>
     );
   }
 
   return (
-    <div className="px-5 py-4 border-t" style={{ borderColor: "var(--border)" }}>
-      <div className="flex items-center gap-3 mb-3 group cursor-pointer" onClick={() => setShowUpload(true)}>
+    <div className="px-4 py-3 border-t" style={{ borderColor: "var(--border)" }}>
+      <div className="flex items-center gap-2 mb-2 group cursor-pointer" onClick={() => setShowUpload(true)}>
         <div className="relative">
           <div
-            className="w-10 h-10 rounded-full overflow-hidden grid place-items-center text-sm font-bold transition-all duration-200 group-hover:ring-2 group-hover:ring-[var(--primary)]"
+            className="w-8 h-8 rounded-full overflow-hidden grid place-items-center text-xs font-bold transition-all duration-200 group-hover:ring-2 group-hover:ring-[var(--primary)]"
             style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
           >
             {session.profileImage ? (
@@ -114,19 +118,89 @@ function AuthButton() {
               session.name.charAt(0).toUpperCase()
             )}
           </div>
-          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full grid place-items-center text-[8px]" style={{ background: "var(--primary)", color: "#fff" }}>📷</div>
+          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full grid place-items-center text-[6px]" style={{ background: "var(--primary)", color: "#fff" }}>📷</div>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold truncate" style={{ color: "var(--text-heading)" }}>{session.name}</p>
-          <p className="text-[11px] truncate" style={{ color: "var(--text-faint)" }}>{session.email}</p>
+          <p className="text-xs font-semibold truncate" style={{ color: "var(--text-heading)" }}>{session.name}</p>
+          <p className="text-[10px] truncate" style={{ color: "var(--text-faint)" }}>{session.email}</p>
         </div>
       </div>
-      <button onClick={logout} className="btn btn-secondary w-full py-2.5 text-sm">
+      <button onClick={logout} className="btn btn-secondary w-full py-1.5 text-xs">
         🚪 Sign Out
       </button>
       {showUpload && (
         <ProfileUploadModal user={session} onUploadSuccess={() => { setShowUpload(false); router.refresh(); }} onClose={() => setShowUpload(false)} />
       )}
+    </div>
+  );
+}
+
+/** Theme selector — compact for sidebar bottom (desktop) */
+function ThemeSelectorDesktop({ hydrated, theme, setTheme }: { hydrated: boolean; theme: Theme; setTheme: (t: Theme) => void }) {
+  return (
+    <div className="px-4 py-3 border-t" style={{ borderColor: "var(--border)" }}>
+      <p className="text-[9px] font-bold uppercase tracking-[0.1em] mb-2" style={{ color: "var(--text-faint)" }}>Theme</p>
+      <div className="grid grid-cols-4 gap-1.5">
+        {THEMES.map((t) => {
+          const selected = hydrated && theme === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTheme(t.id)}
+              title={t.label}
+              aria-label={`Switch to ${t.label}`}
+              className="theme-btn h-7 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
+              style={{
+                background: selected ? t.gradient : "var(--surface-3)",
+                border: selected ? `2px solid ${t.color}` : "2px solid var(--border)",
+                boxShadow: selected ? `0 0 12px ${t.color}33` : "none",
+              }}
+            >
+              {selected ? (
+                <span className="text-[10px] font-bold text-white">✓</span>
+              ) : (
+                <span className="block w-1.5 h-1.5 rounded-full" style={{ background: t.gradient }} />
+              )}
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-[10px] text-center mt-1.5 font-semibold" style={{ color: "var(--primary)" }}>
+        {THEMES.find((t) => t.id === theme)?.label || "Obsidian"}
+      </p>
+    </div>
+  );
+}
+
+/** Theme selector — inline above Net Worth (mobile sidebar) */
+function ThemeSelectorMobile({ hydrated, theme, setTheme }: { hydrated: boolean; theme: Theme; setTheme: (t: Theme) => void }) {
+  return (
+    <div className="px-2.5 py-2.5 rounded-xl mb-1" style={{ background: "var(--surface-2)" }}>
+      <p className="text-[9px] font-bold uppercase tracking-[0.1em] mb-2 flex items-center gap-1" style={{ color: "var(--text-faint)" }}>
+        🎨 Theme
+      </p>
+      <div className="grid grid-cols-4 gap-1.5">
+        {THEMES.map((t) => {
+          const selected = hydrated && theme === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTheme(t.id)}
+              title={t.label}
+              aria-label={`Switch to ${t.label}`}
+              className="flex flex-col items-center py-1.5 rounded-lg transition-all duration-200 active:scale-95"
+              style={{
+                background: selected ? `${t.color}18` : "transparent",
+                border: selected ? `2px solid ${t.color}` : "2px solid transparent",
+                boxShadow: selected ? `0 0 10px ${t.color}22` : "none",
+              }}
+            >
+              <span className="text-sm leading-none mb-0.5">{t.emoji}</span>
+              <span className="text-[7px] font-bold" style={{ color: selected ? t.color : "var(--text-faint)" }}>{t.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -155,34 +229,29 @@ export function Sidebar() {
       {/* ─── Mobile Overlay ─── */}
       {open && <div className="lg:hidden fixed inset-0 z-30 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />}
 
-      {/* ─── Sidebar ─── */}
+      {/* ═══════════════════════════════════════════════════════════
+          DESKTOP: Compact sticky sidebar — 220px, no animation
+          ═══════════════════════════════════════════════════════════ */}
       <aside
-        className={`fixed lg:sticky top-0 z-40 lg:z-auto h-screen w-[280px] flex flex-col transition-transform duration-300 ease-[cubic-bezier(.4,0,.2,1)] ${
-          open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        }`}
+        className="hidden lg:flex flex-col sticky top-0 z-40 h-screen w-[220px] flex-shrink-0"
         style={{ background: "var(--sidebar)", borderRight: "1px solid var(--border)" }}
       >
         {/* ─── Logo ─── */}
-        <div className="hidden lg:flex px-6 py-6 items-center gap-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <div className="w-10 h-10 rounded-xl grid place-items-center text-xl shadow-lg" style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))" }}>
+        <div className="px-4 py-4 flex items-center gap-2.5 border-b" style={{ borderColor: "var(--border)" }}>
+          <div className="w-8 h-8 rounded-lg grid place-items-center text-sm shadow-md flex-shrink-0" style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))" }}>
             📊
           </div>
           <div>
-            <p className="font-extrabold tracking-tight text-base" style={{ color: "var(--text-heading)" }}>Personal CFO</p>
-            <p className="text-[10px] font-medium" style={{ color: "var(--text-faint)" }}>Family Wealth Suite</p>
+            <p className="font-extrabold tracking-tight text-sm" style={{ color: "var(--text-heading)" }}>Personal CFO</p>
+            <p className="text-[8px] font-medium" style={{ color: "var(--text-faint)" }}>Family Wealth Suite</p>
           </div>
         </div>
 
-        {/* ─── Close (mobile) ─── */}
-        <div className="lg:hidden flex justify-end p-3">
-          <button onClick={() => setOpen(false)} className="btn btn-ghost w-9 h-9">✕</button>
-        </div>
-
         {/* ─── Navigation ─── */}
-        <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+        <nav className="flex-1 overflow-y-auto px-2.5 py-3 space-y-4">
           {NAV.map((section) => (
             <div key={section.group}>
-              <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--text-faint)" }}>
+              <p className="px-2 mb-1.5 text-[9px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--text-faint)" }}>
                 {section.group}
               </p>
               <div className="space-y-0.5">
@@ -192,15 +261,12 @@ export function Sidebar() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      onClick={() => setOpen(false)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-200 ${
+                      className={`flex items-center gap-2 px-2 py-2 rounded-lg text-[12px] font-medium transition-colors duration-150 ${
                         active ? "nav-active" : ""
                       }`}
-                      style={{
-                        color: active ? "var(--primary)" : "var(--text-muted)",
-                      }}
+                      style={{ color: active ? "var(--primary)" : "var(--text-muted)" }}
                     >
-                      <span className="text-[15px]">{item.icon}</span>
+                      <span className="text-[13px]">{item.icon}</span>
                       <span>{item.label}</span>
                     </Link>
                   );
@@ -212,39 +278,58 @@ export function Sidebar() {
 
         <ProfileIndicator />
         <AuthButton />
+        <ThemeSelectorDesktop hydrated={hydrated} theme={theme} setTheme={setTheme} />
+      </aside>
 
-        {/* ─── Theme Selector ─── */}
-        <div className="px-5 py-4 border-t" style={{ borderColor: "var(--border)" }}>
-          <p className="text-[10px] font-bold uppercase tracking-[0.1em] mb-3" style={{ color: "var(--text-faint)" }}>Theme</p>
-          <div className="grid grid-cols-4 gap-2">
-            {THEMES.map((t) => {
-              const selected = hydrated && theme === t.id;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setTheme(t.id)}
-                  title={t.label}
-                  aria-label={`Switch to ${t.label}`}
-                  className="theme-btn h-9 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
-                  style={{
-                    background: selected ? t.gradient : "var(--surface-3)",
-                    border: selected ? `2px solid ${t.color}` : "2px solid var(--border)",
-                    boxShadow: selected ? `0 0 16px ${t.color}33` : "none",
-                  }}
-                >
-                  {selected ? (
-                    <span className="text-[11px] font-bold text-white">✓</span>
-                  ) : (
-                    <span className="block w-2 h-2 rounded-full" style={{ background: t.gradient }} />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-          <p className="text-[11px] text-center mt-2 font-semibold" style={{ color: "var(--primary)" }}>
-            {THEMES.find((t) => t.id === theme)?.label || "Obsidian"}
-          </p>
+      {/* ═══════════════════════════════════════════════════════════
+          MOBILE: Hamburger sidebar with theme above Net Worth
+          ═══════════════════════════════════════════════════════════ */}
+      <aside
+        className={`lg:hidden fixed top-0 z-40 h-screen w-[260px] flex flex-col transition-transform duration-200 ease-out ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+        style={{ background: "var(--sidebar)", borderRight: "1px solid var(--border)" }}
+      >
+        <div className="flex justify-end p-3">
+          <button onClick={() => setOpen(false)} className="btn btn-ghost w-9 h-9">✕</button>
         </div>
+
+        <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-4">
+          {NAV.map((section) => (
+            <div key={section.group}>
+              <p className="px-2 mb-1.5 text-[9px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--text-faint)" }}>
+                {section.group}
+              </p>
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  const active = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setOpen(false)}
+                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12px] font-medium transition-colors duration-150 ${
+                        active ? "nav-active" : ""
+                      }`}
+                      style={{ color: active ? "var(--primary)" : "var(--text-muted)" }}
+                    >
+                      <span className="text-[14px]">{item.icon}</span>
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+              {/* Theme selector above Net Worth — mobile only */}
+              {section.group === "Wealth" && (
+                <div className="mt-2">
+                  <ThemeSelectorMobile hydrated={hydrated} theme={theme} setTheme={setTheme} />
+                </div>
+              )}
+            </div>
+          ))}
+        </nav>
+
+        <AuthButton />
       </aside>
     </>
   );

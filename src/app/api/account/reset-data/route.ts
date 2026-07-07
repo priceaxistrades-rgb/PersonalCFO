@@ -1,3 +1,4 @@
+import { catchErr } from "@/lib/catch";
 import { db } from "@/db";
 import {
   accounts,
@@ -47,7 +48,7 @@ export async function DELETE(req: Request) {
     });
 
     return Response.json({ ok: true });
-  } catch {
+  } catch (err) {
     return Response.json({ error: "Could not reset data" }, { status: 500 });
   }
 }

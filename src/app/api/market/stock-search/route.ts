@@ -1,3 +1,4 @@
+import { catchErr } from "@/lib/catch";
 import { searchIndianStocks } from "@/lib/indian-stocks";
 
 export const dynamic = "force-dynamic";
@@ -55,7 +56,7 @@ async function searchYahooIndianStocks(q: string): Promise<StockResult[]> {
         exchange: normaliseExchange(item.symbol!, item.exchDisp || item.exchange),
         sector: item.sector,
       }));
-  } catch {
+  } catch (err) {
     return [];
   }
 }

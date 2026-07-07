@@ -1,19 +1,30 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { logger } from "./logger";
 
 export type AppSession = {
   userId: number;
   email: string;
   name: string;
   exp: number;
+  iat: number;
 };
 
 const COOKIE_NAME = "pcfo_session";
 const DEFAULT_SESSION_DAYS = 7;
+const REFRESH_THRESHOLD_MS = 24 * 60 * 60 * 1000; // Refresh if > 24h remaining
 
-function getSecret() {
-  return process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "dev-only-change-me-personal-cfo-secret";
+function getSecret(): string {
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!secret || secret === "dev-only-change-me-personal-cfo-secret") {
+    if (process.env.NODE_ENV === "production") {
+      logger.fatal("AUTH_SECRET is not set or using default value in production! All sessions are forgeable.");
+    }
+    logger.warn("AUTH_SECRET not set — using insecure default. Set AUTH_SECRET env var immediately.");
+    return "dev-only-change-me-personal-cfo-secret";
+  }
+  return secret;
 }
 
 function b64url(input: string | Buffer) {
@@ -24,10 +35,12 @@ function sign(payload: string) {
   return crypto.createHmac("sha256", getSecret()).update(payload).digest("base64url");
 }
 
-export function createSessionToken(input: Omit<AppSession, "exp">, days = DEFAULT_SESSION_DAYS) {
+export function createSessionToken(input: Omit<AppSession, "exp" | "iat">, days = DEFAULT_SESSION_DAYS) {
+  const now = Date.now();
   const session: AppSession = {
     ...input,
-    exp: Date.now() + days * 24 * 60 * 60 * 1000,
+    iat: now,
+    exp: now + days * 24 * 60 * 60 * 1000,
   };
   const payload = b64url(JSON.stringify(session));
   return `${payload}.${sign(payload)}`;
@@ -48,6 +61,16 @@ export function verifySessionToken(token?: string | null): AppSession | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Check if session should be refreshed (sliding window).
+ * Refreshes if more than 24h remaining and session is valid.
+ */
+function shouldRefreshSession(session: AppSession): boolean {
+  const remaining = session.exp - Date.now();
+  // Refresh if session has more than the threshold remaining but less than half the total duration
+  return remaining > 0 && remaining < (DEFAULT_SESSION_DAYS * 24 * 60 * 60 * 1000) / 2;
 }
 
 export function sessionCookieHeader(token: string) {
@@ -83,10 +106,31 @@ export function getApiSession(req: Request): AppSession | null {
 
 export function requireApiSession(req: Request): AppSession | Response {
   const session = getApiSession(req);
-  if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+  if (!session) {
+    return Response.json(
+      { ok: false, error: "Authentication required", requestId: `auth_${Date.now().toString(36)}` },
+      { status: 401 },
+    );
+  }
   return session;
 }
 
 export function isSession(value: AppSession | Response): value is AppSession {
   return !(value instanceof Response);
+}
+
+/**
+ * Get a refresh token if the session should be extended.
+ * Returns a Set-Cookie header value, or null if no refresh needed.
+ */
+export function getSessionRefreshHeader(session: AppSession): string | null {
+  if (shouldRefreshSession(session)) {
+    const newToken = createSessionToken({
+      userId: session.userId,
+      email: session.email,
+      name: session.name,
+    });
+    return sessionCookieHeader(newToken);
+  }
+  return null;
 }

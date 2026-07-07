@@ -1,5 +1,5 @@
 import { SectionTitle } from "@/components/ui/Card";
-import { getAccounts, getInvestments, getDebts, getSnapshots, getTransactions, currentMonthKey, monthlyFlow, lastNMonths } from "@/lib/data";
+import { getAccounts, getInvestments, getDebts, getSnapshots, getAllTransactions, currentMonthKey, monthlyFlow, lastNMonths } from "@/lib/data";
 import { LiveNetWorthTracker } from "./LiveNetWorthTracker";
 import { AccountsManager } from "../settings/AccountsManager";
 import { InvestmentsManager } from "../settings/InvestmentsManager";
@@ -13,7 +13,7 @@ export default async function NetWorthPage() {
     getInvestments(),
     getDebts(),
     getSnapshots(),
-    getTransactions(),
+    getAllTransactions(),
   ]);
 
   const months = lastNMonths(1);

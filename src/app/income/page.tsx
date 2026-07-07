@@ -2,22 +2,15 @@ import { SectionTitle } from "@/components/ui/Card";
 import { TransactionForm } from "@/components/TransactionForm";
 import { MemberSelectorClient } from "@/components/MemberSelectorClient";
 import { FilteredIncome } from "@/components/FilteredIncome";
-import { getTransactions, getMembers, getAccounts } from "@/lib/data";
+import { getAllTransactions, getMembers, getAccounts } from "@/lib/data";
+import { INCOME_CATEGORIES } from "@/lib/categories";
 
 export const dynamic = "force-dynamic";
 
-const INCOME_CATEGORIES = [
-  "Salary",
-  "Business",
-  "Freelancing",
-  "Rental Income",
-  "Dividends",
-  "Interest",
-  "Other Income",
-];
+const incomeCategories = [...INCOME_CATEGORIES];
 
 export default async function IncomePage() {
-  const [txns, members, accounts] = await Promise.all([getTransactions(), getMembers(), getAccounts()]);
+  const [txns, members, accounts] = await Promise.all([getAllTransactions(), getMembers(), getAccounts()]);
   const income = txns.filter((t) => t.type === "income");
 
   return (
@@ -25,7 +18,7 @@ export default async function IncomePage() {
       <SectionTitle
         title="Income Tracker"
         subtitle="All earning sources for the household"
-        action={<TransactionForm type="income" categories={INCOME_CATEGORIES} members={members} accounts={accounts} />}
+        action={<TransactionForm type="income" categories={incomeCategories} members={members} accounts={accounts} />}
       />
 
       <MemberSelectorClient members={members} />

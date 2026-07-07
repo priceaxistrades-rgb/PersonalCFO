@@ -5,7 +5,7 @@ import { MemberSelectorClient } from "@/components/MemberSelectorClient";
 import { QuickActionCenter } from "@/components/QuickActionCenter";
 import { PrivacyToggle } from "@/components/PrivacyToggle";
 import {
-  getTransactions,
+  getAllTransactions,
   getBills,
   getDebts,
   getGoals,
@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 export default async function Dashboard() {
   const [user, txns, bills, debts, goals, invs, accs, members] = await Promise.all([
     getCurrentUser(),
-    getTransactions(),
+    getAllTransactions(),
     getBills(),
     getDebts(),
     getGoals(),
@@ -29,11 +29,15 @@ export default async function Dashboard() {
     getMembers(),
   ]);
 
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+
   return (
     <div className="space-y-6">
       <SectionTitle
         title="Financial Dashboard"
-        subtitle={`Welcome back, ${user.name} · ${new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`}
+        subtitle={`Welcome back, ${user.name} · ${dateStr} · ${timeStr}`}
         action={
           <div className="flex items-center gap-2">
             <PrivacyToggle />

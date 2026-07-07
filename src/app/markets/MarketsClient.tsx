@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { SectionTitle, Badge, Card } from "@/components/ui/Card";
 import { LiveMarkets } from "./LiveMarkets";
 import { AddWatch } from "./AddWatch";
-import { InvestmentForm, SellInvestmentModal, type InvestmentRow } from "../settings/InvestmentsManager";
+import { InvestmentForm, SellInvestmentModal } from "../settings/InvestmentsManager";
+import type { InvestmentRow } from "@/lib/types";
 
 export function MarketsClient({
   watchItemsPromise,
@@ -21,6 +22,7 @@ export function MarketsClient({
   const [investments, setInvestments] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [sellTarget, setSellTarget] = useState<InvestmentRow | null>(null);
+  const [sellLivePrice, setSellLivePrice] = useState<number | null>(null);
   const [selectedItem, setSelectedItem] = useState<{
     symbol?: string;
     schemeCode?: string;
@@ -90,7 +92,12 @@ export function MarketsClient({
       schemeCode: inv.schemeCode,
       units: inv.units,
       startDate: inv.startDate,
+      createdAt: inv.createdAt,
+      updatedAt: inv.updatedAt,
+      userId: inv.userId,
+      memberId: inv.memberId,
     });
+    setSellLivePrice(item.currentPrice || null);
   };
 
   return (
@@ -149,18 +156,29 @@ export function MarketsClient({
       {sellTarget && (
         <SellInvestmentModal
           investment={sellTarget}
-          livePrice={null}
+          livePrice={sellLivePrice}
           accounts={accounts}
-          onClose={() => setSellTarget(null)}
-          onSold={() => { setSellTarget(null); router.refresh(); }}
+          onClose={() => { setSellTarget(null); setSellLivePrice(null); }}
+          onSold={() => { setSellTarget(null); setSellLivePrice(null); router.refresh(); }}
         />
       )}
 
-      <Card className="!p-4">
-        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          📊 <span className="font-semibold" style={{ color: "var(--text)" }}>How it works: </span>
-          Your investments with a stock symbol or MF scheme code automatically appear here. Stock prices from Yahoo Finance, mutual fund NAVs from AMFI via mfapi.in. Click <strong>+ Add</strong> to add a stock/MF to your portfolio — just enter units &amp; average buy price, and current value auto-calculates from live price.
-        </p>
+      <Card className="!p-4" style={{ border: "1px solid var(--border-accent)" }}>
+        <div className="flex items-start gap-3">
+          <span className="text-lg flex-shrink-0">🔗</span>
+          <div className="space-y-1.5">
+            <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>Auto-Sync Note</p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Your investments with a stock symbol or MF scheme code automatically appear here. Stock prices from Yahoo Finance, mutual fund NAVs from AMFI via mfapi.in.
+            </p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Click <strong>+ Add</strong> to add a stock/MF to your portfolio — enter <strong>units + average buy price</strong>, and current value auto-calculates from live price.
+            </p>
+            <p className="text-xs font-medium" style={{ color: "var(--warning)" }}>
+              💡 Always enter average buy price when adding investments. This ensures correct invested amount & P&L display in both Live Markets and Investment Dashboard.
+            </p>
+          </div>
+        </div>
       </Card>
     </div>
   );

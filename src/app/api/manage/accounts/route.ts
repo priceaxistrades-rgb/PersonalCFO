@@ -1,3 +1,4 @@
+import { catchErr } from "@/lib/catch";
 import { db } from "@/db";
 import { accounts } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -10,8 +11,8 @@ export async function GET(req: Request) {
   try {
     const rows = await db.select().from(accounts).where(eq(accounts.userId, session.userId)).orderBy(accounts.id);
     return Response.json({ ok: true, rows });
-  } catch {
-    return Response.json({ error: "Server error" }, { status: 500 });
+  } catch (err) {
+    return catchErr("manage_accounts", err, session?.userId);
   }
 }
 
@@ -33,8 +34,8 @@ export async function POST(req: Request) {
       memberId: b.memberId,
     }).returning();
     return Response.json({ ok: true, row });
-  } catch {
-    return Response.json({ error: "Server error" }, { status: 500 });
+  } catch (err) {
+    return catchErr("manage_accounts", err, session?.userId);
   }
 }
 
@@ -57,8 +58,8 @@ export async function PATCH(req: Request) {
 
     await db.update(accounts).set(safeUpdates).where(and(eq(accounts.id, id), eq(accounts.userId, session.userId)));
     return Response.json({ ok: true });
-  } catch {
-    return Response.json({ error: "Server error" }, { status: 500 });
+  } catch (err) {
+    return catchErr("manage_accounts", err, session?.userId);
   }
 }
 
@@ -73,7 +74,7 @@ export async function DELETE(req: Request) {
 
     await db.delete(accounts).where(and(eq(accounts.id, id), eq(accounts.userId, session.userId)));
     return Response.json({ ok: true });
-  } catch {
-    return Response.json({ error: "Server error" }, { status: 500 });
+  } catch (err) {
+    return catchErr("manage_accounts", err, session?.userId);
   }
 }

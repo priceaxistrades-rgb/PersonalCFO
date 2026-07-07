@@ -1,3 +1,4 @@
+import { catchErr } from "@/lib/catch";
 import { searchMutualFunds } from "@/lib/market";
 
 export const dynamic = "force-dynamic";

@@ -2,19 +2,15 @@ import { SectionTitle } from "@/components/ui/Card";
 import { TransactionForm } from "@/components/TransactionForm";
 import { MemberSelectorClient } from "@/components/MemberSelectorClient";
 import { FilteredExpenses } from "@/components/FilteredExpenses";
-import { getTransactions, getMembers, getAccounts } from "@/lib/data";
+import { getAllTransactions, getMembers, getAccounts } from "@/lib/data";
+import { EXPENSE_CATEGORIES } from "@/lib/categories";
 
 export const dynamic = "force-dynamic";
 
-const EXPENSE_CATEGORIES = [
-  "Housing", "Food", "Groceries", "Electricity", "Water", "Gas", "Internet",
-  "Mobile", "Transportation", "Fuel", "Insurance", "Medical", "Education",
-  "Shopping", "Entertainment", "Subscriptions", "Travel", "Gifts",
-  "Investments", "Miscellaneous",
-];
+const expenseCategories = [...EXPENSE_CATEGORIES];
 
 export default async function ExpensesPage() {
-  const [txns, members, accounts] = await Promise.all([getTransactions(), getMembers(), getAccounts()]);
+  const [txns, members, accounts] = await Promise.all([getAllTransactions(), getMembers(), getAccounts()]);
   const expenses = txns.filter((t) => t.type === "expense");
 
   return (
@@ -22,7 +18,7 @@ export default async function ExpensesPage() {
       <SectionTitle
         title="Expense Tracker"
         subtitle="Every rupee, categorised and visualised"
-        action={<TransactionForm type="expense" categories={EXPENSE_CATEGORIES} members={members} accounts={accounts} />}
+        action={<TransactionForm type="expense" categories={expenseCategories} members={members} accounts={accounts} />}
       />
 
       <MemberSelectorClient members={members} />
