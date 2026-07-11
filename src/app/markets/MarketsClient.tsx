@@ -159,6 +159,7 @@ export function MarketsClient({
             </div>
             <InvestmentForm
               editingInvestment={null}
+              existingInvestments={investments}
               initialData={selectedItem}
               onSave={async (payload) => {
                 const res = await fetch("/api/manage/investments", {

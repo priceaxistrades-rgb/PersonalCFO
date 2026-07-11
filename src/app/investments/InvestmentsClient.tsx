@@ -16,6 +16,7 @@ import {
   InvestmentForm,
   InvestmentManagementTable,
   SellInvestmentModal,
+  AddMoreUnitsModal,
 } from "../settings/InvestmentsManager";
 import type { InvestmentRow } from "@/lib/types";
 
@@ -32,6 +33,7 @@ export function InvestmentsPageClient({
   const [showForm, setShowForm] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState<InvestmentRow | null>(null);
   const [sellTarget, setSellTarget] = useState<InvestmentRow | null>(null);
+  const [addMoreTarget, setAddMoreTarget] = useState<InvestmentRow | null>(null);
 
   // Build a price lookup from live data
   const livePriceMap = new Map<number, number>();
@@ -93,7 +95,7 @@ export function InvestmentsPageClient({
       </div>
 
       {showForm && (
-        <InvestmentForm editingInvestment={editingInvestment} onSave={handleSave} onCancel={() => { setShowForm(false); setEditingInvestment(null); }} />
+        <InvestmentForm editingInvestment={editingInvestment} existingInvestments={initialInvestments as any} onSave={handleSave} onCancel={() => { setShowForm(false); setEditingInvestment(null); }} />
       )}
 
       {/* Legacy holdings table (still useful for detailed view) */}
@@ -110,6 +112,7 @@ export function InvestmentsPageClient({
         onEdit={startEdit}
         onDelete={handleDelete}
         onSell={(i) => setSellTarget(i)}
+        onAddMore={(i) => setAddMoreTarget(i)}
       />
 
       <InvestmentFooter />
@@ -121,6 +124,14 @@ export function InvestmentsPageClient({
           accounts={accounts}
           onClose={() => setSellTarget(null)}
           onSold={() => { setSellTarget(null); router.refresh(); }}
+        />
+      )}
+      {addMoreTarget && (
+        <AddMoreUnitsModal
+          investment={addMoreTarget}
+          livePrice={livePriceMap.get(addMoreTarget.id) || null}
+          onClose={() => setAddMoreTarget(null)}
+          onAdded={() => { setAddMoreTarget(null); router.refresh(); }}
         />
       )}
     </div>

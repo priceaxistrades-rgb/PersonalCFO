@@ -52,7 +52,7 @@ export function DreamsClient(data: DreamsData) {
   const handlePreset = (preset: typeof DREAM_PRESETS[number]) => {
     setNewDream(prev => ({
       ...prev,
-      name: prev.name || preset.label,
+      name: preset.label,
       category: preset.category,
       targetAmount: preset.defaultAmount,
       timelineYears: preset.defaultYears,

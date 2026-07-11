@@ -13,6 +13,7 @@ import {
   investments,
   members,
   netWorthSnapshots,
+  passwordResetTokens,
   taxProfile,
   transactions,
   watchlist,
@@ -47,6 +48,7 @@ export async function DELETE(req: Request) {
       await tx.delete(emergencyItems).where(eq(emergencyItems.userId, userId));
       await tx.delete(members).where(eq(members.userId, userId));
       await tx.delete(aiQueries).where(eq(aiQueries.userId, userId));
+      await tx.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, userId));
     });
 
     return Response.json({ ok: true });

@@ -7,6 +7,7 @@ import { Table, Tr, Td } from "@/components/ui/Table";
 import { AccessibleModal } from "@/components/AccessibleModal";
 import { inr } from "@/lib/format";
 import type { InvestmentRow, AccountOption, SellFormState, InvestmentFormData, InvestmentInitialData } from "@/lib/types";
+import { resolveLiveSymbol, type MarketQuote } from "@/lib/market";
 
 const inputStyle = { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" };
 export const TYPES = ["Stocks", "MutualFunds", "PPF", "EPF", "NPS", "FD", "RD", "Gold", "Silver", "Bonds", "Crypto", "RealEstate", "Other"];
@@ -41,11 +42,14 @@ export function InvestmentForm({
   initialData,
   onSave,
   onCancel,
+  existingInvestments,
 }: {
   editingInvestment: InvestmentRow | null;
   initialData?: InvestmentInitialData;
   onSave: (payload: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
+  /** Pass the full investment list so the "Add More" flow can find existing holdings */
+  existingInvestments?: InvestmentRow[];
 }) {
   const [stockQuery, setStockQuery] = useState("");
   const [stockResults, setStockResults] = useState<{ symbol: string; name: string; exchange: string; sector?: string }[]>([]);
@@ -66,6 +70,66 @@ export function InvestmentForm({
   });
 
   const livePrice = initialData?.price || 0;
+
+  // ─── Price Mode: "live" (use today's price) vs "manual" (enter avg price) ───
+  const [priceMode, setPriceMode] = useState<"live" | "manual">(livePrice > 0 ? "live" : "manual");
+  const [fetchedLivePrice, setFetchedLivePrice] = useState<number>(livePrice);
+  const [livePriceLoading, setLivePriceLoading] = useState(false);
+
+  // Auto-fetch live price when symbol or type changes (for new investments)
+  useEffect(() => {
+    if (editingInvestment) return; // editing mode uses existing data
+    const symbol = form.symbol;
+    const type = form.type;
+    if (!symbol && !["Gold", "Silver", "Crypto", "RealEstate", "Bonds"].includes(type)) {
+      setFetchedLivePrice(0);
+      return;
+    }
+    let active = true;
+    const fetchPrice = async () => {
+      setLivePriceLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (symbol && type === "Stocks") params.set("stocks", symbol);
+        else if (type === "MutualFunds" && form.schemeCode) params.set("mf", form.schemeCode);
+        else {
+          const resolved = resolveLiveSymbol(type, symbol || null);
+          if (resolved) {
+            if (resolved.kind === "commodity") params.set("commodities", resolved.yahooSymbol);
+            else if (resolved.kind === "crypto") params.set("crypto", resolved.yahooSymbol);
+            else if (resolved.kind === "index") params.set("indices", resolved.yahooSymbol);
+            else if (resolved.kind === "reit") params.set("reits", resolved.yahooSymbol);
+            else if (resolved.kind === "bond") params.set("bonds", resolved.yahooSymbol);
+            else params.set("stocks", resolved.yahooSymbol);
+          }
+        }
+        if (!params.toString()) { setLivePriceLoading(false); return; }
+        const res = await fetch(`/api/market/quote?${params.toString()}`, { cache: "no-store" });
+        const data = await res.json();
+        if (active && data.quotes) {
+          const quote: MarketQuote | undefined = Object.values(data.quotes)[0] as MarketQuote | undefined;
+          if (quote?.ok) setFetchedLivePrice(quote.price);
+        }
+      } catch { /* keep previous */ }
+      if (active) setLivePriceLoading(false);
+    };
+    const timer = setTimeout(() => void fetchPrice(), 300);
+    return () => { active = false; clearTimeout(timer); };
+  }, [form.symbol, form.type, form.schemeCode, editingInvestment]);
+
+  // Effective live price — either from initialData or auto-fetched
+  const effectiveLivePrice = fetchedLivePrice > 0 ? fetchedLivePrice : livePrice;
+
+  // When priceMode changes to "live", auto-fill avgPrice with live price
+  useEffect(() => {
+    if (priceMode === "live" && effectiveLivePrice > 0 && !editingInvestment) {
+      setForm((prev) => {
+        const invested = Number((Number(prev.units || 0) * effectiveLivePrice).toFixed(2));
+        const currentValue = invested; // at buy time, invested ≈ current
+        return { ...prev, avgPrice: effectiveLivePrice, invested, currentValue };
+      });
+    }
+  }, [priceMode, effectiveLivePrice, editingInvestment]);
 
   useEffect(() => {
     if (editingInvestment) {
@@ -111,8 +175,9 @@ export function InvestmentForm({
 
   const recalcFromUnits = (units: string, avgPrice: number) => {
     const u = Number(units) || 0;
-    const invested = Number((u * avgPrice).toFixed(2));
-    const currentValue = livePrice > 0 ? Number((u * livePrice).toFixed(2)) : invested;
+    const effectiveAvg = priceMode === "live" && effectiveLivePrice > 0 ? effectiveLivePrice : avgPrice;
+    const invested = Number((u * effectiveAvg).toFixed(2));
+    const currentValue = effectiveLivePrice > 0 ? Number((u * effectiveLivePrice).toFixed(2)) : invested;
     return { invested, currentValue };
   };
 
@@ -170,18 +235,64 @@ export function InvestmentForm({
     setMfResults([]);
   };
 
-  const hasLivePrice = livePrice > 0;
+  const hasLivePrice = effectiveLivePrice > 0;
 
   const handleSave = () => {
     const finalForm = { ...form };
     const u = Number(finalForm.units) || 0;
-    if (u > 0 && Number(finalForm.invested) <= 0) {
-      const effectiveAvgPrice = finalForm.avgPrice > 0 ? finalForm.avgPrice : livePrice;
-      if (effectiveAvgPrice > 0) {
-        finalForm.invested = Number((u * effectiveAvgPrice).toFixed(2));
-        finalForm.currentValue = livePrice > 0 ? Number((u * livePrice).toFixed(2)) : finalForm.invested;
+
+    // In "live" mode, force avgPrice to the live price
+    if (priceMode === "live" && effectiveLivePrice > 0) {
+      finalForm.avgPrice = effectiveLivePrice;
+      if (u > 0) {
+        finalForm.invested = Number((u * effectiveLivePrice).toFixed(2));
+        finalForm.currentValue = Number((u * effectiveLivePrice).toFixed(2));
       }
     }
+
+    if (u > 0 && Number(finalForm.invested) <= 0) {
+      const effectiveAvgPrice = finalForm.avgPrice > 0 ? finalForm.avgPrice : effectiveLivePrice;
+      if (effectiveAvgPrice > 0) {
+        finalForm.invested = Number((u * effectiveAvgPrice).toFixed(2));
+        finalForm.currentValue = effectiveLivePrice > 0 ? Number((u * effectiveLivePrice).toFixed(2)) : finalForm.invested;
+      }
+    }
+
+    // ─── Add More Units flow: merge with existing holding ───
+    if (!editingInvestment && existingInvestments && u > 0) {
+      const existing = existingInvestments.find((inv) => {
+        if (finalForm.symbol && inv.symbol === finalForm.symbol) return true;
+        if (finalForm.schemeCode && inv.schemeCode === finalForm.schemeCode) return true;
+        if (finalForm.name && inv.name === finalForm.name && inv.type === finalForm.type) return true;
+        return false;
+      });
+      if (existing) {
+        const existingUnits = Number(existing.units) || 0;
+        const existingInvested = Number(existing.invested) || 0;
+        const newUnitsTotal = existingUnits + u;
+        const newInvestedTotal = existingInvested + Number(finalForm.invested);
+        const newAvgPrice = newUnitsTotal > 0 ? newInvestedTotal / newUnitsTotal : 0;
+        const newCurrentValue = effectiveLivePrice > 0 && newUnitsTotal > 0
+          ? Number((effectiveLivePrice * newUnitsTotal).toFixed(2))
+          : newInvestedTotal;
+
+        const payload = buildPayload({
+          ...finalForm,
+          units: String(newUnitsTotal),
+          avgPrice: Number(newAvgPrice.toFixed(4)),
+          invested: Number(newInvestedTotal.toFixed(2)),
+          currentValue: newCurrentValue,
+        });
+        (payload as any).id = existing.id;
+        // Also preserve existing symbol/schemeCode
+        if (existing.symbol) payload.symbol = existing.symbol;
+        if (existing.schemeCode) payload.schemeCode = existing.schemeCode;
+        if (existing.name) payload.name = existing.name;
+        void onSave(payload);
+        return;
+      }
+    }
+
     const payload = buildPayload(finalForm);
     if (editingInvestment) {
       (payload as any).id = editingInvestment.id;
@@ -208,31 +319,96 @@ export function InvestmentForm({
         </div>
       </div>
 
-      {/* Average Price */}
-      <div className="grid sm:grid-cols-2 gap-4">
-        {Number(form.units) > 0 && form.avgPrice <= 0 && (
-          <div className="sm:col-span-2 p-2.5 rounded-lg text-xs font-medium" style={{ background: "var(--warning-soft)", color: "var(--warning)", border: "1px solid var(--warning)" }} role="alert">
-            ⚠️ Enter average buy price to track invested amount & P&L. Without it, invested will default to live price × units.
-          </div>
-        )}
-        <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="inv-avg-price">Average Buy Price (₹ per unit)</label>
-          <input id="inv-avg-price" type="number" step="0.01" placeholder="e.g. 2450.50" value={form.avgPrice || ""} onChange={(e) => handleAvgPriceChange(Number(e.target.value))} className="input" />
-          <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>
-            Invested = avg price × units
-            {form.units && form.avgPrice ? ` = ₹${(Number(form.units) * form.avgPrice).toLocaleString("en-IN", { maximumFractionDigits: 2 })}` : ""}
-          </p>
-        </div>
-        {hasLivePrice && (
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Live Price (auto)</label>
-            <div className="input" style={{ background: "var(--primary-soft)", color: "var(--primary)", fontWeight: 700 }}>
-              ₹{livePrice.toLocaleString("en-IN", { maximumFractionDigits: 2 })} per unit
+      {/* ═══ Price Mode Toggle: Today's Live Price vs Manual ═══ */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Buy Price</span>
+          {(effectiveLivePrice > 0 || livePriceLoading) && (
+            <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+              <button
+                onClick={() => setPriceMode("live")}
+                className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-all"
+                style={{
+                  background: priceMode === "live" ? "var(--success)" : "var(--surface-3)",
+                  color: priceMode === "live" ? "#fff" : "var(--text-muted)",
+                }}
+              >
+                📡 Today&apos;s Price
+              </button>
+              <button
+                onClick={() => setPriceMode("manual")}
+                className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-all"
+                style={{
+                  background: priceMode === "manual" ? "var(--primary)" : "var(--surface-3)",
+                  color: priceMode === "manual" ? "#fff" : "var(--text-muted)",
+                }}
+              >
+                ✏️ Manual
+              </button>
             </div>
-            <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>
-              Current value = live price × units
-              {form.units ? ` = ₹${(Number(form.units) * livePrice).toLocaleString("en-IN", { maximumFractionDigits: 2 })}` : ""}
-            </p>
+          )}
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          {/* Left: Price input (changes based on mode) */}
+          <div>
+            {priceMode === "live" && effectiveLivePrice > 0 ? (
+              <>
+                <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--success)" }} htmlFor="inv-live-price">
+                  Today&apos;s Price (₹ per unit)
+                </label>
+                <div className="input flex items-center gap-2" style={{ background: "var(--success-soft)", color: "var(--success)", fontWeight: 700 }}>
+                  ₹{effectiveLivePrice.toLocaleString("en-IN", { maximumFractionDigits: 2 })} per unit
+                  {livePriceLoading && <span className="animate-pulse">⏳</span>}
+                  <span className="text-[9px] font-normal opacity-70">AUTO</span>
+                </div>
+                <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>
+                  Invested = today&apos;s price × units
+                  {form.units ? ` = ₹${(Number(form.units) * effectiveLivePrice).toLocaleString("en-IN", { maximumFractionDigits: 2 })}` : ""}
+                </p>
+              </>
+            ) : (
+              <>
+                <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="inv-avg-price">Average Buy Price (₹ per unit)</label>
+                <input id="inv-avg-price" type="number" step="0.01" placeholder="e.g. 2450.50" value={form.avgPrice || ""} onChange={(e) => handleAvgPriceChange(Number(e.target.value))} className="input" />
+                <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>
+                  Invested = avg price × units
+                  {form.units && form.avgPrice ? ` = ₹${(Number(form.units) * form.avgPrice).toLocaleString("en-IN", { maximumFractionDigits: 2 })}` : ""}
+                </p>
+              </>
+            )}
+          </div>
+
+          {/* Right: Live price reference */}
+          {effectiveLivePrice > 0 && priceMode === "manual" && (
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Live Price (reference)</label>
+              <div className="input" style={{ background: "var(--primary-soft)", color: "var(--primary)", fontWeight: 700 }}>
+                ₹{effectiveLivePrice.toLocaleString("en-IN", { maximumFractionDigits: 2 })} per unit
+                {livePriceLoading && <span className="animate-pulse ml-1">⏳</span>}
+              </div>
+              <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>
+                Current value = live price × units
+                {form.units ? ` = ₹${(Number(form.units) * effectiveLivePrice).toLocaleString("en-IN", { maximumFractionDigits: 2 })}` : ""}
+              </p>
+            </div>
+          )}
+          {effectiveLivePrice > 0 && priceMode === "live" && (
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Current Value</label>
+              <div className="input" style={{ background: "var(--primary-soft)", color: "var(--primary)", fontWeight: 700 }}>
+                {form.units ? `₹${(Number(form.units) * effectiveLivePrice).toLocaleString("en-IN", { maximumFractionDigits: 2 })}` : "Enter units to calculate"}
+              </div>
+              <p className="text-[11px] mt-1" style={{ color: "var(--text-faint)" }}>
+                Auto-calculated from today&apos;s live price
+              </p>
+            </div>
+          )}
+        </div>
+
+        {Number(form.units) > 0 && form.avgPrice <= 0 && priceMode === "manual" && (
+          <div className="p-2.5 rounded-lg text-xs font-medium" style={{ background: "var(--warning-soft)", color: "var(--warning)", border: "1px solid var(--warning)" }} role="alert">
+            ⚠️ Enter average buy price to track invested amount & P&L. Or switch to &quot;📡 Today&apos;s Price&quot; to auto-fill from live market data.
           </div>
         )}
       </div>
@@ -350,6 +526,166 @@ export function InvestmentForm({
         <button onClick={onCancel} className="btn btn-secondary px-5 py-2.5">Cancel</button>
       </div>
     </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ADD MORE UNITS MODAL — Quick top-up for existing holdings
+   Fetches live price, auto-averages with existing holding
+   ═══════════════════════════════════════════════════════════════ */
+
+export function AddMoreUnitsModal({
+  investment,
+  livePrice,
+  onClose,
+  onAdded,
+}: {
+  investment: InvestmentRow;
+  livePrice: number | null;
+  onClose: () => void;
+  onAdded: () => void;
+}) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [priceMode, setPriceMode] = useState<"live" | "manual">(livePrice && livePrice > 0 ? "live" : "manual");
+  const [newUnits, setNewUnits] = useState("");
+  const [buyPrice, setBuyPrice] = useState(livePrice || 0);
+
+  const existingUnits = Number(investment.units) || 0;
+  const existingInvested = Number(investment.invested) || 0;
+  const existingAvg = existingUnits > 0 ? existingInvested / existingUnits : 0;
+  const effectiveBuyPrice = priceMode === "live" && livePrice ? livePrice : buyPrice;
+  const newInvested = Number(newUnits || 0) * effectiveBuyPrice;
+  const totalUnits = existingUnits + Number(newUnits || 0);
+  const totalInvested = existingInvested + newInvested;
+  const newAvg = totalUnits > 0 ? totalInvested / totalUnits : 0;
+  const newCurrentValue = livePrice && livePrice > 0 && totalUnits > 0
+    ? livePrice * totalUnits
+    : totalInvested;
+
+  const handleAdd = async () => {
+    const units = Number(newUnits);
+    if (!units || units <= 0) { setError("Enter units to add"); return; }
+    if (effectiveBuyPrice <= 0) { setError("Enter buy price"); return; }
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/manage/investments", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: investment.id,
+          units: totalUnits.toFixed(4),
+          invested: totalInvested.toFixed(2),
+          currentValue: newCurrentValue.toFixed(2),
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || "Failed to update investment");
+      }
+      onAdded();
+      onClose();
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add units");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AccessibleModal isOpen={true} onClose={onClose} title="Add More Units" size="md">
+      <div className="flex justify-between items-center mb-5">
+        <h3 id="modal-title" className="font-bold text-lg flex items-center gap-2" style={{ color: "var(--text-heading)" }}>
+          <span className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: "linear-gradient(135deg, var(--primary), var(--success))" }} aria-hidden="true">📈</span>
+          Add More Units
+        </h3>
+        <button onClick={onClose} className="btn btn-ghost w-8 h-8 rounded-full text-xs" aria-label="Close">✕</button>
+      </div>
+
+      {/* Existing holding info */}
+      <div className="p-3 rounded-lg mb-4" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+        <p className="font-semibold" style={{ color: "var(--text-heading)" }}>{investment.name}</p>
+        <div className="flex gap-3 mt-1 flex-wrap text-[11px]" style={{ color: "var(--text-muted)" }}>
+          <span>📊 {existingUnits} units held</span>
+          <span>💰 Avg ₹{existingAvg.toFixed(2)}/unit</span>
+          <span>💼 Invested ₹{existingInvested.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>
+        </div>
+      </div>
+
+      {error && <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: "var(--danger-soft)", color: "var(--danger)" }} role="alert">{error}</div>}
+
+      <div className="space-y-4">
+        {/* Units input */}
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }} htmlFor="add-more-units">New Units to Add</label>
+          <input id="add-more-units" type="number" step="0.0001" placeholder="e.g. 5" value={newUnits} onChange={(e) => setNewUnits(e.target.value)} className="input" autoFocus />
+        </div>
+
+        {/* Price mode toggle */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Buy Price</span>
+            {livePrice && livePrice > 0 && (
+              <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+                <button onClick={() => setPriceMode("live")} className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider" style={{ background: priceMode === "live" ? "var(--success)" : "var(--surface-3)", color: priceMode === "live" ? "#fff" : "var(--text-muted)" }}>
+                  📡 Today&apos;s Price
+                </button>
+                <button onClick={() => setPriceMode("manual")} className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider" style={{ background: priceMode === "manual" ? "var(--primary)" : "var(--surface-3)", color: priceMode === "manual" ? "#fff" : "var(--text-muted)" }}>
+                  ✏️ Manual
+                </button>
+              </div>
+            )}
+          </div>
+
+          {priceMode === "live" && livePrice ? (
+            <div className="input" style={{ background: "var(--success-soft)", color: "var(--success)", fontWeight: 700 }}>
+              ₹{livePrice.toLocaleString("en-IN", { maximumFractionDigits: 2 })} per unit <span className="text-[9px] font-normal opacity-70">LIVE</span>
+            </div>
+          ) : (
+            <div>
+              <input type="number" step="0.01" placeholder="Enter buy price per unit" value={buyPrice || ""} onChange={(e) => setBuyPrice(Number(e.target.value))} className="input" />
+            </div>
+          )}
+        </div>
+
+        {/* Auto-averaged summary */}
+        {Number(newUnits) > 0 && effectiveBuyPrice > 0 && (
+          <div className="p-3 rounded-lg" style={{ background: "var(--primary-soft)", border: "1px solid var(--border-accent)" }} role="status">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-[10px] font-bold uppercase" style={{ color: "var(--text-faint)" }}>New Investment</p>
+                <p className="font-bold" style={{ color: "var(--text-heading)" }}>₹{newInvested.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</p>
+                <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>{newUnits} units × ₹{effectiveBuyPrice.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase" style={{ color: "var(--text-faint)" }}>New Average</p>
+                <p className="font-bold" style={{ color: "var(--primary)" }}>₹{newAvg.toFixed(2)}/unit</p>
+                <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>{existingAvg.toFixed(2)} → {newAvg.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase" style={{ color: "var(--text-faint)" }}>Total Units</p>
+                <p className="font-bold" style={{ color: "var(--text-heading)" }}>{totalUnits}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase" style={{ color: "var(--text-faint)" }}>Total Invested</p>
+                <p className="font-bold" style={{ color: "var(--text-heading)" }}>₹{totalInvested.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <button onClick={handleAdd} disabled={loading || !Number(newUnits) || effectiveBuyPrice <= 0} className="btn btn-success flex-1 py-3 disabled:opacity-50">
+            {loading ? "Adding..." : `📈 Add ${newUnits || "0"} Units`}
+          </button>
+          <button onClick={onClose} className="btn btn-secondary px-5 py-3">Cancel</button>
+        </div>
+      </div>
+    </AccessibleModal>
   );
 }
 
@@ -578,11 +914,13 @@ export function InvestmentManagementTable({
   onEdit,
   onDelete,
   onSell,
+  onAddMore,
 }: {
   investments: InvestmentRow[];
   onEdit: (i: InvestmentRow) => void;
   onDelete: (id: number) => Promise<void>;
   onSell?: (i: InvestmentRow) => void;
+  onAddMore?: (i: InvestmentRow) => void;
 }) {
   return (
     <Card title="📈 Investment Management" subtitle={`${investments.length} holdings`}>
@@ -597,6 +935,9 @@ export function InvestmentManagementTable({
             <Td right muted>{i.units || "—"}</Td>
             <Td right>
               <div className="flex gap-1 justify-end no-print">
+                {onAddMore && (Number(i.units || 0) > 0 || Number(i.invested || 0) > 0) && (
+                  <button onClick={() => onAddMore(i)} className="btn btn-ghost text-[11px] px-2 py-1" style={{ color: "var(--success)" }} aria-label={`Add more ${i.name}`}>📈 Add</button>
+                )}
                 {onSell && (Number(i.units || 0) > 0 || Number(i.invested || 0) > 0 || Number(i.currentValue || 0) > 0) && (
                   <button onClick={() => onSell(i)} className="btn btn-ghost text-[11px] px-2 py-1" style={{ color: "var(--warning)" }} aria-label={`Sell ${i.name}`}>📉 Sell</button>
                 )}
@@ -616,6 +957,7 @@ export function InvestmentsManager({ investments, accounts }: { investments: Inv
   const [editing, setEditing] = useState<InvestmentRow | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [sellTarget, setSellTarget] = useState<InvestmentRow | null>(null);
+  const [addMoreTarget, setAddMoreTarget] = useState<InvestmentRow | null>(null);
 
   const handleSave = async (payload: Record<string, unknown>) => {
     await fetch("/api/manage/investments", {
@@ -642,13 +984,14 @@ export function InvestmentsManager({ investments, accounts }: { investments: Inv
         </button>
       </div>
       {(showAdd || editing) && (
-        <InvestmentForm editingInvestment={editing} onSave={handleSave} onCancel={() => { setShowAdd(false); setEditing(null); }} />
+        <InvestmentForm editingInvestment={editing} existingInvestments={investments} onSave={handleSave} onCancel={() => { setShowAdd(false); setEditing(null); }} />
       )}
       <InvestmentManagementTable
         investments={investments}
         onEdit={(i) => { setEditing(i); setShowAdd(true); }}
         onDelete={handleDelete}
         onSell={(i) => setSellTarget(i)}
+        onAddMore={(i) => setAddMoreTarget(i)}
       />
       {sellTarget && (
         <SellInvestmentModal
@@ -657,6 +1000,14 @@ export function InvestmentsManager({ investments, accounts }: { investments: Inv
           accounts={accounts || []}
           onClose={() => setSellTarget(null)}
           onSold={() => { setSellTarget(null); router.refresh(); }}
+        />
+      )}
+      {addMoreTarget && (
+        <AddMoreUnitsModal
+          investment={addMoreTarget}
+          livePrice={null}
+          onClose={() => setAddMoreTarget(null)}
+          onAdded={() => { setAddMoreTarget(null); router.refresh(); }}
         />
       )}
     </div>

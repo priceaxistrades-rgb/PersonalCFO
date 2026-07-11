@@ -219,10 +219,11 @@ export function AddWatch() {
                   const price = quote?.ok ? fmtPrice(quote.price, quote.currency) : "—";
                   const change = quote?.ok ? quote.changePct : null;
                   return (
-                    <div
+                    <button
                       key={item.symbol}
-                      className="flex items-center justify-between p-3 rounded-xl"
-                      style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
+                      onClick={() => addInstrument({ kind: item.kind, symbol: item.symbol, label: item.name })}
+                      className="w-full text-left flex items-center justify-between p-3 rounded-xl hover:opacity-80 transition-opacity"
+                      style={{ background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--text)" }}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <span className="text-lg">{item.icon}</span>
@@ -244,15 +245,9 @@ export function AddWatch() {
                         ) : quote ? (
                           <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>⏳</span>
                         ) : null}
-                        <button
-                          onClick={() => addInstrument({ kind: item.kind, symbol: item.symbol, label: item.name })}
-                          className="px-3 py-1.5 rounded-lg text-xs font-semibold"
-                          style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
-                        >
-                          + Add
-                        </button>
+                        <span className="text-xs font-semibold shrink-0" style={{ color: "var(--primary)" }}>+ Add</span>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>

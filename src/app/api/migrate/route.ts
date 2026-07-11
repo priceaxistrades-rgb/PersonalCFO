@@ -331,6 +331,13 @@ export async function GET() {
     await addColumn("emergency_items", "created_at", "TIMESTAMP", results, { default: "NOW()", notNull: true });
     await addColumn("emergency_items", "updated_at", "TIMESTAMP", results, { default: "NOW()", notNull: true });
 
+    // Password reset tokens
+    await addColumn("password_reset_tokens", "user_id", "INTEGER", results);
+    await addColumn("password_reset_tokens", "token", "TEXT", results);
+    await addColumn("password_reset_tokens", "expires_at", "TIMESTAMP", results);
+    await addColumn("password_reset_tokens", "used_at", "TIMESTAMP", results);
+    await addColumn("password_reset_tokens", "created_at", "TIMESTAMP", results, { default: "NOW()", notNull: true });
+
     // ─── 4. Create audit_log table ──────────────────────────
     await createTable(`CREATE TABLE IF NOT EXISTS "audit_log" (
       "id" SERIAL PRIMARY KEY,
@@ -353,6 +360,16 @@ export async function GET() {
       "confidence" TEXT NOT NULL DEFAULT 'medium',
       "created_at" TIMESTAMP NOT NULL DEFAULT NOW()
     )`, "ai_queries", results);
+
+    // ─── 4c. Create password_reset_tokens table ────────────
+    await createTable(`CREATE TABLE IF NOT EXISTS "password_reset_tokens" (
+      "id" SERIAL PRIMARY KEY,
+      "user_id" INTEGER NOT NULL,
+      "token" TEXT NOT NULL UNIQUE,
+      "expires_at" TIMESTAMP NOT NULL,
+      "used_at" TIMESTAMP,
+      "created_at" TIMESTAMP NOT NULL DEFAULT NOW()
+    )`, "password_reset_tokens", results);
 
     // ─── 5. Create indexes ──────────────────────────────────
     await createIndex("members_user_id_idx", `"members" ("user_id")`, results);
@@ -387,6 +404,8 @@ export async function GET() {
     await createIndex("audit_log_created_at_idx", `"audit_log" ("created_at")`, results);
     await createIndex("ai_queries_user_id_idx", `"ai_queries" ("user_id")`, results);
     await createIndex("ai_queries_created_at_idx", `"ai_queries" ("created_at")`, results);
+    await createIndex("password_reset_tokens_user_id_idx", `"password_reset_tokens" ("user_id")`, results);
+    await createIndex("password_reset_tokens_token_idx", `"password_reset_tokens" ("token")`, results);
 
     // ─── 6. Fix enum-typed columns if they were created as TEXT ──
     // For accounts.type — if it's currently TEXT, alter to enum

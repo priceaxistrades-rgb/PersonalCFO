@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotSent, setForgotSent] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [devResetUrl, setDevResetUrl] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,8 +37,13 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: forgotEmail }),
       });
+      const data = await res.json();
       if (res.ok) {
         setForgotSent(true);
+        // In development, show the reset URL directly
+        if (data.devResetUrl) {
+          setDevResetUrl(data.devResetUrl);
+        }
       } else {
         const data = await res.json().catch(() => ({}));
         setError(data.error || "Could not process request");
@@ -117,6 +123,23 @@ export default function LoginPage() {
                 <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
                   Check your inbox at <strong>{forgotEmail}</strong> for the password reset link.
                 </p>
+                {devResetUrl && (
+                  <div className="mt-3 p-2.5 rounded-lg text-left" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+                    <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "var(--warning)" }}>🛠️ Dev Mode — Reset URL:</p>
+                    <a
+                      href={devResetUrl}
+                      className="text-xs font-medium break-all underline"
+                      style={{ color: "var(--primary)" }}
+                    >
+                      {devResetUrl}
+                    </a>
+                  </div>
+                )}
+                {!devResetUrl && (
+                  <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>
+                    💡 Check your spam/junk folder if you don't see the email.
+                  </p>
+                )}
               </div>
             ) : (
               <form onSubmit={handleForgotPassword} className="space-y-4">

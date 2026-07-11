@@ -239,8 +239,12 @@ export function generateDreamPlannerReport(data: {
       const cat = mapGoalCategory(g.category);
       const remaining = num(g.target) - num(g.saved);
       const yearsEstimate = avgSavings > 0 ? Math.max(1, Math.ceil(remaining / (avgSavings * 12))) : 5;
+      // Use the preset label for a nicer name if the goal name is just the raw category
+      const presetLabel = DREAM_PRESETS.find(p => p.category === cat)?.label;
+      const isGenericName = !g.name.trim() || g.name.trim().toLowerCase() === g.category.toLowerCase()
+        || g.name.trim().toLowerCase() === cat.toLowerCase();
       return {
-        name: g.name,
+        name: isGenericName && presetLabel ? presetLabel : g.name.trim() || presetLabel || cat,
         category: cat,
         targetAmount: remaining,
         timelineYears: Math.min(yearsEstimate, 30),
@@ -280,7 +284,9 @@ export function generateDreamPlannerReport(data: {
 function mapGoalCategory(cat: string): DreamCategory {
   const map: Record<string, DreamCategory> = {
     Emergency: "custom",
+    Vacation: "travel",
     Travel: "travel",
+    House: "home",
     Home: "home",
     Car: "car",
     Education: "education",
@@ -288,6 +294,10 @@ function mapGoalCategory(cat: string): DreamCategory {
     Wedding: "wedding",
     Business: "business",
     Gadget: "gadget",
+    Medical: "custom",
+    "Home Appliance": "gadget",
+    Charity: "custom",
+    Custom: "custom",
   };
   return map[cat] || "custom";
 }

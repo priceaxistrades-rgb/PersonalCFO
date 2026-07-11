@@ -114,6 +114,19 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 }).strict();
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email("Enter a valid email address"),
+}).strict();
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Reset token is required"),
+  password: z.string().min(8, "Password must be at least 8 characters").max(128, "Password too long"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+}).strict().refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
 // ─── Account Schemas ────────────────────────────────────────────
 
 export const accountCreateSchema = z.object({

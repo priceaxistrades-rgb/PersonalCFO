@@ -297,6 +297,19 @@ export const aiQueries = pgTable("ai_queries", {
   index("ai_queries_created_at_idx").on(table.createdAt),
 ]);
 
+// ─── Password Reset Tokens ──────────────────────────────────
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("password_reset_tokens_user_id_idx").on(table.userId),
+  index("password_reset_tokens_token_idx").on(table.token),
+]);
+
 // ─── Audit Log ──────────────────────────────────────────────
 // Immutable record of all financial data changes for traceability
 export const auditLog = pgTable("audit_log", {

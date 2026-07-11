@@ -14,9 +14,13 @@ const safeUserColumns = {
   name: users.name,
 };
 
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 12);
+}
+
 export async function createUser(email: string, password: string, name: string) {
   const normalizedEmail = normalizeEmail(email);
-  const hashedPassword = await bcrypt.hash(password, 12);
+  const hashedPassword = await hashPassword(password);
   const [user] = await db
     .insert(users)
     .values({
@@ -48,4 +52,12 @@ export async function getUserById(id: number) {
     .from(users)
     .where(eq(users.id, id));
   return user;
+}
+
+export async function updateUserPassword(userId: number, newPassword: string) {
+  const hashedPassword = await hashPassword(newPassword);
+  await db
+    .update(users)
+    .set({ password: hashedPassword, updatedAt: new Date() })
+    .where(eq(users.id, userId));
 }

@@ -23,7 +23,7 @@ const TABS = [
   { id: "annual",     label: "Annual",     icon: "🗓️", color: "var(--primary)" },
 ] as const;
 
-export function QuickActionCenter({ accounts }: { accounts: any[] }) {
+export function QuickActionCenter({ accounts, investments }: { accounts: any[]; investments?: any[] }) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -137,9 +137,11 @@ export function QuickActionCenter({ accounts }: { accounts: any[] }) {
                 <InvestmentForm
                   key={investmentFormKey}
                   editingInvestment={null}
+                  existingInvestments={investments || []}
                   onSave={async (payload) => {
+                    const method = payload.id ? "PATCH" : "POST";
                     const res = await fetch("/api/manage/investments", {
-                      method: "POST",
+                      method,
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify(payload),
                     });

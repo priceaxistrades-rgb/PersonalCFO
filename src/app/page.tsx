@@ -48,7 +48,7 @@ export default async function Dashboard() {
 
       <MemberSelectorClient members={members} />
 
-      <QuickActionCenter accounts={accs} />
+      <QuickActionCenter accounts={accs} investments={invs} />
 
       <FilteredDashboard 
         txns={txns}
