@@ -33,13 +33,18 @@ export const GET = apiHandler(async (req, { log }) => {
 
     const profile = buildTwinProfile({ txns, accounts, investments, debts, bills, goals, insurance });
 
-    // Also get recent query history
-    const recentQueries = await db
-      .select()
-      .from(aiQueries)
-      .where(eq(aiQueries.userId, session.userId))
-      .orderBy(desc(aiQueries.createdAt))
-      .limit(20);
+    // Get recent query history — non-critical, don't crash if table missing
+    let recentQueries: any[] = [];
+    try {
+      recentQueries = await db
+        .select()
+        .from(aiQueries)
+        .where(eq(aiQueries.userId, session.userId))
+        .orderBy(desc(aiQueries.createdAt))
+        .limit(20);
+    } catch (queryErr) {
+      log.warn("Could not fetch AI query history (table may not exist)", { error: String(queryErr) });
+    }
 
     log.info("Twin profile generated", { userId: session.userId });
     return apiSuccess({ profile, recentQueries });
@@ -100,14 +105,18 @@ export const POST = apiHandler(async (req, { log }) => {
       response = answerTwinQuery(profile, { question, amount });
     }
 
-    // Save query to history
-    await db.insert(aiQueries).values({
-      userId: session.userId,
-      question: question || `Scenario: ${scenarioType}`,
-      category: response.category || "General",
-      answer: response.answer || ("recommendation" in response ? response.recommendation : "") || "",
-      confidence: response.confidence || "medium",
-    });
+    // Save query to history — non-critical, don't crash if table missing
+    try {
+      await db.insert(aiQueries).values({
+        userId: session.userId,
+        question: question || `Scenario: ${scenarioType}`,
+        category: response.category || "General",
+        answer: response.answer || ("recommendation" in response ? response.recommendation : "") || "",
+        confidence: response.confidence || "medium",
+      });
+    } catch (insertErr) {
+      log.warn("Could not save AI query to history (table may not exist)", { error: String(insertErr) });
+    }
 
     log.info("Twin query answered", {
       userId: session.userId,

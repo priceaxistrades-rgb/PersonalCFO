@@ -70,7 +70,7 @@ function strToPaise(str: string): bigint {
  * Strips trailing zeros: 48500000n → "485000", 86n → "0.86", 520n → "5.2"
  */
 export function fromPaise(paise: bigint): string {
-  if (paise === 0n) return "0";
+  if (paise === 0n) return "0.00";
   const negative = paise < 0n;
   const abs = negative ? -paise : paise;
   const rupees = abs / SCALE;

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { CONTENT_SECURITY_POLICY } from "@/lib/api-utils";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/api/auth/login", "/api/auth/signup", "/api/auth/forgot-password", "/api/auth/demo", "/api/health", "/api/migrate"];
+const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/api/auth/login", "/api/auth/signup", "/api/auth/forgot-password", "/api/auth/demo"];
 const SESSION_COOKIE = "pcfo_session";
 
 /**

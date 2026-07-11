@@ -51,6 +51,7 @@ export function FinancialTwinClient() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [profileError, setProfileError] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"chat" | "simulator">("chat");
   const [simScenario, setSimScenario] = useState<string>("salaryIncrease");
   const [simAmount, setSimAmount] = useState<number>(20);
@@ -60,6 +61,8 @@ export function FinancialTwinClient() {
   // Fetch twin profile on mount
   useEffect(() => {
     async function fetchProfile() {
+      setProfileError("");
+      setProfileLoading(true);
       try {
         const res = await fetch("/api/ai/twin");
         if (res.ok) {
@@ -87,10 +90,16 @@ export function FinancialTwinClient() {
               }
               setMessages(history);
             }
+          } else {
+            setProfileError(data.error || "Failed to load your financial profile. Please try again.");
           }
+        } else {
+          setProfileError(res.status === 401
+            ? "Please sign in to access your Financial Twin."
+            : "Failed to load your financial profile. Please try again.");
         }
-      } catch {
-        // silently fail
+      } catch (err) {
+        setProfileError("Connection error. Please check your internet and try again.");
       } finally {
         setProfileLoading(false);
       }
@@ -190,9 +199,21 @@ export function FinancialTwinClient() {
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, msg]);
+      } else {
+        setMessages(prev => [...prev, {
+          id: `e-${Date.now()}`,
+          role: "assistant",
+          content: "⚠️ Simulation failed. Please try again.",
+          timestamp: new Date(),
+        }]);
       }
     } catch {
-      // silently fail
+      setMessages(prev => [...prev, {
+        id: `e-${Date.now()}`,
+        role: "assistant",
+        content: "⚠️ Connection error during simulation. Please try again.",
+        timestamp: new Date(),
+      }]);
     } finally {
       setLoading(false);
     }
@@ -212,6 +233,49 @@ export function FinancialTwinClient() {
     }
   };
 
+  const retryProfile = useCallback(() => {
+    setProfileError("");
+    setProfileLoading(true);
+    setProfile(null);
+    setMessages([]);
+    fetch("/api/ai/twin")
+      .then(res => {
+        if (res.ok) return res.json();
+        throw new Error(res.status === 401 ? "Please sign in" : "Failed to load profile");
+      })
+      .then(data => {
+        if (data.ok && data.data) {
+          setProfile(data.data.profile);
+          if (data.data.recentQueries?.length) {
+            const history: ChatMessage[] = [];
+            for (const q of data.data.recentQueries.slice(0, 10).reverse()) {
+              history.push({
+                id: `q-${q.id}`,
+                role: "user",
+                content: q.question,
+                timestamp: new Date(q.createdAt),
+              });
+              history.push({
+                id: `a-${q.id}`,
+                role: "assistant",
+                content: q.answer,
+                category: q.category,
+                confidence: q.confidence as "high" | "medium" | "low",
+                timestamp: new Date(q.createdAt),
+              });
+            }
+            setMessages(history);
+          }
+        } else {
+          setProfileError(data.error || "Failed to load profile");
+        }
+      })
+      .catch(err => {
+        setProfileError(err instanceof Error ? err.message : "Connection error. Please try again.");
+      })
+      .finally(() => setProfileLoading(false));
+  }, []);
+
   if (profileLoading) {
     return (
       <Card>
@@ -222,6 +286,25 @@ export function FinancialTwinClient() {
           </div>
           <div className="h-64 shimmer rounded-xl" />
         </div>
+      </Card>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <Card className="text-center py-10">
+        <div className="inline-flex w-14 h-14 rounded-2xl grid place-items-center text-3xl mb-4" style={{ background: "var(--danger-soft)" }}>
+          ⚠️
+        </div>
+        <h3 className="text-lg font-bold mb-2" style={{ color: "var(--danger)" }}>Unable to Load Financial Twin</h3>
+        <p className="text-sm mb-4 max-w-md mx-auto" style={{ color: "var(--text-muted)" }}>{profileError}</p>
+        <button
+          onClick={retryProfile}
+          className="btn btn-primary px-6"
+          style={{ minHeight: "44px" }}
+        >
+          🔄 Retry
+        </button>
       </Card>
     );
   }

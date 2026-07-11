@@ -2,6 +2,7 @@ import { catchErr } from "@/lib/catch";
 import { db } from "@/db";
 import {
   accounts,
+  aiQueries,
   annualPlans,
   bills,
   budgets,
@@ -45,6 +46,7 @@ export async function DELETE(req: Request) {
       await tx.delete(taxProfile).where(eq(taxProfile.userId, userId));
       await tx.delete(emergencyItems).where(eq(emergencyItems.userId, userId));
       await tx.delete(members).where(eq(members.userId, userId));
+      await tx.delete(aiQueries).where(eq(aiQueries.userId, userId));
     });
 
     return Response.json({ ok: true });

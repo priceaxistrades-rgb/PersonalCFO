@@ -38,7 +38,7 @@ describe("fromPaise", () => {
   });
 
   it("handles zero", () => {
-    expect(fromPaise(0n)).toBe("0");
+    expect(fromPaise(0n)).toBe("0.00");
   });
 
   it("handles negative paise", () => {
@@ -71,7 +71,7 @@ describe("subtractMoney", () => {
   });
 
   it("handles subtraction resulting in zero", () => {
-    expect(subtractMoney("50", "50")).toBe("0");
+    expect(subtractMoney("50", "50")).toBe("0.00");
   });
 
   it("handles negative result", () => {

@@ -28,42 +28,43 @@ const SCENARIOS = [
   { id: "medicalEmergency", label: "Medical Emergency", icon: "🏥", unit: "₹", defaultVal: 500000 },
 ] as const;
 
+type ScenarioId = typeof SCENARIOS[number]["id"];
+
+const VALID_SCENARIOS: ScenarioId[] = ["salaryIncrease", "salaryDecrease", "housePurchase", "carPurchase", "jobLoss", "inflation", "childEducation", "medicalEmergency"];
+
 export function SimulatorClient(data: SimulatorData) {
   const profile = buildTwinProfile(data);
   const [scenarioId, setScenarioId] = useState<string>("salaryIncrease");
   const [value, setValue] = useState<number>(20);
   const [result, setResult] = useState<TwinScenario | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>("");
 
   const handleScenarioChange = (id: string) => {
     setScenarioId(id);
     const sc = SCENARIOS.find(s => s.id === id);
     if (sc) setValue(sc.defaultVal);
     setResult(null);
+    setError("");
   };
 
-  const runSimulation = useCallback(async () => {
-    setLoading(true);
+  // Compute locally — no API call needed, all data is already available
+  const runSimulation = useCallback(() => {
+    setError("");
     try {
       const sc = SCENARIOS.find(s => s.id === scenarioId);
       const isPercent = sc?.unit === "%";
-      const res = await fetch("/api/ai/twin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          scenario: scenarioId,
-          params: isPercent ? { percent: value } : { amount: value },
-          question: "",
-        }),
-      });
-      const d = await res.json();
-      if (d.ok && d.data) {
-        const resp = d.data.response as TwinScenario;
-        setResult(resp);
+      const params = isPercent ? { percent: value } : { amount: value };
+      const scenarioType = scenarioId as typeof VALID_SCENARIOS[number];
+      if (!VALID_SCENARIOS.includes(scenarioType)) {
+        setError("Invalid scenario selected");
+        return;
       }
-    } catch { /* silently fail */ }
-    setLoading(false);
-  }, [scenarioId, value]);
+      const simResult = simulateScenario(profile, scenarioType, params);
+      setResult(simResult);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Simulation failed. Please try again.");
+    }
+  }, [scenarioId, value, profile]);
 
   const selectedScenario = SCENARIOS.find(s => s.id === scenarioId);
   const isPercent = selectedScenario?.unit === "%";
@@ -120,13 +121,18 @@ export function SimulatorClient(data: SimulatorData) {
           </div>
           <button
             onClick={runSimulation}
-            disabled={loading}
             className="btn btn-primary px-6 whitespace-nowrap"
             style={{ minHeight: "44px" }}
           >
-            {loading ? "⏳ Running..." : "▶ Simulate Impact"}
+            ▶ Simulate Impact
           </button>
         </div>
+
+        {error && (
+          <div className="mt-3 p-3 rounded-lg text-sm" style={{ background: "var(--danger-soft)", color: "var(--danger)" }}>
+            ⚠️ {error}
+          </div>
+        )}
       </Card>
 
       {/* Result */}
