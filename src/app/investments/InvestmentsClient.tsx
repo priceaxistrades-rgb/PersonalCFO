@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { SectionTitle } from "@/components/ui/Card";
 import {
   useLiveInvestments,
-  InvestmentKpis,
   InvestmentHoldings,
   InvestmentAllocation,
   InvestmentFooter,
   type Investment,
   type LiveInvestment,
 } from "./LiveInvestmentsDashboard";
+import { PortfolioSyncDashboard } from "./PortfolioSyncDashboard";
 import {
   InvestmentForm,
   InvestmentManagementTable,
@@ -27,7 +27,7 @@ export function InvestmentsPageClient({
   accounts: { id: number; name: string; type: string }[];
 }) {
   const router = useRouter();
-  const { liveInvestments, loading, updatedAt, error, loadQuotes } = useLiveInvestments(initialInvestments);
+  const { liveInvestments, loading, updatedAt, error, loadQuotes, quotes } = useLiveInvestments(initialInvestments);
 
   const [showForm, setShowForm] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState<InvestmentRow | null>(null);
@@ -70,11 +70,21 @@ export function InvestmentsPageClient({
     <div className="space-y-6">
       <SectionTitle
         title="Investment Dashboard"
-        subtitle="Live portfolio value synced from stock prices and mutual fund NAVs"
+        subtitle="Live portfolio synced from stock prices and mutual fund NAVs"
       />
 
-      {/* Auto-sync status banner */}
-      <InvestmentKpis liveInvestments={liveInvestments} loading={loading} updatedAt={updatedAt} error={error} loadQuotes={loadQuotes} />
+      {/* ═══ FULL PORTFOLIO SYNC DASHBOARD ═══ */}
+      <PortfolioSyncDashboard
+        holdings={liveInvestments}
+        quotes={quotes}
+        loading={loading}
+        updatedAt={updatedAt}
+        error={error}
+        loadQuotes={loadQuotes}
+        onSell={(h) => {
+          setSellTarget(h as unknown as InvestmentRow);
+        }}
+      />
 
       <div className="flex justify-end mb-2 no-print">
         <button onClick={() => { setShowForm(!showForm); setEditingInvestment(null); }} className="btn btn-primary text-sm">
@@ -86,7 +96,7 @@ export function InvestmentsPageClient({
         <InvestmentForm editingInvestment={editingInvestment} onSave={handleSave} onCancel={() => { setShowForm(false); setEditingInvestment(null); }} />
       )}
 
-      {/* 1. Live Holdings table */}
+      {/* Legacy holdings table (still useful for detailed view) */}
       <InvestmentHoldings
         liveInvestments={liveInvestments}
         onSell={(li: LiveInvestment) => {
@@ -94,10 +104,7 @@ export function InvestmentsPageClient({
         }}
       />
 
-      {/* 2. Asset Allocation chart */}
-      <InvestmentAllocation liveInvestments={liveInvestments} />
-
-      {/* 3. Investment Management table — below Asset Allocation as requested */}
+      {/* Investment Management table */}
       <InvestmentManagementTable
         investments={initialInvestments as unknown as InvestmentRow[]}
         onEdit={startEdit}
@@ -105,7 +112,6 @@ export function InvestmentsPageClient({
         onSell={(i) => setSellTarget(i)}
       />
 
-      {/* 4. Auto-sync note at the bottom */}
       <InvestmentFooter />
 
       {sellTarget && (

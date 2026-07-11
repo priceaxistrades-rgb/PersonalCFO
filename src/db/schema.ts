@@ -37,7 +37,7 @@ export const goalCategoryEnum = pgEnum("goal_category", [
 export const annualCategoryEnum = pgEnum("annual_category", ["Financial", "Savings", "Investment", "Tax", "Purchase"]);
 export const annualStatusEnum = pgEnum("annual_status", ["Planned", "InProgress", "Done"]);
 export const taxRegimeEnum = pgEnum("tax_regime", ["old", "new"]);
-export const watchlistKindEnum = pgEnum("watchlist_kind", ["stock", "mf"]);
+export const watchlistKindEnum = pgEnum("watchlist_kind", ["stock", "mf", "commodity", "crypto", "index", "reit", "bond"]);
 
 // Users table for authentication
 export const users = pgTable("users", {

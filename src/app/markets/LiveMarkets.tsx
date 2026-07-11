@@ -32,7 +32,7 @@ const CHART_RANGES: { id: ChartRange; label: string }[] = [
   { id: "3y", label: "3Y" },
   { id: "5y", label: "5Y" },
 ];
-type ChartTarget = { kind: "stock" | "mf"; id: string; label: string };
+type ChartTarget = { kind: MarketQuote["kind"]; id: string; label: string };
 
 function fmtNum(n: number, currency = "INR") {
   return new Intl.NumberFormat("en-IN", {
@@ -236,6 +236,11 @@ export function LiveMarkets({
 
   const stocks = useMemo(() => items.filter((i) => i.kind === "stock" && i.symbol).map((i) => i.symbol!), [items]);
   const mfs = useMemo(() => items.filter((i) => i.kind === "mf" && i.schemeCode).map((i) => i.schemeCode!), [items]);
+  const commodities = useMemo(() => items.filter((i) => i.kind === "commodity" && i.symbol).map((i) => i.symbol!), [items]);
+  const cryptos = useMemo(() => items.filter((i) => i.kind === "crypto" && i.symbol).map((i) => i.symbol!), [items]);
+  const indices = useMemo(() => items.filter((i) => i.kind === "index" && i.symbol).map((i) => i.symbol!), [items]);
+  const reits = useMemo(() => items.filter((i) => i.kind === "reit" && i.symbol).map((i) => i.symbol!), [items]);
+  const bonds = useMemo(() => items.filter((i) => i.kind === "bond" && i.symbol).map((i) => i.symbol!), [items]);
 
   // "X seconds ago" display
   const [secondsAgo, setSecondsAgo] = useState(0);
@@ -256,6 +261,11 @@ export function LiveMarkets({
     const params = new URLSearchParams();
     if (stocks.length) params.set("stocks", stocks.join(","));
     if (mfs.length) params.set("mf", mfs.join(","));
+    if (commodities.length) params.set("commodities", commodities.join(","));
+    if (cryptos.length) params.set("crypto", cryptos.join(","));
+    if (indices.length) params.set("indices", indices.join(","));
+    if (reits.length) params.set("reits", reits.join(","));
+    if (bonds.length) params.set("bonds", bonds.join(","));
     try {
       const res = await fetch(`/api/market/quote?${params.toString()}`, { cache: "no-store" });
       const json = await res.json();
@@ -266,7 +276,7 @@ export function LiveMarkets({
       // Keep previous prices on transient API errors.
     }
     setLoading(false);
-  }, [items.length, stocks, mfs]);
+  }, [items.length, stocks, mfs, commodities, cryptos, indices, reits, bonds]);
 
   useEffect(() => {
     const start = setTimeout(() => void load(), 0);
@@ -327,12 +337,17 @@ export function LiveMarkets({
 
   const stockItems = items.filter((i) => i.kind === "stock");
   const mfItems = items.filter((i) => i.kind === "mf");
+  const commodityItems = items.filter((i) => i.kind === "commodity");
+  const cryptoItems = items.filter((i) => i.kind === "crypto");
+  const indexItems = items.filter((i) => i.kind === "index");
+  const reitItems = items.filter((i) => i.kind === "reit");
+  const bondItems = items.filter((i) => i.kind === "bond");
 
   // Summary stats for investment-linked items (include all with any value, even without units)
   const investedItems = items.filter((i) => i.source === "investment" && (Number(i.invested) > 0 || Number(i.units) > 0 || Number(i.currentValue) > 0));
   const totalInvested = investedItems.reduce((s, i) => s + (Number(i.invested) || 0), 0);
   const totalCurrent = investedItems.reduce((s, i) => {
-    const key = i.kind === "stock" ? `stock:${i.symbol}` : `mf:${i.schemeCode}`;
+    const key = i.kind === "mf" ? `mf:${i.schemeCode}` : `${i.kind}:${i.symbol}`;
     const q = quotes[key];
     const units = Number(i.units) || 0;
     const invested = Number(i.invested) || 0;
@@ -346,13 +361,13 @@ export function LiveMarkets({
 
   const renderRows = (list: WatchItem[]) =>
     list.map((it) => {
-      const key = it.kind === "stock" ? `stock:${it.symbol}` : `mf:${it.schemeCode}`;
+      const key = it.kind === "mf" ? `mf:${it.schemeCode}` : `${it.kind}:${it.symbol}`;
       const q = quotes[key];
       const livePrice = q?.ok ? q.price : null;
-      const target = it.kind === "stock" && it.symbol
-        ? { kind: "stock" as const, id: it.symbol, label: it.label }
-        : it.kind === "mf" && it.schemeCode
-          ? { kind: "mf" as const, id: it.schemeCode, label: it.label }
+      const target = it.symbol
+        ? { kind: it.kind as MarketQuote["kind"], id: it.kind === "mf" ? it.schemeCode! : it.symbol, label: it.label }
+        : it.schemeCode
+          ? { kind: "mf" as MarketQuote["kind"], id: it.schemeCode, label: it.label }
           : null;
       const isHeld = it.source === "investment" && (Number(it.units) > 0 || Number(it.invested) > 0 || Number(it.currentValue) > 0);
 
@@ -492,7 +507,7 @@ export function LiveMarkets({
       {chartTarget && (
         <Card
           title={`📊 ${chartTarget.label} Chart`}
-          subtitle={chartTarget.kind === "mf" ? "Mutual fund NAV history from mfapi.in" : "Stock price history from Yahoo Finance"}
+          subtitle={chartTarget.kind === "mf" ? "Mutual fund NAV history from mfapi.in" : "Price history from Yahoo Finance"}
           action={
             <button onClick={() => setChartTarget(null)} className="px-3 py-1.5 rounded-lg text-xs" style={{ background: "var(--surface-3)", color: "var(--text)" }}>
               Close
@@ -564,6 +579,43 @@ export function LiveMarkets({
           <p className="text-sm py-6 text-center" style={{ color: "var(--text-faint)" }}>No mutual funds tracked. Search & add one below or add MF investments.</p>
         )}
       </Card>
+
+      {/* ═══ NEW: Commodities, Crypto, Indices, REITs, Bonds ═══ */}
+      {commodityItems.length > 0 && (
+        <Card title="🥇 Live Commodities" subtitle="Gold, Silver & more via Yahoo Finance · auto-refresh 30s">
+          <Table headers={["Instrument", "Price", "Day", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
+            {renderRows(commodityItems)}
+          </Table>
+        </Card>
+      )}
+      {cryptoItems.length > 0 && (
+        <Card title="₿ Live Crypto" subtitle="Bitcoin, Ethereum & more via Yahoo Finance · auto-refresh 30s">
+          <Table headers={["Coin", "Price", "Day", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
+            {renderRows(cryptoItems)}
+          </Table>
+        </Card>
+      )}
+      {indexItems.length > 0 && (
+        <Card title="📊 Live Indices" subtitle="Nifty 50, Sensex & more via Yahoo Finance · auto-refresh 30s">
+          <Table headers={["Index", "Value", "Day", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
+            {renderRows(indexItems)}
+          </Table>
+        </Card>
+      )}
+      {reitItems.length > 0 && (
+        <Card title="🏠 REITs" subtitle="Real Estate Investment Trusts via Yahoo Finance · auto-refresh 30s">
+          <Table headers={["REIT", "Price", "Day", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
+            {renderRows(reitItems)}
+          </Table>
+        </Card>
+      )}
+      {bondItems.length > 0 && (
+        <Card title="📜 Bond ETFs" subtitle="Government & corporate bond ETFs via Yahoo Finance · auto-refresh 30s">
+          <Table headers={["Bond ETF", "Price", "Day", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
+            {renderRows(bondItems)}
+          </Table>
+        </Card>
+      )}
     </div>
   );
 }

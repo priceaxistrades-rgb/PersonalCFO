@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { SectionTitle, Badge, Card } from "@/components/ui/Card";
 import { LiveMarkets } from "./LiveMarkets";
 import { AddWatch } from "./AddWatch";
+import { MarketsPortfolioSync } from "./MarketsPortfolioSync";
 import { InvestmentForm, SellInvestmentModal } from "../settings/InvestmentsManager";
 import type { InvestmentRow } from "@/lib/types";
 
@@ -40,21 +41,44 @@ export function MarketsClient({
   }, [watchItemsPromise, investmentsPromise]);
 
   const manualItems = watchItems.map((item) => ({ ...item, source: "watchlist" as const }));
-  const investmentItems = investments
-    .filter((investment) => investment.symbol || investment.schemeCode)
-    .map((investment) => ({
-      id: -investment.id,
-      kind: investment.schemeCode ? "mf" : "stock",
-      symbol: investment.symbol,
-      schemeCode: investment.schemeCode,
-      label: investment.name,
-      source: "investment" as const,
-      units: investment.units,
-      invested: investment.invested,
-      currentValue: investment.currentValue,
-      investmentId: investment.id,
-      investmentType: investment.type,
-    }));
+  // Filter out fully-sold ghost holdings (invested=0, currentValue=0, units=0)
+  const activeInvestments = investments.filter((inv: any) => {
+    const invAmt = Number(inv.invested) || 0;
+    const cv = Number(inv.currentValue) || 0;
+    const u = Number(inv.units) || 0;
+    return invAmt > 0 || cv > 0 || u > 0;
+  });
+  const investmentItems = activeInvestments
+    .filter((investment) => {
+      // Include all investments that have a symbol, scheme code, or a resolvable live tracker
+      if (investment.symbol || investment.schemeCode) return true;
+      // Also include Gold, Silver, Crypto, RealEstate, Bonds etc. even without explicit symbol
+      if (["Gold", "Silver", "Crypto", "RealEstate", "Bonds", "FD", "PPF", "EPF", "NPS", "RD", "Other"].includes(investment.type)) return true;
+      return false;
+    })
+    .map((investment) => {
+      // Determine the kind for the watchlist item
+      let kind = investment.schemeCode ? "mf" : "stock";
+      if (investment.type === "Gold" || investment.type === "Silver") kind = "commodity";
+      else if (investment.type === "Crypto") kind = "crypto";
+      else if (investment.type === "RealEstate") kind = "reit";
+      else if (investment.type === "Bonds") kind = "bond";
+      else if (investment.schemeCode) kind = "mf";
+
+      return {
+        id: -investment.id,
+        kind,
+        symbol: investment.symbol,
+        schemeCode: investment.schemeCode,
+        label: investment.name,
+        source: "investment" as const,
+        units: investment.units,
+        invested: investment.invested,
+        currentValue: investment.currentValue,
+        investmentId: investment.id,
+        investmentType: investment.type,
+      };
+    });
 
   const seen = new Set<string>();
   const items = [...manualItems, ...investmentItems].filter((item) => {
@@ -78,7 +102,7 @@ export function MarketsClient({
 
   const handleSell = (item: any) => {
     // Find the real investment from our investments array
-    const realId = item.investmentId || -item.id;
+    const realId = item.investmentId || item.id;
     const inv = investments.find((i: any) => i.id === realId);
     if (!inv) return;
     setSellTarget({
@@ -97,7 +121,7 @@ export function MarketsClient({
       userId: inv.userId,
       memberId: inv.memberId,
     });
-    setSellLivePrice(item.currentPrice || null);
+    setSellLivePrice(item.currentPrice || item.livePrice || null);
   };
 
   return (
@@ -109,6 +133,11 @@ export function MarketsClient({
       />
 
       <LiveMarkets items={items} onAddToPortfolio={handleAddToPortfolio} onSell={handleSell} />
+
+      {/* Portfolio Sync with Live Markets */}
+      {activeInvestments.length > 0 && (
+        <MarketsPortfolioSync investments={activeInvestments} onSell={handleSell} />
+      )}
 
       {showAddModal && selectedItem && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowAddModal(false)}>

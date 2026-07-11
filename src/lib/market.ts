@@ -17,7 +17,7 @@ export type CagrSet = {
 
 export type MarketQuote = {
   ok: boolean;
-  kind: "stock" | "mf";
+  kind: "stock" | "mf" | "commodity" | "crypto" | "index" | "reit" | "bond";
   id: string; // symbol or scheme code
   name: string;
   extra?: string; // fund house / exchange
@@ -250,6 +250,237 @@ export async function fetchStock(symbol: string): Promise<MarketQuote> {
     return { ...base, error: e instanceof Error ? e.message : "fetch failed" };
   }
 }
+
+// ---- Commodities / Crypto / Index / REIT / Bond via Yahoo Finance ----
+// These use Yahoo Finance just like stocks but with different symbol conventions:
+// Gold: GC=F (USD/oz) or GOLD.NS (Gold ETF INR)
+// Silver: SI=F (USD/oz) or SILVER.NS
+// Bitcoin: BTC-USD, Ethereum: ETH-USD
+// Nifty 50: ^NSEI, Sensex: ^BSESN
+// REITs: EMBI.NS etc.
+
+export async function fetchByYahooKind(
+  symbol: string,
+  kind: "commodity" | "crypto" | "index" | "reit" | "bond",
+  displayName?: string,
+): Promise<MarketQuote> {
+  const base: MarketQuote = {
+    ok: false,
+    kind,
+    id: symbol,
+    name: displayName || symbol,
+    price: 0,
+    prevClose: 0,
+    change: 0,
+    changePct: 0,
+    currency: "INR",
+    cagr: { y1: null, y3: null, y5: null },
+    asOf: "",
+  };
+
+  const headers = {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+    Accept: "application/json",
+  };
+
+  try {
+    const dayUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
+      symbol,
+    )}?interval=1d&range=5d`;
+
+    const historyUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
+      symbol,
+    )}?interval=1wk&range=5y`;
+
+    const [dayRes, historyRes] = await Promise.all([
+      fetch(dayUrl, { next: { revalidate: 60 }, headers }),
+      fetch(historyUrl, { next: { revalidate: 3600 }, headers }),
+    ]);
+
+    if (!dayRes.ok) throw new Error(`Day HTTP ${dayRes.status}`);
+    if (!historyRes.ok) throw new Error(`History HTTP ${historyRes.status}`);
+
+    const dayJson = (await dayRes.json()) as {
+      chart?: {
+        result?: {
+          meta?: {
+            regularMarketPrice?: number;
+            previousClose?: number;
+            chartPreviousClose?: number;
+            currency?: string;
+            shortName?: string;
+            longName?: string;
+            fullExchangeName?: string;
+          };
+          timestamp?: number[];
+          indicators?: { quote?: { close?: (number | null)[] }[] };
+        }[];
+        error?: { description?: string } | null;
+      };
+    };
+
+    const historyJson = (await historyRes.json()) as {
+      chart?: {
+        result?: {
+          meta?: {
+            regularMarketPrice?: number;
+            currency?: string;
+            shortName?: string;
+            longName?: string;
+          };
+          timestamp?: number[];
+          indicators?: { quote?: { close?: (number | null)[] }[] };
+        }[];
+        error?: { description?: string } | null;
+      };
+    };
+
+    const dayResult = dayJson.chart?.result?.[0];
+    const historyResult = historyJson.chart?.result?.[0];
+    if (!dayResult?.meta) throw new Error(dayJson.chart?.error?.description || "No day data");
+    if (!historyResult?.meta) throw new Error(historyJson.chart?.error?.description || "No history data");
+
+    const dayMeta = dayResult.meta;
+
+    const dayCloses = (dayResult.indicators?.quote?.[0]?.close || []).filter(
+      (v): v is number => typeof v === "number" && Number.isFinite(v),
+    );
+
+    const price = dayMeta.regularMarketPrice ?? dayCloses[dayCloses.length - 1] ?? 0;
+    const prev =
+      dayMeta.previousClose ??
+      (dayCloses.length >= 2 ? dayCloses[dayCloses.length - 2] : undefined) ??
+      dayMeta.chartPreviousClose ??
+      price;
+
+    const ts = historyResult.timestamp || [];
+    const closes = historyResult.indicators?.quote?.[0]?.close || [];
+    const points: PricePoint[] = [];
+    for (let i = 0; i < ts.length; i++) {
+      const c = closes[i];
+      if (typeof c === "number") points.push({ t: ts[i] * 1000, v: c });
+    }
+
+    const resolvedName =
+      dayMeta.longName || dayMeta.shortName ||
+      historyResult.meta?.longName || historyResult.meta?.shortName ||
+      displayName || symbol;
+
+    return {
+      ...base,
+      ok: true,
+      name: resolvedName,
+      extra: dayMeta.fullExchangeName,
+      price,
+      prevClose: prev,
+      change: price - prev,
+      changePct: prev ? ((price - prev) / prev) * 100 : 0,
+      currency: dayMeta.currency || "INR",
+      cagr: cagrFromSeries(points, price),
+      asOf: new Date().toLocaleDateString("en-IN"),
+    };
+  } catch (e) {
+    return { ...base, error: e instanceof Error ? e.message : "fetch failed" };
+  }
+}
+
+/**
+ * Resolve a commodity/crypto/index/bond symbol from an investment type + optional symbol.
+ * Returns the Yahoo Finance symbol to use for live price fetching.
+ */
+export function resolveLiveSymbol(
+  type: string,
+  symbol: string | null,
+): { yahooSymbol: string; kind: MarketQuote["kind"]; displayName: string } | null {
+  // If the user has set a custom symbol, use it directly
+  if (symbol) {
+    // Auto-detect kind from known patterns
+    if (symbol.endsWith("-USD") || symbol.endsWith("-INR") || symbol.endsWith("-EUR"))
+      return { yahooSymbol: symbol, kind: "crypto", displayName: symbol.replace("-USD", "") };
+    if (symbol.startsWith("^")) return { yahooSymbol: symbol, kind: "index", displayName: symbol };
+    if (symbol.includes("GOLD") || symbol.includes("GOLDBEES") || symbol.includes("GOLDSHARE"))
+      return { yahooSymbol: symbol, kind: "commodity", displayName: "Gold ETF" };
+    if (symbol.includes("SILVER") || symbol.includes("SILVERBEES"))
+      return { yahooSymbol: symbol, kind: "commodity", displayName: "Silver ETF" };
+    // Default: treat as stock
+    return { yahooSymbol: symbol, kind: "stock", displayName: symbol };
+  }
+
+  // No symbol set — use default tracker based on investment type
+  switch (type) {
+    case "Gold":
+      return { yahooSymbol: "GOLDBEES.NS", kind: "commodity", displayName: "Gold ETF (GoldBees)" };
+    case "Silver":
+      return { yahooSymbol: "SILVERBEES.NS", kind: "commodity", displayName: "Silver ETF (SilverBees)" };
+    case "Crypto":
+      return { yahooSymbol: "BTC-USD", kind: "crypto", displayName: "Bitcoin" };
+    case "RealEstate":
+      return { yahooSymbol: "^CREIT", kind: "reit", displayName: "REIT Index" };
+    case "Bonds":
+      return { yahooSymbol: "BONDHILDR.NS", kind: "bond", displayName: "Bond ETF" };
+    default:
+      return null;
+  }
+}
+
+/**
+ * Predefined commodity / crypto / index instruments that users can add
+ */
+export const PRESET_INSTRUMENTS: {
+  category: string;
+  items: { symbol: string; kind: MarketQuote["kind"]; name: string; icon: string }[];
+}[] = [
+  {
+    category: "🥇 Commodities",
+    items: [
+      { symbol: "GOLDBEES.NS", kind: "commodity", name: "Gold ETF (GoldBees)", icon: "🥇" },
+      { symbol: "SILVERBEES.NS", kind: "commodity", name: "Silver ETF (SilverBees)", icon: "🥈" },
+      { symbol: "GC=F", kind: "commodity", name: "Gold Futures (USD/oz)", icon: "🥇" },
+      { symbol: "SI=F", kind: "commodity", name: "Silver Futures (USD/oz)", icon: "🥈" },
+    ],
+  },
+  {
+    category: "₿ Cryptocurrency",
+    items: [
+      { symbol: "BTC-USD", kind: "crypto", name: "Bitcoin (USD)", icon: "₿" },
+      { symbol: "ETH-USD", kind: "crypto", name: "Ethereum (USD)", icon: "⟠" },
+      { symbol: "BNB-USD", kind: "crypto", name: "BNB (USD)", icon: "🔶" },
+      { symbol: "SOL-USD", kind: "crypto", name: "Solana (USD)", icon: "◎" },
+      { symbol: "XRP-USD", kind: "crypto", name: "XRP (USD)", icon: "✕" },
+      { symbol: "ADA-USD", kind: "crypto", name: "Cardano (USD)", icon: "🔵" },
+      { symbol: "DOGE-USD", kind: "crypto", name: "Dogecoin (USD)", icon: "🐕" },
+      { symbol: "DOT-USD", kind: "crypto", name: "Polkadot (USD)", icon: "⚫" },
+    ],
+  },
+  {
+    category: "📊 Indices",
+    items: [
+      { symbol: "^NSEI", kind: "index", name: "Nifty 50", icon: "📈" },
+      { symbol: "^BSESN", kind: "index", name: "Sensex", icon: "📈" },
+      { symbol: "^NSERAIL", kind: "index", name: "Nifty Realty", icon: "🏠" },
+      { symbol: "^NSEBANK", kind: "index", name: "Nifty Bank", icon: "🏦" },
+      { symbol: "^NSEIT", kind: "index", name: "Nifty IT", icon: "💻" },
+    ],
+  },
+  {
+    category: "🏠 REITs",
+    items: [
+      { symbol: "EMBIREL.NS", kind: "reit", name: "Embassy Office REIT", icon: "🏢" },
+      { symbol: "BROOKREIT.NS", kind: "reit", name: "Brookfield REIT", icon: "🏢" },
+      { symbol: "MINDREIT.NS", kind: "reit", name: "Mindspace REIT", icon: "🏢" },
+    ],
+  },
+  {
+    category: "📜 Bond ETFs",
+    items: [
+      { symbol: "BONDHILDR.NS", kind: "bond", name: "Bond Hilldr ETF", icon: "📜" },
+      { symbol: "LICNETF.NS", kind: "bond", name: "LIC MF Bond ETF", icon: "📜" },
+      { symbol: "GILT5YBEES.NS", kind: "bond", name: "Gilt 5Y ETF", icon: "📜" },
+      { symbol: "GILT10YBEES.NS", kind: "bond", name: "Gilt 10Y ETF", icon: "📜" },
+    ],
+  },
+];
 
 // ---- MF search ----
 type MfScheme = { schemeCode: number; schemeName: string };

@@ -106,13 +106,24 @@ export async function GET(req: NextRequest) {
   const id = searchParams.get("id") || "";
   const range = searchParams.get("range") || "1y";
 
-  if (!id || (kind !== "stock" && kind !== "mf")) {
-    return Response.json({ error: "kind=stock|mf and id are required" }, { status: 400 });
+  if (!id || !["stock", "mf", "commodity", "crypto", "index", "reit", "bond"].includes(kind || "")) {
+    return Response.json({ error: "kind=stock|mf|commodity|crypto|index|reit|bond and id are required" }, { status: 400 });
   }
 
   try {
-    const points = kind === "stock" ? await stockHistory(id, range) : await mutualFundHistory(id, range);
-    return Response.json({ ok: true, kind, id, range, supportsCandles: kind === "stock", points });
+    let points: ChartPoint[];
+    let supportsCandles: boolean;
+
+    if (kind === "mf") {
+      points = await mutualFundHistory(id, range);
+      supportsCandles = false;
+    } else {
+      // Stocks, commodities, crypto, indices, REITs, bonds — all via Yahoo Finance
+      points = await stockHistory(id, range);
+      supportsCandles = true;
+    }
+
+    return Response.json({ ok: true, kind, id, range, supportsCandles, points });
   } catch (error) {
     return Response.json(
       { error: error instanceof Error ? error.message : "Unable to load chart" },

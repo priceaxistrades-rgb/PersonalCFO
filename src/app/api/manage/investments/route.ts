@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { investments } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import { isSession, requireApiSession } from "@/lib/server-auth";
 import { validate, investmentCreateSchema, investmentUpdateSchema, idDeleteSchema } from "@/lib/validation";
 import { apiHandler, apiSuccess, apiError } from "@/lib/api-utils";
@@ -12,6 +12,38 @@ export const GET = apiHandler(async (req, { log }) => {
   if (!isSession(session)) return session;
 
   try {
+    // Auto-clean ghost records (invested=0, currentValue=0, units=0 or null)
+    // These are leftover from the old non-atomic sell flow
+    try {
+      const ghostResult = await db
+        .delete(investments)
+        .where(
+          and(
+            eq(investments.userId, session.userId),
+            or(
+              sql`${investments.invested} = '0' OR ${investments.invested} = '0.00'`,
+              sql`${investments.invested} IS NULL`,
+            ),
+            or(
+              sql`${investments.currentValue} = '0' OR ${investments.currentValue} = '0.00'`,
+              sql`${investments.currentValue} IS NULL`,
+            ),
+            or(
+              sql`${investments.units} = '0' OR ${investments.units} = '0.00' OR ${investments.units} = '0.0000'`,
+              sql`${investments.units} IS NULL`,
+            ),
+          )
+        )
+        .returning({ id: investments.id, name: investments.name });
+
+      if (ghostResult.length > 0) {
+        log.info("Auto-cleaned ghost investment records", { count: ghostResult.length, ids: ghostResult.map(r => r.id) });
+      }
+    } catch (cleanupErr) {
+      // Don't fail the GET if cleanup fails — just log it
+      log.warn("Ghost cleanup failed (non-fatal)", { error: String(cleanupErr) });
+    }
+
     const rows = await db.select().from(investments).where(eq(investments.userId, session.userId)).orderBy(investments.id);
     log.info("Fetched investments", { count: rows.length });
     return apiSuccess({ rows });

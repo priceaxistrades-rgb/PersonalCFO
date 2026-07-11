@@ -7,7 +7,7 @@ import { KpiCard } from "@/components/ui/Kpi";
 import { DonutChart } from "@/components/ui/Charts";
 import { Table, Tr, Td } from "@/components/ui/Table";
 import { inr, num } from "@/lib/format";
-import { type MarketQuote } from "@/lib/market";
+import { type MarketQuote, resolveLiveSymbol } from "@/lib/market";
 
 const TYPE_LABELS: Record<string, string> = {
   MutualFunds: "Mutual Funds",
@@ -69,22 +69,53 @@ export function useLiveInvestments(investments: Investment[]) {
   const [error, setError] = useState("");
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const stocks = useMemo(
-    () => [...new Set(investments.map((i) => i.symbol).filter(Boolean) as string[])],
-    [investments]
-  );
-  const mfs = useMemo(
-    () => [...new Set(investments.map((i) => i.schemeCode).filter(Boolean) as string[])],
+  // Filter out fully-sold ghost holdings (invested=0, currentValue=0, no units)
+  const activeInvestments = useMemo(() =>
+    investments.filter(i => {
+      const inv = num(i.invested);
+      const cv = num(i.currentValue);
+      const u = num(i.units);
+      return inv > 0 || cv > 0 || u > 0;
+    }),
     [investments]
   );
 
+  const stocks = useMemo(
+    () => [...new Set(activeInvestments.filter(i => i.symbol && i.type === "Stocks").map((i) => i.symbol).filter(Boolean) as string[])],
+    [activeInvestments]
+  );
+  const mfs = useMemo(
+    () => [...new Set(activeInvestments.filter(i => i.schemeCode && i.type === "MutualFunds").map((i) => i.schemeCode).filter(Boolean) as string[])],
+    [activeInvestments]
+  );
+  // Resolve live symbols for non-stock/MF investment types (Gold, Silver, Crypto, etc.)
+  const extraSymbols = useMemo(() => {
+    const map: Record<string, string[]> = { commodity: [], crypto: [], index: [], reit: [], bond: [] };
+    activeInvestments.forEach((inv) => {
+      if (inv.type === "Stocks" || inv.type === "MutualFunds") return;
+      const resolved = resolveLiveSymbol(inv.type, inv.symbol);
+      if (resolved) {
+        if (!map[resolved.kind]) map[resolved.kind] = [];
+        if (!map[resolved.kind].includes(resolved.yahooSymbol)) {
+          map[resolved.kind].push(resolved.yahooSymbol);
+        }
+      }
+    });
+    return map;
+  }, [activeInvestments]);
+
   const loadQuotes = useCallback(async () => {
-    if (!stocks.length && !mfs.length) return;
+    if (!stocks.length && !mfs.length && Object.values(extraSymbols).every(a => !a.length)) return;
     setLoading(true);
     setError("");
     const params = new URLSearchParams();
     if (stocks.length) params.set("stocks", stocks.join(","));
     if (mfs.length) params.set("mf", mfs.join(","));
+    if (extraSymbols.commodity?.length) params.set("commodities", extraSymbols.commodity.join(","));
+    if (extraSymbols.crypto?.length) params.set("crypto", extraSymbols.crypto.join(","));
+    if (extraSymbols.index?.length) params.set("indices", extraSymbols.index.join(","));
+    if (extraSymbols.reit?.length) params.set("reits", extraSymbols.reit.join(","));
+    if (extraSymbols.bond?.length) params.set("bonds", extraSymbols.bond.join(","));
     try {
       const res = await fetch(`/api/market/quote?${params.toString()}`, { cache: "no-store" });
       const data = await res.json();
@@ -96,7 +127,7 @@ export function useLiveInvestments(investments: Investment[]) {
     } finally {
       setLoading(false);
     }
-  }, [stocks, mfs]);
+  }, [stocks, mfs, extraSymbols]);
 
   useEffect(() => {
     const start = setTimeout(() => void loadQuotes(), 0);
@@ -108,9 +139,20 @@ export function useLiveInvestments(investments: Investment[]) {
   }, [loadQuotes]);
 
   const liveInvestments = useMemo<LiveInvestment[]>(() => {
-    return investments.map((i) => {
-      const key = instrumentKey(i);
-      const q = key ? quotes[key] : undefined;
+    return activeInvestments.map((i) => {
+      // First try explicit stock/MF key
+      let key = instrumentKey(i);
+      let q = key ? quotes[key] : undefined;
+
+      // If no direct key match, try resolving via investment type (Gold, Silver, Crypto, etc.)
+      if (!q) {
+        const resolved = resolveLiveSymbol(i.type, i.symbol);
+        if (resolved) {
+          const resolvedKey = `${resolved.kind}:${resolved.yahooSymbol}`;
+          q = quotes[resolvedKey];
+          if (q) key = resolvedKey;
+        }
+      }
       const units = num(i.units);
       const invested = num(i.invested);
       const storedCurrent = num(i.currentValue);
@@ -136,7 +178,7 @@ export function useLiveInvestments(investments: Investment[]) {
     });
   }, [investments, quotes]);
 
-  return { liveInvestments, loading, updatedAt, error, loadQuotes };
+  return { liveInvestments, loading, updatedAt, error, loadQuotes, quotes };
 }
 
 export function InvestmentKpis({ 
@@ -213,7 +255,14 @@ export function InvestmentKpis({
 }
 
 export function InvestmentHoldings({ liveInvestments, onSell }: { liveInvestments: LiveInvestment[]; onSell?: (i: LiveInvestment) => void }) {
-  const rows = [...liveInvestments].sort((a, b) => b.liveCurrentValue - a.liveCurrentValue);
+  // Hide fully-sold holdings (invested=0, current=0, no units)
+  const activeRows = liveInvestments.filter(i => {
+    const inv = num(i.invested);
+    const cv = i.liveCurrentValue;
+    const u = num(i.units);
+    return inv > 0 || cv > 0 || u > 0;
+  });
+  const rows = [...activeRows].sort((a, b) => b.liveCurrentValue - a.liveCurrentValue);
 
   return (
     <Card

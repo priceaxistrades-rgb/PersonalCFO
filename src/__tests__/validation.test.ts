@@ -1,7 +1,7 @@
 /**
  * Unit tests for validation.ts — Zod schemas
  */
-import { validate, loginSchema, signupSchema, transactionCreateSchema } from "@/lib/validation";
+import { validate, loginSchema, signupSchema, transactionCreateSchema, sellSchema } from "@/lib/validation";
 
 describe("loginSchema", () => {
   it("validates correct input", () => {
@@ -136,6 +136,71 @@ describe("transactionCreateSchema", () => {
       memberId: null,
       accountId: null,
       extraField: "nope",
+    });
+    expect(result.ok).toBe(false);
+  });
+});
+
+describe("sellSchema", () => {
+  it("validates unit-based sell", () => {
+    const result = validate(sellSchema, {
+      investmentId: 1,
+      sellUnits: 10,
+      sellPrice: 150.5,
+      accountId: null,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.investmentId).toBe(1);
+      expect(result.data.sellUnits).toBe(10);
+      expect(result.data.sellPrice).toBe(150.5);
+    }
+  });
+
+  it("validates amount-based sell", () => {
+    const result = validate(sellSchema, {
+      investmentId: 5,
+      sellAmount: 50000,
+      accountId: 3,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.sellAmount).toBe(50000);
+      expect(result.data.accountId).toBe(3);
+    }
+  });
+
+  it("rejects when neither sellUnits nor sellAmount provided", () => {
+    const result = validate(sellSchema, {
+      investmentId: 1,
+      accountId: null,
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it("rejects negative sellAmount", () => {
+    const result = validate(sellSchema, {
+      investmentId: 1,
+      sellAmount: -100,
+      accountId: null,
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it("rejects missing investmentId", () => {
+    const result = validate(sellSchema, {
+      sellAmount: 100,
+      accountId: null,
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it("rejects extra fields (strict mode)", () => {
+    const result = validate(sellSchema, {
+      investmentId: 1,
+      sellAmount: 100,
+      accountId: null,
+      hackField: "nope",
     });
     expect(result.ok).toBe(false);
   });

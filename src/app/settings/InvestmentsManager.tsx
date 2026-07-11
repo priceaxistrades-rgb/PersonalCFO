@@ -275,6 +275,25 @@ export function InvestmentForm({
 
       {searching && <p className="text-xs" style={{ color: "var(--text-muted)" }} aria-live="polite">Searching live instruments...</p>}
 
+      {/* Live tracker info for Gold, Silver, Crypto, RealEstate, Bonds */}
+      {["Gold", "Silver", "Crypto", "RealEstate", "Bonds"].includes(form.type) && (
+        <div className="p-3 rounded-lg" style={{ background: "var(--primary-soft)", border: "1px solid var(--border-accent)" }}>
+          <p className="text-xs font-semibold" style={{ color: "var(--primary)" }}>
+            📡 Live Price Tracking Available
+          </p>
+          <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
+            {form.type === "Gold" && "Gold ETF (GOLDBEES.NS) price will auto-sync. Enter units to track live P&L. Or enter a custom symbol like GC=F for Gold Futures (USD)."}
+            {form.type === "Silver" && "Silver ETF (SILVERBEES.NS) price will auto-sync. Enter units to track live P&L. Or enter a custom symbol like SI=F for Silver Futures (USD)."}
+            {form.type === "Crypto" && "Enter the crypto symbol (e.g. BTC-USD for Bitcoin, ETH-USD for Ethereum) in the Stock Symbol field to get live prices. Enter units to track live P&L."}
+            {form.type === "RealEstate" && "REIT prices will auto-sync. Enter units to track live P&L. You can also enter a custom REIT symbol like EMBIREL.NS."}
+            {form.type === "Bonds" && "Bond ETF prices will auto-sync. Enter units to track live P&L. You can also enter a custom symbol like GILT10YBEES.NS."}
+          </p>
+          <p className="text-[11px] mt-1 font-medium" style={{ color: "var(--warning)" }}>
+            💡 Enter units + invested amount for accurate live P&L tracking across all dashboards.
+          </p>
+        </div>
+      )}
+
       {/* Computed values preview */}
       {(form.units && (form.avgPrice || hasLivePrice)) && (
         <div className="grid sm:grid-cols-3 gap-3 p-3 rounded-lg" style={{ background: "var(--surface-2)" }}>
@@ -383,67 +402,29 @@ export function SellInvestmentModal({
     setError("");
 
     try {
-      let investedStr: string;
-      let currentValueStr: string;
-      let sellAmountStr: string;
-      let remainingUnitsStr: string;
-
-      if (hasUnits) {
-        const investedPerUnit = Number(investment.invested) / (currentUnits || 1);
-        const remainingUnitsNum = Number((currentUnits - Number(form.sellUnits)).toFixed(4));
-        remainingUnitsStr = remainingUnitsNum.toString();
-        const newInvestedNum = isFullSell ? 0 : Number((investedPerUnit * remainingUnitsNum).toFixed(2));
-        const newCurrentValueNum = isFullSell ? 0 : Number((form.sellPrice * remainingUnitsNum).toFixed(2));
-        investedStr = newInvestedNum.toFixed(2);
-        currentValueStr = newCurrentValueNum.toFixed(2);
-        sellAmountStr = sellAmount.toFixed(2);
-      } else {
-        const sellPortion = Number(form.sellAmount) / effectiveValue;
-        remainingUnitsStr = "0";
-        investedStr = isFullSell ? "0.00" : Number((currentInvested * (1 - sellPortion)).toFixed(2)).toFixed(2);
-        currentValueStr = isFullSell ? "0.00" : Number((effectiveValue * (1 - sellPortion)).toFixed(2)).toFixed(2);
-        sellAmountStr = Number(form.sellAmount).toFixed(2);
-      }
-
-      // Update investment (reduce units/value)
-      const invPayload: Record<string, unknown> = {
-        id: investment.id,
-        invested: investedStr,
-        currentValue: currentValueStr,
+      // ─── ATOMIC SELL: Single API call handles DELETE/UPDATE + transaction recording ───
+      const sellPayload: Record<string, unknown> = {
+        investmentId: investment.id,
+        accountId: form.accountId ? Number(form.accountId) : null,
       };
+
       if (hasUnits) {
-        invPayload.units = isFullSell ? "0" : remainingUnitsStr;
-      }
-      const invRes = await fetch("/api/manage/investments", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(invPayload),
-      });
-      if (!invRes.ok) {
-        const d = await invRes.json().catch(() => ({}));
-        const detail = d.details ? ` (${Object.entries(d.details).map(([k, v]) => `${k}: ${v}`).join("; ")})` : "";
-        throw new Error((d.error || "Failed to update investment") + detail);
+        sellPayload.sellUnits = Number(form.sellUnits);
+        sellPayload.sellPrice = form.sellPrice;
+      } else {
+        sellPayload.sellAmount = Number(form.sellAmount);
       }
 
-      // Record income transaction (sale proceeds)
-      const txnRes = await fetch("/api/transactions", {
+      const sellRes = await fetch("/api/manage/investments/sell", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "income",
-          category: "Investment Sale",
-          amount: sellAmountStr,
-          note: hasUnits
-            ? `Sold ${form.sellUnits} units of ${investment.name}${isFullSell ? " (FULL EXIT)" : ` (${remainingUnitsStr} units remaining)`} @ ₹${form.sellPrice}/unit`
-            : `Sold ${isFullSell ? "full" : "partial"} holding of ${investment.name} for ₹${sellAmountStr}`,
-          accountId: form.accountId ? Number(form.accountId) : null,
-          txnDate: new Date().toISOString().split("T")[0],
-        }),
+        body: JSON.stringify(sellPayload),
       });
-      if (!txnRes.ok) {
-        const d = await txnRes.json().catch(() => ({}));
+
+      if (!sellRes.ok) {
+        const d = await sellRes.json().catch(() => ({}));
         const detail = d.details ? ` (${Object.entries(d.details).map(([k, v]) => `${k}: ${v}`).join("; ")})` : "";
-        throw new Error((d.error || "Failed to record sale transaction") + detail);
+        throw new Error((d.error || "Failed to process sale") + detail);
       }
 
       onSold();
@@ -675,7 +656,7 @@ export function InvestmentsManager({ investments, accounts }: { investments: Inv
           livePrice={null}
           accounts={accounts || []}
           onClose={() => setSellTarget(null)}
-          onSold={() => setSellTarget(null)}
+          onSold={() => { setSellTarget(null); router.refresh(); }}
         />
       )}
     </div>

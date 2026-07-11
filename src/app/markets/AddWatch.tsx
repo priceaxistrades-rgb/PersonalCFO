@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Card";
+import { PRESET_INSTRUMENTS, type MarketQuote } from "@/lib/market";
 
 const inputCls = "w-full px-3 py-2 rounded-lg text-sm outline-none border";
 type StockResult = { symbol: string; name: string; exchange: string; sector?: string };
@@ -10,17 +12,51 @@ type MfResult = { schemeCode: number; schemeName: string };
 
 export function AddWatch() {
   const router = useRouter();
-  const [tab, setTab] = useState<"stock" | "mf">("stock");
+  const [tab, setTab] = useState<"stock" | "mf" | "presets">("stock");
   const style = { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" };
 
   const [stockQ, setStockQ] = useState("");
   const [stockResults, setStockResults] = useState<StockResult[]>([]);
   const [manualSymbol, setManualSymbol] = useState("");
   const [manualLabel, setManualLabel] = useState("");
+  const [manualKind, setManualKind] = useState<MarketQuote["kind"]>("commodity");
 
   const [q, setQ] = useState("");
   const [results, setResults] = useState<MfResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [presetPrices, setPresetPrices] = useState<Record<string, MarketQuote>>({});
+  const [presetLoading, setPresetLoading] = useState(false);
+
+  // Load live prices for preset instruments
+  useEffect(() => {
+    if (tab !== "presets") return;
+    let active = true;
+    const allSymbols = PRESET_INSTRUMENTS.flatMap((cat) => cat.items);
+    const loadPrices = async () => {
+      setPresetLoading(true);
+      const params = new URLSearchParams();
+      const commodities = allSymbols.filter((s) => s.kind === "commodity").map((s) => s.symbol);
+      const cryptos = allSymbols.filter((s) => s.kind === "crypto").map((s) => s.symbol);
+      const indices = allSymbols.filter((s) => s.kind === "index").map((s) => s.symbol);
+      const reits = allSymbols.filter((s) => s.kind === "reit").map((s) => s.symbol);
+      const bonds = allSymbols.filter((s) => s.kind === "bond").map((s) => s.symbol);
+      if (commodities.length) params.set("commodities", commodities.join(","));
+      if (cryptos.length) params.set("crypto", cryptos.join(","));
+      if (indices.length) params.set("indices", indices.join(","));
+      if (reits.length) params.set("reits", reits.join(","));
+      if (bonds.length) params.set("bonds", bonds.join(","));
+      try {
+        const res = await fetch(`/api/market/quote?${params.toString()}`, { cache: "no-store" });
+        const data = await res.json();
+        if (active && data.quotes) setPresetPrices(data.quotes);
+      } catch {
+        // Keep empty
+      }
+      setPresetLoading(false);
+    };
+    void loadPrices();
+    return () => { active = false; };
+  }, [tab]);
 
   useEffect(() => {
     let active = true;
@@ -36,7 +72,7 @@ export function AddWatch() {
     };
   }, [stockQ]);
 
-  const addInstrument = async (payload: { kind: "stock" | "mf"; symbol?: string; schemeCode?: number | string; label: string }) => {
+  const addInstrument = async (payload: { kind: string; symbol?: string; schemeCode?: number | string; label: string }) => {
     try {
       const res = await fetch("/api/watchlist", {
         method: "POST",
@@ -57,7 +93,7 @@ export function AddWatch() {
   const addManualStock = async () => {
     const symbol = manualSymbol.trim().toUpperCase();
     if (!symbol) return;
-    await addInstrument({ kind: "stock", symbol, label: manualLabel.trim() || symbol });
+    await addInstrument({ kind: manualKind, symbol, label: manualLabel.trim() || symbol });
     setManualSymbol("");
     setManualLabel("");
   };
@@ -85,17 +121,22 @@ export function AddWatch() {
     setResults([]);
   };
 
+  function fmtPrice(price: number, currency?: string) {
+    if (currency === "USD") return `$${price.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+    return `₹${price.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+  }
+
   return (
-    <Card title="➕ Track New Instrument" subtitle="Search Indian stocks and mutual funds, then add them to your live watchlist">
-      <div className="flex gap-2 mb-4 no-print">
-        {(["stock", "mf"] as const).map((t) => (
+    <Card title="➕ Track New Instrument" subtitle="Search stocks, mutual funds, commodities, crypto, indices, REITs & bonds">
+      <div className="flex gap-2 mb-4 no-print flex-wrap">
+        {(["stock", "mf", "presets"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className="px-3 py-1.5 rounded-lg text-sm font-medium"
             style={{ background: tab === t ? "var(--primary)" : "var(--surface-3)", color: tab === t ? "#fff" : "var(--text-muted)" }}
           >
-            {t === "stock" ? "Indian Stocks" : "Mutual Funds"}
+            {t === "stock" ? "📈 Stocks" : t === "mf" ? "🏦 MFs" : "🌍 Gold · Crypto · More"}
           </button>
         ))}
       </div>
@@ -146,7 +187,7 @@ export function AddWatch() {
             Dropdown includes major Indian stocks/indices. For any other NSE/BSE symbol, use manual entry with Yahoo suffix: .NS for NSE and .BO for BSE.
           </p>
         </div>
-      ) : (
+      ) : tab === "mf" ? (
         <div className="no-print">
           <input className={inputCls} style={style} value={q} onChange={(e) => searchMf(e.target.value)} placeholder="Search funds… e.g. Parag Parikh, Nifty index, SBI bluechip" />
           {searching && <p className="text-xs mt-2" style={{ color: "var(--text-faint)" }}>Searching…</p>}
@@ -160,6 +201,100 @@ export function AddWatch() {
               ))}
             </div>
           )}
+        </div>
+      ) : (
+        /* ─── PRESET INSTRUMENTS TAB ─── */
+        <div className="space-y-6 no-print">
+          {presetLoading && (
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>Loading live prices…</p>
+          )}
+
+          {PRESET_INSTRUMENTS.map((cat) => (
+            <div key={cat.category}>
+              <h4 className="text-sm font-bold mb-2" style={{ color: "var(--text-heading)" }}>{cat.category}</h4>
+              <div className="grid gap-2">
+                {cat.items.map((item) => {
+                  const quoteKey = `${item.kind}:${item.symbol}`;
+                  const quote = presetPrices[quoteKey];
+                  const price = quote?.ok ? fmtPrice(quote.price, quote.currency) : "—";
+                  const change = quote?.ok ? quote.changePct : null;
+                  return (
+                    <div
+                      key={item.symbol}
+                      className="flex items-center justify-between p-3 rounded-xl"
+                      style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-lg">{item.icon}</span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold truncate" style={{ color: "var(--text-heading)" }}>{item.name}</p>
+                          <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>{item.symbol} · {item.kind}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        {quote?.ok ? (
+                          <div className="text-right">
+                            <p className="text-sm font-bold" style={{ color: "var(--text-heading)" }}>{price}</p>
+                            {change !== null && (
+                              <p className="text-[11px] font-semibold" style={{ color: change >= 0 ? "var(--success)" : "var(--danger)" }}>
+                                {change >= 0 ? "▲" : "▼"} {Math.abs(change).toFixed(2)}%
+                              </p>
+                            )}
+                          </div>
+                        ) : quote ? (
+                          <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>⏳</span>
+                        ) : null}
+                        <button
+                          onClick={() => addInstrument({ kind: item.kind, symbol: item.symbol, label: item.name })}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+                          style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
+                        >
+                          + Add
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          {/* Manual add for any Yahoo Finance symbol */}
+          <div className="pt-4 border-t" style={{ borderColor: "var(--border)" }}>
+            <h4 className="text-sm font-bold mb-2" style={{ color: "var(--text-heading)" }}>🔧 Add Custom Symbol</h4>
+            <p className="text-xs mb-3" style={{ color: "var(--text-faint)" }}>
+              Enter any Yahoo Finance symbol. Examples: GC=F (Gold), BTC-USD (Bitcoin), ^NSEI (Nifty), EMBIREL.NS (REIT)
+            </p>
+            <div className="grid sm:grid-cols-4 gap-3 items-end">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Type</label>
+                <select
+                  value={manualKind}
+                  onChange={(e) => setManualKind(e.target.value as MarketQuote["kind"])}
+                  className={inputCls}
+                  style={style}
+                >
+                  <option value="commodity">🥇 Commodity</option>
+                  <option value="crypto">₿ Crypto</option>
+                  <option value="index">📊 Index</option>
+                  <option value="reit">🏠 REIT</option>
+                  <option value="bond">📜 Bond ETF</option>
+                  <option value="stock">📈 Stock</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Symbol</label>
+                <input className={inputCls} style={style} value={manualSymbol} onChange={(e) => setManualSymbol(e.target.value)} placeholder="BTC-USD or GOLDBEES.NS" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Display Name</label>
+                <input className={inputCls} style={style} value={manualLabel} onChange={(e) => setManualLabel(e.target.value)} placeholder="Optional" />
+              </div>
+              <button onClick={addManualStock} className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: "var(--success)" }}>
+                + Add
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </Card>

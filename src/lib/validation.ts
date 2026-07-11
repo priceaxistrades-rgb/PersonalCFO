@@ -93,7 +93,7 @@ const GOAL_CATEGORIES = [
 const ANNUAL_CATEGORIES = ["Financial", "Savings", "Investment", "Tax", "Purchase"] as const;
 const ANNUAL_STATUSES = ["Planned", "InProgress", "Done"] as const;
 const TAX_REGIMES = ["old", "new"] as const;
-const WATCHLIST_KINDS = ["stock", "mf"] as const;
+const WATCHLIST_KINDS = ["stock", "mf", "commodity", "crypto", "index", "reit", "bond"] as const;
 
 // ─── Auth Schemas ───────────────────────────────────────────────
 
@@ -195,6 +195,22 @@ export const investmentUpdateSchema = z.object({
   startDate: dateStr.nullable().optional(),
   memberId: optionalIntId.optional(),
 }).strict();
+
+// ─── Sell Investment Schema ────────────────────────────────────
+// Used by the atomic /api/manage/investments/sell endpoint.
+// Supports BOTH unit-based sells (Stocks, MFs) and amount-based
+// sells (FD, PPF, EPF, RealEstate, etc.)
+
+export const sellSchema = z.object({
+  investmentId: positiveInt,
+  sellUnits: z.number().min(0).nullable().optional(),
+  sellPrice: z.number().min(0).nullable().optional(),
+  sellAmount: z.number().min(0).nullable().optional(),
+  accountId: optionalIntId,
+}).strict().refine(
+  (v) => v.sellUnits != null || v.sellAmount != null,
+  { message: "Either sellUnits or sellAmount must be provided", path: ["_root"] },
+);
 
 // ─── Debt Schemas ───────────────────────────────────────────────
 
