@@ -4,233 +4,162 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Badge } from "@/components/ui/Card";
 import { Table, Tr, Td } from "@/components/ui/Table";
+import { inr } from "@/lib/format";
 import type { MarketQuote } from "@/lib/market";
+import {
+  IconRefresh, IconMarkets, IconInvestments, IconDashboard,
+  IconArrowRight, IconSparkles, IconAlert, IconCheck, IconTarget
+} from "@/components/ui/Icons";
 
-type WatchItem = {
+export type WatchItem = {
   id: number;
+  symbol: string;
+  schemeCode?: string | null;
+  name: string;
   kind: string;
-  symbol: string | null;
-  schemeCode: string | null;
-  label: string;
-  source?: "watchlist" | "investment";
-  units?: string | null;
-  invested?: string | null;
-  currentValue?: string | null;
-  currentPrice?: number;
-  investmentId?: number;
-  investmentType?: string;
+  currency?: string;
+  source?: string;
+  invested?: number | string;
+  currentValue?: number | string;
+  units?: number | string;
 };
 
-type ChartPoint = { date: string; value: number; open?: number; high?: number; low?: number; close?: number };
-type ChartRange = "1m" | "3m" | "6m" | "1y" | "3y" | "5y";
-type ChartType = "line" | "candle";
-const CHART_RANGES: { id: ChartRange; label: string }[] = [
-  { id: "1m", label: "1M" },
-  { id: "3m", label: "3M" },
-  { id: "6m", label: "6M" },
-  { id: "1y", label: "1Y" },
-  { id: "3y", label: "3Y" },
-  { id: "5y", label: "5Y" },
-];
-type ChartTarget = { kind: MarketQuote["kind"]; id: string; label: string };
-
-function fmtNum(n: number, currency = "INR") {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 2,
-  }).format(n);
+function sumBy<T>(arr: T[], fn: (x: T) => number) {
+  return arr.reduce((sum, item) => sum + fn(item), 0);
 }
 
-function compactINR(n: number): string {
-  const abs = Math.abs(n);
-  if (abs >= 1e7) return `₹${(n / 1e7).toFixed(2)} Cr`;
-  if (abs >= 1e5) return `₹${(n / 1e5).toFixed(2)} L`;
-  if (abs >= 1e3) return `₹${(n / 1e3).toFixed(1)} K`;
-  return `₹${n.toFixed(0)}`;
+type ChartRange = "1d" | "5d" | "1mo" | "6mo" | "1y" | "5y";
+type ChartType = "line" | "candle";
+type ChartTarget = { id: string; label: string; kind: "stock" | "mf" };
+
+const CHART_RANGES: { id: ChartRange; label: string }[] = [
+  { id: "1d", label: "1D" },
+  { id: "5d", label: "5D" },
+  { id: "1mo", label: "1M" },
+  { id: "6mo", label: "6M" },
+  { id: "1y", label: "1Y" },
+  { id: "5y", label: "5Y" },
+];
+
+function compactINR(value: number) {
+  return inr(value, { compact: true });
+}
+
+function fmtNum(n: number | null | undefined, curr = "INR") {
+  if (n === null || n === undefined) return "—";
+  if (curr === "USD") return `$${n.toFixed(2)}`;
+  return inr(n);
 }
 
 function Cagr({ v }: { v: number | null }) {
-  if (v === null || v === undefined) return <span style={{ color: "var(--text-faint)" }}>—</span>;
-  return <span style={{ color: v >= 0 ? "var(--success)" : "var(--danger)" }}>{v >= 0 ? "+" : ""}{v.toFixed(1)}%</span>;
+  if (v === null || Number.isNaN(v)) return <span style={{ color: "var(--text-faint)" }}>—</span>;
+  return (
+    <span className="font-mono font-bold" style={{ color: v >= 0 ? "var(--success)" : "var(--danger)" }}>
+      {v >= 0 ? "+" : ""}{v.toFixed(1)}%
+    </span>
+  );
 }
 
-/** Holdings badge shown for investment-linked instruments */
 function HoldingsBadge({ item, livePrice }: { item: WatchItem; livePrice: number | null }) {
   if (item.source !== "investment") return null;
-  const units = Number(item.units) || 0;
-  const invested = Number(item.invested) || 0;
-  const manualCurrentValue = Number(item.currentValue) || 0;
-  // Effective display values — use currentValue when invested is 0
-  const displayInvested = invested > 0 ? invested : manualCurrentValue;
-  const displayCurrent = livePrice && units > 0 ? livePrice * units : (manualCurrentValue > 0 ? manualCurrentValue : invested);
-
-  // Show holdings info even without units — show invested/current value
-  if (units <= 0) {
-    return (
-      <div
-        className="mt-1.5 p-2 rounded-lg text-[11px] space-y-1"
-        style={{ background: "var(--primary-soft)", border: "1px solid var(--border-accent)" }}
-      >
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="badge badge-primary">📋 Held in portfolio</span>
-        </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          {invested > 0 && (
-            <span style={{ color: "var(--text-muted)" }}>
-              Invested: <strong style={{ color: "var(--text)" }}>{compactINR(invested)}</strong>
-            </span>
-          )}
-          {manualCurrentValue > 0 && (
-            <span style={{ color: "var(--success)", fontWeight: 600 }}>
-              Current: {compactINR(manualCurrentValue)}
-            </span>
-          )}
-          {invested <= 0 && manualCurrentValue <= 0 && (
-            <span style={{ color: "var(--warning)", fontWeight: 500 }}>
-              ⚠️ Set invested amount or units for tracking
-            </span>
-          )}
-          <span style={{ color: "var(--text-faint)" }}>
-            Add units + avg price for live price tracking
-          </span>
-        </div>
-      </div>
-    );
-  }
-
-  const avgPrice = units > 0 ? invested / units : 0;
-  const currentVal = livePrice ? livePrice * units : displayCurrent;
-  const pnl = currentVal - displayInvested;
-  const pnlPct = displayInvested > 0 ? (pnl / displayInvested) * 100 : 0;
+  const invested = Number(item.invested || 0);
+  const units = Number(item.units || 0);
+  const manualValue = Number(item.currentValue || 0);
+  const liveVal = livePrice && units > 0 ? livePrice * units : manualValue;
+  const pnl = liveVal - invested;
+  const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0;
 
   return (
-    <div
-      className="mt-1.5 p-2 rounded-lg text-[11px] space-y-1"
-      style={{ background: "var(--primary-soft)", border: "1px solid var(--border-accent)" }}
-    >
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <span className="badge badge-primary">📋 {units} units held</span>
-        {invested > 0 && <span style={{ color: "var(--text-muted)" }}>Avg ₹{avgPrice.toFixed(2)}</span>}
-        {invested <= 0 && <span style={{ color: "var(--warning)", fontWeight: 500 }}>⚠️ Set avg price for P&L</span>}
-      </div>
-      <div className="flex items-center gap-3 flex-wrap">
-        <span style={{ color: "var(--text-muted)" }}>
-          Invested: <strong style={{ color: "var(--text)" }}>{compactINR(displayInvested)}</strong>
+    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+      {units > 0 && <Badge tone="primary" className="font-mono">{units} units held</Badge>}
+      {invested > 0 && (
+        <span className={`font-mono font-bold text-[11px] ${pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+          {pnl >= 0 ? "+" : ""}{compactINR(pnl)} ({pnlPct >= 0 ? "+" : ""}{pnlPct.toFixed(1)}%)
         </span>
-        {livePrice ? (
-          <>
-            <span style={{ color: "var(--text-muted)" }}>
-              Current: <strong style={{ color: "var(--text)" }}>{compactINR(currentVal)}</strong>
-            </span>
-            <span style={{ color: pnl >= 0 ? "var(--success)" : "var(--danger)", fontWeight: 700 }}>
-              {pnl >= 0 ? "▲" : "▼"} {compactINR(Math.abs(pnl))} ({pnlPct.toFixed(1)}%)
-            </span>
-          </>
-        ) : (
-          <span style={{ color: "var(--text-faint)" }}>Current value updates with live price</span>
-        )}
-      </div>
+      )}
     </div>
   );
 }
 
-function MiniChart({ points, chartType, supportsCandles }: { points: ChartPoint[]; chartType: ChartType; supportsCandles: boolean }) {
-  if (points.length < 2) {
-    return <p className="text-sm py-8 text-center" style={{ color: "var(--text-faint)" }}>Not enough chart data.</p>;
-  }
-  const width = 760;
-  const height = 280;
-  const pad = { l: 46, r: 16, t: 16, b: 30 };
-  const values = points.flatMap((p) => [p.high ?? p.value, p.low ?? p.value, p.value]).filter(Number.isFinite);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
+function MiniChart({ points, chartType, supportsCandles }: { points: Array<{ time: string; price: number; open?: number; high?: number; low?: number; close?: number }>; chartType: ChartType; supportsCandles: boolean }) {
+  const [hover, setHover] = useState<number | null>(null);
+  if (!points.length) return <p className="text-sm py-10 text-center text-slate-400">No history available for this range</p>;
+
+  const width = 640;
+  const height = 240;
+  const pad = { l: 12, r: 12, t: 16, b: 24 };
   const innerW = width - pad.l - pad.r;
   const innerH = height - pad.t - pad.b;
+
+  const prices = points.map((p) => p.close ?? p.price);
+  const max = Math.max(...prices);
+  const min = Math.min(...prices);
+  const rng = max - min || 1;
   const x = (i: number) => pad.l + (i / Math.max(points.length - 1, 1)) * innerW;
-  const y = (v: number) => pad.t + innerH - ((v - min) / range) * innerH;
-  const path = points.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(" ");
-  const first = points[0].value;
-  const last = points[points.length - 1].value;
-  const change = first ? ((last - first) / first) * 100 : 0;
-  const color = change >= 0 ? "var(--success)" : "var(--danger)";
-  const candleWidth = Math.max(3, Math.min(10, innerW / points.length / 1.8));
-  const renderCandles = chartType === "candle" && supportsCandles;
+  const y = (v: number) => pad.t + innerH - ((v - min) / rng) * innerH;
+
+  const pts = points.map((p, i) => `${x(i)},${y(p.close ?? p.price)}`).join(" ");
+  const area = `${pts} ${x(points.length - 1)},${pad.t + innerH} ${x(0)},${pad.t + innerH}`;
+  const first = prices[0];
+  const last = prices[prices.length - 1];
+  const color = last >= first ? "#10b981" : "#f43f5e";
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between text-xs" style={{ color: "var(--text-muted)" }}>
-        <span>{points[0].date}</span>
-        <span style={{ color }}>{change >= 0 ? "+" : ""}{change.toFixed(2)}% over chart range</span>
-        <span>{points[points.length - 1].date}</span>
-      </div>
-      {!supportsCandles && chartType === "candle" && (
-        <div className="rounded-lg px-3 py-2 text-xs" style={{ background: "var(--warning-soft)", color: "var(--warning)" }}>
-          Candle chart is available for stocks. Mutual funds publish daily NAV, so NAV line chart is shown.
+    <div className="w-full select-none">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full overflow-visible" style={{ height }} onMouseLeave={() => setHover(null)}>
+        <defs>
+          <linearGradient id="chartGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.0" />
+          </linearGradient>
+        </defs>
+
+        {[0, 0.5, 1].map((g, i) => (
+          <line key={i} x1={pad.l} x2={width - pad.r} y1={pad.t + innerH * g} y2={pad.t + innerH * g} stroke="var(--border)" strokeWidth="1" strokeDasharray="3 3" />
+        ))}
+
+        <polygon points={area} fill="url(#chartGrad)" />
+        <polyline points={pts} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+        {points.map((_, i) => (
+          <rect key={i} x={x(i) - innerW / (2 * Math.max(points.length - 1, 1))} y={0} width={innerW / Math.max(points.length - 1, 1)} height={height} fill="transparent" onMouseEnter={() => setHover(i)} className="cursor-pointer" />
+        ))}
+
+        {hover !== null && (
+          <line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={pad.t + innerH} stroke="var(--text-faint)" strokeWidth="1.5" strokeDasharray="4 4" />
+        )}
+      </svg>
+      {hover !== null && (
+        <div className="flex justify-between items-center text-xs font-mono font-bold mt-2 px-3 py-1.5 rounded-xl border border-white/[0.08] bg-surface-2">
+          <span className="text-slate-400">{points[hover].time}</span>
+          <span style={{ color }}>{inr(points[hover].close ?? points[hover].price)}</span>
         </div>
       )}
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ height }}>
-        {[0, 0.25, 0.5, 0.75, 1].map((g) => (
-          <line key={g} x1={pad.l} x2={width - pad.r} y1={pad.t + innerH * g} y2={pad.t + innerH * g} stroke="var(--border)" />
-        ))}
-        {renderCandles ? (
-          points.map((p, i) => {
-            const open = p.open ?? p.value;
-            const close = p.close ?? p.value;
-            const high = p.high ?? Math.max(open, close);
-            const low = p.low ?? Math.min(open, close);
-            const up = close >= open;
-            const c = up ? "var(--success)" : "var(--danger)";
-            const cx = x(i);
-            const top = y(Math.max(open, close));
-            const bottom = y(Math.min(open, close));
-            return (
-              <g key={`${p.date}-${i}`}>
-                <line x1={cx} x2={cx} y1={y(high)} y2={y(low)} stroke={c} strokeWidth="1.3" />
-                <rect
-                  x={cx - candleWidth / 2}
-                  y={top}
-                  width={candleWidth}
-                  height={Math.max(1, bottom - top)}
-                  fill={up ? "transparent" : c}
-                  stroke={c}
-                  strokeWidth="1.2"
-                  rx="1"
-                />
-              </g>
-            );
-          })
-        ) : (
-          <path d={path} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        )}
-        <text x={8} y={y(max) + 4} fontSize="11" fill="var(--text-muted)">{max.toFixed(2)}</text>
-        <text x={8} y={y(min) + 4} fontSize="11" fill="var(--text-muted)">{min.toFixed(2)}</text>
-      </svg>
     </div>
   );
 }
 
-export function LiveMarkets({ 
-  items, 
+export function LiveMarkets({
+  items,
   onAddToPortfolio,
   onSell,
-}: { 
-  items: WatchItem[], 
-  onAddToPortfolio: (item: WatchItem) => void,
-  onSell?: (item: WatchItem) => void,
+}: {
+  items: WatchItem[];
+  onAddToPortfolio?: (item: WatchItem & { currentPrice?: number }) => void;
+  onSell?: (item: WatchItem) => void;
 }) {
   const router = useRouter();
   const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
   const [loading, setLoading] = useState(true);
-  const [updated, setUpdated] = useState<string>("");
+  const [updated, setUpdated] = useState("");
   const [chartTarget, setChartTarget] = useState<ChartTarget | null>(null);
-  const [chartPoints, setChartPoints] = useState<ChartPoint[]>([]);
-  const [chartRange, setChartRange] = useState<ChartRange>("1y");
+  const [chartRange, setChartRange] = useState<ChartRange>("1mo");
   const [chartType, setChartType] = useState<ChartType>("line");
-  const [supportsCandles, setSupportsCandles] = useState(false);
+  const [chartPoints, setChartPoints] = useState<any[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
   const [chartError, setChartError] = useState("");
+  const [supportsCandles, setSupportsCandles] = useState(false);
+
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastLoadTime = useRef<Date>(new Date());
 
@@ -242,7 +171,6 @@ export function LiveMarkets({
   const reits = useMemo(() => items.filter((i) => i.kind === "reit" && i.symbol).map((i) => i.symbol!), [items]);
   const bonds = useMemo(() => items.filter((i) => i.kind === "bond" && i.symbol).map((i) => i.symbol!), [items]);
 
-  // "X seconds ago" display
   const [secondsAgo, setSecondsAgo] = useState(0);
   useEffect(() => {
     const interval = setInterval(() => {
@@ -272,15 +200,13 @@ export function LiveMarkets({
       setQuotes(json.quotes || {});
       lastLoadTime.current = new Date();
       setUpdated(new Date().toLocaleTimeString("en-IN"));
-    } catch {
-      // Keep previous prices on transient API errors.
-    }
+    } catch {}
     setLoading(false);
   }, [items.length, stocks, mfs, commodities, cryptos, indices, reits, bonds]);
 
   useEffect(() => {
     const start = setTimeout(() => void load(), 0);
-    timer.current = setInterval(() => void load(), 5000); // Refresh every 5 seconds for near-real-time
+    timer.current = setInterval(() => void load(), 5000);
     return () => {
       clearTimeout(start);
       if (timer.current) clearInterval(timer.current);
@@ -324,83 +250,47 @@ export function LiveMarkets({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
-      if (res.ok) {
-        router.refresh();
-      } else {
-        const err = await res.json();
-        alert(`Error removing instrument: ${err.error || "Unknown error"}`);
-      }
-    } catch (e) {
-      alert("Failed to remove instrument. Please check your connection.");
-    }
+      if (res.ok) router.refresh();
+    } catch {}
   };
-
-  const stockItems = items.filter((i) => i.kind === "stock");
-  const mfItems = items.filter((i) => i.kind === "mf");
-  const commodityItems = items.filter((i) => i.kind === "commodity");
-  const cryptoItems = items.filter((i) => i.kind === "crypto");
-  const indexItems = items.filter((i) => i.kind === "index");
-  const reitItems = items.filter((i) => i.kind === "reit");
-  const bondItems = items.filter((i) => i.kind === "bond");
-
-  // Summary stats for investment-linked items (include all with any value, even without units)
-  const investedItems = items.filter((i) => i.source === "investment" && (Number(i.invested) > 0 || Number(i.units) > 0 || Number(i.currentValue) > 0));
-  const totalInvested = investedItems.reduce((s, i) => s + (Number(i.invested) || 0), 0);
-  const totalCurrent = investedItems.reduce((s, i) => {
-    const key = i.kind === "mf" ? `mf:${i.schemeCode}` : `${i.kind}:${i.symbol}`;
-    const q = quotes[key];
-    const units = Number(i.units) || 0;
-    const invested = Number(i.invested) || 0;
-    const cv = Number(i.currentValue) || 0;
-    // If we have units + live price, use live value; otherwise use currentValue, then invested as fallback
-    if (q?.ok && q.price > 0 && units > 0) return s + (q.price * units);
-    if (cv > 0) return s + cv;
-    return s + invested;
-  }, 0);
-  const totalPnl = totalCurrent - totalInvested;
 
   const renderRows = (list: WatchItem[]) =>
     list.map((it) => {
-      const key = it.kind === "mf" ? `mf:${it.schemeCode}` : `${it.kind}:${it.symbol}`;
+      const key = it.kind === "stock" || it.kind === "commodity" || it.kind === "crypto" || it.kind === "index" || it.kind === "reit" || it.kind === "bond"
+        ? `stock:${it.symbol}`
+        : `mf:${it.symbol}`;
       const q = quotes[key];
+      const target: ChartTarget | null = it.kind === "stock" || it.kind === "commodity" || it.kind === "crypto" || it.kind === "index" || it.kind === "reit" || it.kind === "bond"
+        ? { id: it.symbol, label: it.symbol, kind: "stock" }
+        : { id: it.symbol, label: it.name, kind: "mf" };
+
+      const isHeld = it.source === "investment";
       const livePrice = q?.ok ? q.price : null;
-      const target = it.symbol
-        ? { kind: it.kind as MarketQuote["kind"], id: it.kind === "mf" ? it.schemeCode! : it.symbol, label: it.label }
-        : it.schemeCode
-          ? { kind: "mf" as MarketQuote["kind"], id: it.schemeCode, label: it.label }
-          : null;
-      const isHeld = it.source === "investment" && (Number(it.units) > 0 || Number(it.invested) > 0 || Number(it.currentValue) > 0);
 
       return (
-        <Tr key={`${it.source || "watchlist"}-${it.id}-${key}`}>
+        <Tr key={`${it.kind}-${it.id}`} className={isHeld ? "bg-indigo-500/[0.03]" : ""}>
           <Td strong>
-            <div 
-              className="flex items-center gap-2 cursor-pointer group" 
-              onClick={() => target && openChart(target)}
-            >
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="group-hover:opacity-80 transition-opacity">
-                    {it.label}
-                  </span>
-                  {isHeld && <span className="badge badge-primary text-[9px]">HELD</span>}
-                  <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--primary)" }}>
-                    📊
-                  </span>
+            <div className="flex items-start justify-between gap-2">
+              <div
+                className="cursor-pointer group flex-1"
+                onClick={() => target && openChart(target)}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="group-hover:text-indigo-400 transition-colors text-white font-bold">{it.name}</span>
+                  {isHeld && <Badge tone="primary" className="font-mono text-[9px]">HELD IN PORTFOLIO</Badge>}
                 </div>
-                <span className="block text-[10px] font-normal opacity-70" style={{ color: "var(--text-faint)" }}>
-                  {q?.extra || (it.source === "investment" ? "Synced from portfolio" : "Watchlist")}
+                <span className="block text-[10px] font-mono text-slate-400 mt-0.5">
+                  {q?.extra || (isHeld ? "Synced from portfolio" : "Watchlist")}
                 </span>
               </div>
             </div>
-            {/* Holdings sync info */}
             <HoldingsBadge item={it} livePrice={livePrice} />
           </Td>
-          <Td right strong>{q?.ok ? fmtNum(q.price, q.currency) : q ? "—" : "…"}</Td>
-          <Td right>
+          <Td right strong className="font-mono font-bold text-white">{q?.ok ? fmtNum(q.price, q.currency) : q ? "—" : "…"}</Td>
+          <Td right className="font-mono font-bold">
             {q?.ok ? (
               <span style={{ color: q.change >= 0 ? "var(--success)" : "var(--danger)" }}>
-                {q.change >= 0 ? "▲" : "▼"} {q.changePct.toFixed(2)}%
+                {q.change >= 0 ? "+" : ""}{q.changePct.toFixed(2)}%
               </span>
             ) : (
               <span style={{ color: "var(--text-faint)" }}>{q?.error ? "err" : "…"}</span>
@@ -410,56 +300,30 @@ export function LiveMarkets({
           <Td right><Cagr v={q?.cagr.y3 ?? null} /></Td>
           <Td right><Cagr v={q?.cagr.y5 ?? null} /></Td>
           <Td right>
-            <div className="flex justify-end gap-1 no-print">
+            <div className="flex justify-end gap-1.5 no-print">
               {onSell && isHeld && (
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSell(it);
-                  }}
-                  className="text-xs px-2 py-1 rounded-lg font-semibold"
-                  style={{ background: "var(--warning-soft)", color: "var(--warning)" }}
+                  onClick={() => onSell(it)}
+                  className="btn btn-secondary text-xs px-2.5 py-1 font-bold border border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
                 >
-                  📉 Sell
+                  Sell
                 </button>
               )}
-              {target && isHeld && (
+              {target && (
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddToPortfolio({ ...it, currentPrice: q?.price });
-                  }}
-                  className="text-xs px-2 py-1 rounded-lg"
-                  style={{ background: "var(--success-soft)", color: "var(--success)" }}
+                  onClick={() => openChart(target)}
+                  className="btn btn-ghost text-xs px-2.5 py-1 font-bold border border-white/[0.08]"
                 >
-                  + Add More
+                  Chart
                 </button>
               )}
-              {target && !isHeld && (
+              {!isHeld && (
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddToPortfolio({ ...it, currentPrice: q?.price });
-                  }}
-                  className="text-xs px-2 py-1 rounded-lg"
-                  style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
-                >
-                  + Add
-                </button>
-              )}
-              {it.source !== "investment" ? (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    remove(it.id, it.source);
-                  }}
-                  className="text-xs px-2 py-1 rounded-lg"
-                  style={{ background: "var(--danger-soft)", color: "var(--danger)" }}
+                  onClick={() => remove(it.id, it.source)}
+                  className="btn btn-ghost text-xs px-2.5 py-1 font-bold text-red-400 hover:bg-red-500/10"
                 >
                   ✕
                 </button>
-              ) : (
-                <Badge tone="primary">Linked</Badge>
               )}
             </div>
           </Td>
@@ -467,37 +331,80 @@ export function LiveMarkets({
       );
     });
 
+  const stockItems = items.filter((i) => i.kind === "stock");
+  const mfItems = items.filter((i) => i.kind === "mf");
+  const commodityItems = items.filter((i) => i.kind === "commodity");
+  const cryptoItems = items.filter((i) => i.kind === "crypto");
+  const indexItems = items.filter((i) => i.kind === "index");
+  const reitItems = items.filter((i) => i.kind === "reit");
+  const bondItems = items.filter((i) => i.kind === "bond");
+
+  const investedItems = items.filter((i) => i.source === "investment");
+  const totalInvested = sumBy(investedItems, (i) => Number(i.invested || 0));
+  const totalCurrent = sumBy(investedItems, (i) => {
+    const key = i.kind === "stock" ? `stock:${i.symbol}` : `mf:${i.symbol}`;
+    const q = quotes[key];
+    const units = Number(i.units || 0);
+    const manualVal = Number(i.currentValue || 0);
+    return q?.ok && q.price > 0 && units > 0 ? q.price * units : manualVal;
+  });
+  const totalPnl = totalCurrent - totalInvested;
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: loading ? "var(--warning)" : "var(--success)" }} />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5" style={{ background: loading ? "var(--warning)" : "var(--success)" }} />
-          </span>
-          <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-            {loading ? "Fetching live prices…" : updated ? `Live · Last updated ${secondsAgo < 60 ? `${secondsAgo}s ago` : `${Math.floor(secondsAgo / 60)}m ago`}` : "Live sync ready"}
-          </span>
+    <div className="space-y-6 animate-fade-in w-full select-none">
+      {/* ─── SOVEREIGN COMMAND DECK HEADER ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b" style={{ borderColor: "var(--border)" }}>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-xl shadow-indigo-500/20 shrink-0">
+            <IconMarkets size={24} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: "var(--text-heading)" }}>Live Market Tickers & Watchlist</h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-extrabold uppercase tracking-widest bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Tickers v5.6</span>
+            </div>
+            <p className="text-xs sm:text-sm font-medium mt-0.5" style={{ color: "var(--text-muted)" }}>Real-time polling of NSE stocks, AMFI mutual fund schemes, commodities, and crypto assets</p>
+          </div>
         </div>
-        <button onClick={load} className="text-xs font-medium no-print px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5" style={{ background: "var(--surface-3)", color: "var(--text)" }}>
-          🔄 Refresh
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center"))}
+            className="btn btn-primary px-4 py-2.5 text-xs font-extrabold rounded-xl shadow-lg shadow-indigo-500/20 flex items-center gap-2 cursor-pointer"
+          >
+            <span>+ Track Market Instrument</span>
+            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/20 text-white">⌘K</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between flex-wrap gap-3 p-3.5 rounded-2xl border bg-surface-2 shadow-sm" style={{ borderColor: "var(--border)" }}>
+        <div className="flex items-center gap-3 text-xs font-bold" style={{ color: "var(--text-heading)" }}>
+          <span className="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 grid place-items-center shrink-0">
+            <IconMarkets size={16} />
+          </span>
+          <div>
+            <span className="block">{loading ? "Fetching live market prices…" : updated ? `Live Ticker Feed Polled at ${updated} · (${secondsAgo < 60 ? `${secondsAgo}s ago` : `${Math.floor(secondsAgo / 60)}m ago`})` : "Live Market Sync Ready"}</span>
+            <span className="block text-[11px] font-medium text-slate-400">NSE Equities refresh every 30s · AMFI NAV closing rates updated daily</span>
+          </div>
+        </div>
+        <button onClick={load} disabled={loading} className="btn btn-primary px-3.5 py-1.5 text-xs font-bold rounded-xl shadow-sm flex items-center gap-1.5 disabled:opacity-50">
+          <IconRefresh size={13} className={loading ? "animate-spin" : ""} /> <span>{loading ? "Polling…" : "Poll Live Tickers"}</span>
         </button>
       </div>
 
-      {/* Portfolio sync summary */}
       {investedItems.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 p-3 rounded-xl fade-in" style={{ background: "var(--surface-2)", border: "1px solid var(--border-accent)" }}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 animate-fade-in">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Invested</p>
-            <p className="text-sm font-bold" style={{ color: "var(--text-heading)" }}>{compactINR(totalInvested)}</p>
+            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Watchlist Invested Capital</p>
+            <p className="text-lg font-mono font-black text-white mt-0.5">{compactINR(totalInvested)}</p>
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Current Value</p>
-            <p className="text-sm font-bold" style={{ color: "var(--text-heading)" }}>{compactINR(totalCurrent)}</p>
+            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Live Current Valuation</p>
+            <p className="text-lg font-mono font-black text-emerald-400 mt-0.5">{compactINR(totalCurrent)}</p>
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Live P&L</p>
-            <p className="text-sm font-bold" style={{ color: totalPnl >= 0 ? "var(--success)" : "var(--danger)" }}>
+            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Total Unrealized P&L</p>
+            <p className={`text-lg font-mono font-black mt-0.5 ${totalPnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
               {totalPnl >= 0 ? "+" : ""}{compactINR(totalPnl)} ({totalInvested > 0 ? ((totalPnl / totalInvested) * 100).toFixed(1) : "0"}%)
             </p>
           </div>
@@ -506,112 +413,105 @@ export function LiveMarkets({
 
       {chartTarget && (
         <Card
-          title={`📊 ${chartTarget.label} Chart`}
-          subtitle={chartTarget.kind === "mf" ? "Mutual fund NAV history from mfapi.in" : "Price history from Yahoo Finance"}
+          title={`${chartTarget.label} Ticker Telemetry`}
+          subtitle={chartTarget.kind === "mf" ? "Mutual fund NAV trajectory from mfapi.in" : "Exchange order book trajectory from Yahoo Finance"}
           action={
-            <button onClick={() => setChartTarget(null)} className="px-3 py-1.5 rounded-lg text-xs" style={{ background: "var(--surface-3)", color: "var(--text)" }}>
-              Close
+            <button onClick={() => setChartTarget(null)} className="btn btn-ghost text-xs px-3 py-1.5 font-bold font-mono">
+              ✕ Close Chart
             </button>
           }
         >
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4 no-print">
-            <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-5 no-print pt-1">
+            <div className="flex flex-wrap gap-1.5 p-1 rounded-xl bg-surface-2 border border-white/[0.06]">
               {CHART_RANGES.map((range) => (
                 <button
                   key={range.id}
                   onClick={() => changeRange(range.id)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                  style={{
-                    background: chartRange === range.id ? "var(--primary)" : "var(--surface-3)",
-                    color: chartRange === range.id ? "#fff" : "var(--text)",
-                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                    chartRange === range.id ? "bg-primary text-white shadow-sm" : "text-slate-400 hover:text-white"
+                  }`}
                 >
                   {range.label}
                 </button>
               ))}
             </div>
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 p-1 rounded-xl bg-surface-2 border border-white/[0.06]">
               {(["line", "candle"] as ChartType[]).map((type) => (
                 <button
                   key={type}
                   onClick={() => setChartType(type)}
                   disabled={type === "candle" && !supportsCandles}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium capitalize"
-                  style={{
-                    background: chartType === type ? "var(--primary)" : "var(--surface-3)",
-                    color: chartType === type ? "#fff" : "var(--text)",
-                    opacity: type === "candle" && !supportsCandles ? 0.45 : 1,
-                  }}
-                  title={type === "candle" && !supportsCandles ? "Candles available for stocks only" : `${type} chart`}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold capitalize transition-all ${
+                    chartType === type ? "bg-primary text-white shadow-sm" : "text-slate-400 hover:text-white"
+                  } ${type === "candle" && !supportsCandles ? "opacity-40 cursor-not-allowed" : ""}`}
                 >
-                  {type === "line" ? "Line" : "Candle"}
+                  {type === "line" ? "Spline Area" : "Candlestick"}
                 </button>
               ))}
             </div>
           </div>
 
           {chartLoading ? (
-            <p className="text-sm py-8 text-center" style={{ color: "var(--text-muted)" }}>Loading chart...</p>
+            <div className="py-12 text-center text-slate-400 text-sm font-medium">Polling historical order book telemetry…</div>
           ) : chartError ? (
-            <p className="text-sm py-8 text-center" style={{ color: "var(--danger)" }}>{chartError}</p>
+            <div className="py-12 text-center text-red-400 text-sm font-bold">{chartError}</div>
           ) : (
             <MiniChart points={chartPoints} chartType={chartType} supportsCandles={supportsCandles} />
           )}
         </Card>
       )}
 
-      <Card title="📈 Live Stocks (NSE/BSE)" subtitle="Prices via Yahoo Finance · auto-refresh 30s">
+      <Card title="Live Indian Equities (NSE / BSE)" subtitle="Real-time share prices polled via Yahoo Finance API · auto-refresh 30s">
         {stockItems.length ? (
-          <Table headers={["Stock", "Price", "Day", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
+          <Table headers={["Instrument / Company", "Live Price", "Day %", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
             {renderRows(stockItems)}
           </Table>
         ) : (
-          <p className="text-sm py-6 text-center" style={{ color: "var(--text-faint)" }}>No stocks tracked. Add one below or add stock investments.</p>
+          <div className="py-10 text-center text-slate-400 text-sm font-medium">No equities tracked yet. Add ticker symbols below or link your portfolio stocks.</div>
         )}
       </Card>
 
-      <Card title="🏦 Live Mutual Funds" subtitle="NAV via AMFI / mfapi.in · updates daily">
+      <Card title="Live Mutual Funds & ETFs" subtitle="AMFI scheme NAV rates polled daily via mfapi.in">
         {mfItems.length ? (
-          <Table headers={["Fund", "NAV", "Day", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
+          <Table headers={["Fund / Scheme Name", "NAV Price", "Day %", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
             {renderRows(mfItems)}
           </Table>
         ) : (
-          <p className="text-sm py-6 text-center" style={{ color: "var(--text-faint)" }}>No mutual funds tracked. Search & add one below or add MF investments.</p>
+          <div className="py-10 text-center text-slate-400 text-sm font-medium">No mutual funds tracked yet. Search & link AMFI scheme codes below.</div>
         )}
       </Card>
 
-      {/* ═══ NEW: Commodities, Crypto, Indices, REITs, Bonds ═══ */}
       {commodityItems.length > 0 && (
-        <Card title="🥇 Live Commodities" subtitle="Gold, Silver & more via Yahoo Finance · auto-refresh 30s">
-          <Table headers={["Instrument", "Price", "Day", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
+        <Card title="Live Commodities (Gold & Silver)" subtitle="Precious metals & commodity contracts polled via Yahoo Finance">
+          <Table headers={["Commodity", "Live Price", "Day %", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
             {renderRows(commodityItems)}
           </Table>
         </Card>
       )}
       {cryptoItems.length > 0 && (
-        <Card title="₿ Live Crypto" subtitle="Bitcoin, Ethereum & more via Yahoo Finance · auto-refresh 30s">
-          <Table headers={["Coin", "Price", "Day", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
+        <Card title="Live Digital Assets (Crypto)" subtitle="Bitcoin, Ethereum & digital currencies polled via Yahoo Finance">
+          <Table headers={["Crypto Asset", "Live Price", "Day %", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
             {renderRows(cryptoItems)}
           </Table>
         </Card>
       )}
       {indexItems.length > 0 && (
-        <Card title="📊 Live Indices" subtitle="Nifty 50, Sensex & more via Yahoo Finance · auto-refresh 30s">
-          <Table headers={["Index", "Value", "Day", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
+        <Card title="Live Market Indices" subtitle="Nifty 50, Sensex & macro indices polled via Yahoo Finance">
+          <Table headers={["Index Name", "Value", "Day %", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
             {renderRows(indexItems)}
           </Table>
         </Card>
       )}
       {reitItems.length > 0 && (
-        <Card title="🏠 REITs" subtitle="Real Estate Investment Trusts via Yahoo Finance · auto-refresh 30s">
-          <Table headers={["REIT", "Price", "Day", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
+        <Card title="Real Estate Investment Trusts (REITs)" subtitle="Listed Indian REITs polled via Yahoo Finance">
+          <Table headers={["REIT Name", "Price", "Day %", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
             {renderRows(reitItems)}
           </Table>
         </Card>
       )}
       {bondItems.length > 0 && (
-        <Card title="📜 Bond ETFs" subtitle="Government & corporate bond ETFs via Yahoo Finance · auto-refresh 30s">
-          <Table headers={["Bond ETF", "Price", "Day", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
+        <Card title="Government & Corporate Bond ETFs" subtitle="Listed bond ETFs & NCDs polled via Yahoo Finance">
+          <Table headers={["Bond Instrument", "Price", "Day %", "1Y CAGR", "3Y CAGR", "5Y CAGR", "Actions"]} right={[1, 2, 3, 4, 5, 6]}>
             {renderRows(bondItems)}
           </Table>
         </Card>

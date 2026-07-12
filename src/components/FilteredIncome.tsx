@@ -9,6 +9,10 @@ import { KpiCard } from "@/components/ui/Kpi";
 import { DonutChart, LineChart } from "@/components/ui/Charts";
 import { Table, Tr, Td } from "@/components/ui/Table";
 import { inr, num, fmtDate } from "@/lib/format";
+import {
+  IconIncome, IconDashboard, IconOpportunities, IconSparkles,
+  IconUser, IconAlert
+} from "@/components/ui/Icons";
 
 const INCOME_CATEGORIES = [
   "Salary",
@@ -238,7 +242,7 @@ export function FilteredIncome({
                 type="date"
                 value={form.txnDate}
                 onChange={(e) => setForm({ ...form, txnDate: e.target.value })}
-                className="w-36 px-2 py-1 rounded border text-xs"
+                className="w-36 px-2.5 py-1.5 rounded-lg border text-xs font-mono"
                 style={inputStyle}
               />
             ) : (
@@ -250,7 +254,7 @@ export function FilteredIncome({
               <select
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="w-40 px-2 py-1 rounded border text-xs"
+                className="w-40 px-2.5 py-1.5 rounded-lg border text-xs font-medium"
                 style={inputStyle}
               >
                 {categoryOptions.map((c) => (
@@ -266,7 +270,7 @@ export function FilteredIncome({
               <select
                 value={form.memberId}
                 onChange={(e) => setForm({ ...form, memberId: e.target.value })}
-                className="w-36 px-2 py-1 rounded border text-xs"
+                className="w-36 px-2.5 py-1.5 rounded-lg border text-xs font-medium"
                 style={inputStyle}
               >
                 <option value="">—</option>
@@ -283,7 +287,7 @@ export function FilteredIncome({
               <input
                 value={form.note}
                 onChange={(e) => setForm({ ...form, note: e.target.value })}
-                className="w-44 px-2 py-1 rounded border text-xs"
+                className="w-44 px-2.5 py-1.5 rounded-lg border text-xs font-medium"
                 style={inputStyle}
                 placeholder="Optional"
               />
@@ -297,44 +301,44 @@ export function FilteredIncome({
                 type="number"
                 value={form.amount}
                 onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                className="w-28 px-2 py-1 rounded border text-xs text-right"
+                className="w-32 px-2.5 py-1.5 rounded-lg border text-xs text-right font-mono font-bold"
                 style={inputStyle}
               />
             ) : (
-              <span style={{ color: "var(--success)" }}>+{mask(inr(num(t.amount)), privacyKey, privacyMode)}</span>
+              <span className="font-mono font-bold text-emerald-400">+{mask(inr(num(t.amount)), privacyKey, privacyMode)}</span>
             )}
           </Td>
           <Td right>
             {isEditing ? (
-              <div className="flex justify-end gap-1 no-print">
+              <div className="flex justify-end gap-1.5 no-print">
                 <button
                   onClick={saveEdit}
                   disabled={saving}
-                  className="px-2 py-1 rounded text-xs font-semibold text-white"
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm transition-all"
                   style={{ background: "var(--success)", opacity: saving ? 0.7 : 1 }}
                 >
                   {saving ? "Saving" : "Save"}
                 </button>
                 <button
                   onClick={cancelEdit}
-                  className="px-2 py-1 rounded text-xs"
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors hover:bg-white/[0.06]"
                   style={{ background: "var(--surface-3)", color: "var(--text)" }}
                 >
                   Cancel
                 </button>
               </div>
             ) : (
-              <div className="flex justify-end gap-1 no-print">
+              <div className="flex justify-end gap-1.5 no-print">
                 <button
                   onClick={() => startEdit(t)}
-                  className="px-2 py-1 rounded text-xs"
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:bg-indigo-500/20"
                   style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => deleteIncome(t)}
-                  className="px-2 py-1 rounded text-xs text-white"
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all hover:opacity-90"
                   style={{ background: "var(--danger)" }}
                 >
                   Delete
@@ -361,25 +365,53 @@ export function FilteredIncome({
   };
 
   return (
-    <>
+    <div className="space-y-6 animate-fade-in w-full">
+      {/* ─── SOVEREIGN COMMAND DECK HEADER ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b" style={{ borderColor: "var(--border)" }}>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-xl shadow-emerald-500/20 shrink-0">
+            <IconIncome size={24} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: "var(--text-heading)" }}>Income Revenue Streams</h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-extrabold uppercase tracking-widest bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">Inflow v5.6</span>
+            </div>
+            <p className="text-xs sm:text-sm font-medium mt-0.5" style={{ color: "var(--text-muted)" }}>Categorized salary, business revenue, dividends & capital yield telemetry</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center"))}
+            className="btn btn-primary px-4 py-2.5 text-xs font-extrabold rounded-xl shadow-lg shadow-indigo-500/20 flex items-center gap-2 cursor-pointer"
+          >
+            <span>+ Log Income Stream</span>
+            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/20 text-white">⌘K</span>
+          </button>
+        </div>
+      </div>
+
       {hasSelection && (
-        <Card className="!p-3">
-          <div className="flex items-center gap-2">
-            <span style={{ color: "var(--primary)" }}>👤</span>
-            <span className="text-sm font-medium" style={{ color: "var(--text)" }}>
-              Showing income for: {selectedNames.join(", ")}
+        <Card className="!p-3.5 border-indigo-500/30 bg-indigo-500/10">
+          <div className="flex items-center gap-2.5">
+            <span className="w-8 h-8 rounded-xl grid place-items-center text-sm shadow-sm bg-indigo-500/20 text-indigo-400">
+              <IconUser size={16} />
+            </span>
+            <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+              Showing isolated income for: <strong className="font-bold" style={{ color: "var(--text-heading)" }}>{selectedNames.join(", ")}</strong>
             </span>
           </div>
         </Card>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Hero Bento Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard
-          label="This Month"
+          label="This Month Total"
           value={inr(total, { compact: true })}
-          icon="💰"
+          icon={<IconIncome size={18} />}
           tone="success"
-          sub={`${thisMonthVisibleIncome.length} entr${thisMonthVisibleIncome.length === 1 ? "y" : "ies"} · click to view`}
+          sub={`${thisMonthVisibleIncome.length} entr${thisMonthVisibleIncome.length === 1 ? "y" : "ies"} · click to inspect`}
           onClick={() => openPanel("month")}
           active={activePanel === "month"}
           privacyMode="global"
@@ -388,36 +420,37 @@ export function FilteredIncome({
         <KpiCard
           label="6-Month Average"
           value={inr(avg, { compact: true })}
-          icon="📊"
+          icon={<IconDashboard size={18} />}
           tone="primary"
-          sub="click to view"
+          sub="historical inflow mean"
           onClick={() => openPanel("average")}
           active={activePanel === "average"}
           privacyKey="income-average"
         />
         <KpiCard
-          label="Income Sources"
+          label="Active Sources"
           value={String(catData.length)}
-          icon="🔗"
+          icon={<IconOpportunities size={18} />}
           tone="accent"
-          sub="click to view"
+          sub="income diversification"
           onClick={() => openPanel("sources")}
           active={activePanel === "sources"}
           privacyKey="income-sources"
         />
         <KpiCard
-          label="Top Source"
+          label="Top Stream"
           value={topSource ? inr(topSource.value, { compact: true }) : "—"}
-          icon="⭐"
+          icon={<IconSparkles size={18} />}
           tone="warning"
-          sub={topSource?.label || "click to view"}
+          sub={topSource?.label || "none recorded"}
           onClick={() => openPanel("top")}
           active={activePanel === "top"}
           privacyKey="income-top"
         />
       </div>
 
-      <section className="card p-3 sm:p-5 fade-in">
+      {/* Interactive Drilldown Drawer */}
+      <section className="card p-4 sm:p-6.5 transition-all border rounded-3xl shadow-xl" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
         <header
           role="button"
           tabIndex={0}
@@ -428,15 +461,19 @@ export function FilteredIncome({
               togglePanel(activePanel);
             }
           }}
-          className="flex items-start justify-between mb-3 sm:mb-4 gap-2 sm:gap-3 cursor-pointer select-none rounded-xl"
-          title={panelOpen[activePanel] ? "Click to hide details" : "Click to view details"}
+          className="flex items-center justify-between gap-3 cursor-pointer select-none pb-4 border-b mb-5"
+          style={{ borderColor: "var(--border)" }}
+          title={panelOpen[activePanel] ? "Click to collapse drawer" : "Click to expand drawer"}
         >
           <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-semibold tracking-tight truncate" style={{ color: "var(--text)" }}>
-              Income Insight Drawer
-            </h3>
-            <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>
-              {panelTitle[activePanel]} · {panelSubtitle[activePanel]}
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+              <h3 className="text-base font-extrabold tracking-tight truncate" style={{ color: "var(--text-heading)" }}>
+                {panelTitle[activePanel]}
+              </h3>
+            </div>
+            <p className="text-xs mt-1 truncate" style={{ color: "var(--text-muted)" }}>
+              {panelSubtitle[activePanel]}
             </p>
           </div>
           <button
@@ -445,48 +482,52 @@ export function FilteredIncome({
               e.stopPropagation();
               togglePanel(activePanel);
             }}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium no-print shrink-0"
-            style={{ background: "var(--surface-3)", color: "var(--text)" }}
+            className="px-3.5 py-1.5 rounded-xl text-xs font-bold no-print shrink-0 transition-colors hover:bg-white/[0.06]"
+            style={{ background: "var(--surface-2)", color: "var(--text)" }}
           >
-            {panelOpen[activePanel] ? "Hide" : "View"}
+            {panelOpen[activePanel] ? "Collapse ▲" : "Expand ▼"}
           </button>
         </header>
 
         <div
-          className="overflow-hidden"
+          className="overflow-hidden transition-all duration-300"
           style={{
-            maxHeight: panelOpen[activePanel] ? 900 : 0,
+            maxHeight: panelOpen[activePanel] ? 1200 : 0,
             opacity: panelOpen[activePanel] ? 1 : 0,
-            transition: "max-height 180ms ease, opacity 140ms ease",
           }}
         >
           {error && (
-            <div className="mb-3 rounded-lg p-3 text-sm no-print" style={{ background: "var(--danger-soft)", color: "var(--danger)" }}>
-              {error}
+            <div className="mb-4 rounded-xl p-3.5 text-xs font-bold no-print flex items-center justify-between border border-red-500/40 bg-red-500/10 text-red-400">
+              <span className="flex items-center gap-2"><IconAlert size={16} /> {error}</span>
+              <button onClick={() => setError("")} className="btn btn-ghost text-xs px-2 py-0.5 font-mono">✕</button>
             </div>
           )}
 
           {activePanel === "month" && (
             thisMonthVisibleIncome.length ? (
-              <Table headers={["Date", "Source", "Member", "Note", "Amount", "Actions"]} right={[4, 5]}>
+              <Table headers={["Date", "Source Category", "Member", "Note", "Amount", "Actions"]} right={[4, 5]}>
                 {renderIncomeRows(thisMonthVisibleIncome, "income-month", "global")}
               </Table>
             ) : (
-              <p className="text-sm py-8 text-center" style={{ color: "var(--text-faint)" }}>
-                No income recorded this month. Use the + Add Income button above to add one.
-              </p>
+              <div className="py-12 text-center border border-dashed rounded-2xl bg-surface-2/40" style={{ borderColor: "var(--border-strong)" }}>
+                <span className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 grid place-items-center mx-auto mb-3">
+                  <IconIncome size={24} />
+                </span>
+                <p className="text-sm font-bold" style={{ color: "var(--text-heading)" }}>No income logged this month</p>
+                <p className="text-xs text-slate-400 mt-1">Use the '+ Log Income' button above or Universal Quick Entry to log your salary and inflows.</p>
+              </div>
             )
           )}
 
           {activePanel === "average" && (
-            <Table headers={["Month", "Entries", "Income"]} right={[1, 2]}>
+            <Table headers={["Historical Month", "Logged Entries", "Total Monthly Income"]} right={[1, 2]}>
               {flow.map((m) => {
                 const entries = filteredIncome.filter((t) => getMonthKey(t.txnDate) === m.key);
                 return (
                   <Tr key={m.key}>
-                    <Td strong>{m.label}</Td>
-                    <Td right>{entries.length}</Td>
-                    <Td right strong><span style={{ color: "var(--success)" }}>{mask(inr(m.income), "income-average", "local")}</span></Td>
+                    <Td strong className="font-mono">{m.label}</Td>
+                    <Td right className="font-semibold">{entries.length} entr{entries.length === 1 ? "y" : "ies"}</Td>
+                    <Td right strong><span className="font-mono font-bold text-emerald-400">{mask(inr(m.income), "income-average", "local")}</span></Td>
                   </Tr>
                 );
               })}
@@ -495,49 +536,56 @@ export function FilteredIncome({
 
           {activePanel === "sources" && (
             sourceDetails.length ? (
-              <Table headers={["Source", "Entries", "Amount"]} right={[1, 2]}>
+              <Table headers={["Income Stream / Category", "Transaction Count", "Total Stream Inflow"]} right={[1, 2]}>
                 {sourceDetails.map((source) => (
                   <Tr key={source.label}>
                     <Td strong><Badge tone="success">{source.label}</Badge></Td>
-                    <Td right>{source.entries.length}</Td>
-                    <Td right strong><span style={{ color: "var(--success)" }}>{mask(inr(source.value), "income-sources", "local")}</span></Td>
+                    <Td right className="font-semibold">{source.entries.length} entr{source.entries.length === 1 ? "y" : "ies"}</Td>
+                    <Td right strong><span className="font-mono font-bold text-emerald-400">{mask(inr(source.value), "income-sources", "local")}</span></Td>
                   </Tr>
                 ))}
               </Table>
             ) : (
-              <p className="text-sm py-8 text-center" style={{ color: "var(--text-faint)" }}>No income sources this month.</p>
+              <p className="text-sm py-10 text-center font-medium" style={{ color: "var(--text-faint)" }}>No income sources recorded for this month.</p>
             )
           )}
 
           {activePanel === "top" && (
             topSourceEntries.length ? (
-              <Table headers={["Date", "Source", "Member", "Note", "Amount", "Actions"]} right={[4, 5]}>
+              <Table headers={["Date", "Source Category", "Member", "Note", "Amount", "Actions"]} right={[4, 5]}>
                 {renderIncomeRows(topSourceEntries, "income-top", "local")}
               </Table>
             ) : (
-              <p className="text-sm py-8 text-center" style={{ color: "var(--text-faint)" }}>No top source details available.</p>
+              <p className="text-sm py-10 text-center font-medium" style={{ color: "var(--text-faint)" }}>No top source details available right now.</p>
             )
           )}
         </div>
       </section>
 
-      <div className="grid lg:grid-cols-3 gap-4">
-        <Card title="Income Trend" subtitle={hasSelection ? "Filtered" : "Monthly inflow"} className="lg:col-span-2">
-          <LineChart
-            labels={flow.map((f) => f.label)}
-            series={[{ name: "Income", values: flow.map((f) => f.income), color: "#10b981" }]}
-          />
-        </Card>
-        <Card title="Source Breakdown" subtitle="This month">
-          {catData.length ? (
-            <DonutChart data={catData} centerLabel="Total" centerValue={inr(total, { compact: true })} />
-          ) : (
-            <p className="text-sm py-10 text-center" style={{ color: "var(--text-faint)" }}>
-              {hasSelection ? "No income for selected members" : "No income recorded"}
-            </p>
-          )}
-        </Card>
+      {/* Bento Charts Section */}
+      <div className="bento-grid">
+        <div className="bento-col-8">
+          <Card title="Income Inflow Velocity" subtitle={hasSelection ? "Filtered Member Inflow Trend" : "6-Month Historical Revenue Trajectory"}>
+            <div className="pt-2">
+              <LineChart
+                labels={flow.map((f) => f.label)}
+                series={[{ name: "Income", values: flow.map((f) => f.income), color: "#10b981" }]}
+              />
+            </div>
+          </Card>
+        </div>
+        <div className="bento-col-4 flex flex-col">
+          <Card title="Stream Allocation" subtitle="This month's revenue share" className="flex-1 flex flex-col justify-center">
+            {catData.length ? (
+              <DonutChart data={catData} centerLabel="Total Inflow" centerValue={inr(total, { compact: true })} />
+            ) : (
+              <div className="py-12 text-center text-sm font-medium" style={{ color: "var(--text-faint)" }}>
+                {hasSelection ? "No income logged for selected profiles" : "No income logged"}
+              </div>
+            )}
+          </Card>
+        </div>
       </div>
-    </>
+    </div>
   );
 }

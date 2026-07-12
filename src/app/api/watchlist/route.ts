@@ -19,9 +19,9 @@ export async function POST(req: Request) {
       .values({
         userId: session.userId,
         kind: b.kind,
-        symbol: b.symbol ?? null,
-        schemeCode: b.schemeCode ? String(b.schemeCode) : null,
-        label: b.label,
+        symbol: b.kind !== "mf" ? (b.symbol ?? null) : (b.symbol && isNaN(Number(b.symbol)) ? b.symbol : null),
+        schemeCode: b.schemeCode ? String(b.schemeCode) : (b.kind === "mf" && b.symbol ? String(b.symbol) : null),
+        label: b.label || b.name || b.symbol || b.schemeCode || "Tracked Instrument",
       })
       .returning();
     return Response.json({ ok: true, row });

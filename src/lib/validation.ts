@@ -21,48 +21,81 @@ import { z, ZodError } from "zod";
 
 /**
  * Monetary value that accepts BOTH string and number input.
- * HTML form inputs send numbers; DB stores strings.
- * This coerces both to a validated string for DB storage.
+ * Coerces and normalizes decimals/trimming for exact DB storage.
  */
 const moneyStr = z
-  .union([z.string(), z.number()])
-  .transform((v) => String(v))
+  .union([z.string(), z.number(), z.null(), z.undefined()])
+  .transform((v) => {
+    if (v === null || v === undefined || v === "") return "0";
+    let s = String(v).trim().replace(/,/g, "").replace(/^₹\s*/, "").replace(/[^0-9.-]/g, "");
+    if (s === "" || s === "-" || s === ".") return "0";
+    if (s.startsWith(".")) s = "0" + s;
+    if (s.startsWith("-.")) s = "-0" + s.slice(1);
+    return s;
+  })
   .pipe(
     z.string()
-      .refine((v) => /^-?\d+(\.\d{1,4})?$/.test(v), "Must be a valid monetary amount")
+      .refine((v) => /^-?\d+(\.\d+)?$/.test(v), "Must be a valid monetary amount")
   );
 
 /** Non-negative monetary value (for balances, targets, etc.). Accepts string or number. */
 const nonNegMoneyStr = z
-  .union([z.string(), z.number()])
-  .transform((v) => String(v))
+  .union([z.string(), z.number(), z.null(), z.undefined()])
+  .transform((v) => {
+    if (v === null || v === undefined || v === "") return "0";
+    let s = String(v).trim().replace(/,/g, "").replace(/^₹\s*/, "").replace(/[^0-9.]/g, "");
+    if (s === "" || s === ".") return "0";
+    if (s.startsWith(".")) s = "0" + s;
+    return s;
+  })
   .pipe(
     z.string()
-      .refine((v) => /^\d+(\.\d{1,4})?$/.test(v), "Must be a non-negative monetary amount")
+      .refine((v) => /^\d+(\.\d+)?$/.test(v), "Must be a non-negative monetary amount")
   );
 
 /** Non-negative integer ID. */
 const positiveInt = z.number().int().positive();
 
 /** Optional positive integer ID (nullable). */
-const optionalIntId = z.union([z.number().int().positive(), z.null(), z.undefined()]).transform((v) => v ?? null);
+const optionalIntId = z.union([z.number().int().positive(), z.null(), z.undefined(), z.string().transform((v) => (v && !isNaN(Number(v)) ? Number(v) : null))]).transform((v) => (typeof v === "number" && v > 0 ? v : null));
 
 /** Non-empty trimmed string. */
 const nonEmptyStr = z.string().trim().min(1, "Required");
 
-/** Date string in YYYY-MM-DD format. */
-const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format");
-
-/** Percentage as string (0–100, up to 2 decimal places). Accepts string or number. */
-const percentStr = z
-  .union([z.string(), z.number()])
-  .transform((v) => String(v))
+/** Date string in YYYY-MM-DD format. Accepts ISO strings or Date objects. */
+const dateStr = z
+  .union([z.string(), z.date(), z.null(), z.undefined()])
+  .transform((v) => {
+    if (!v) return new Date().toISOString().slice(0, 10);
+    if (typeof v === "string") {
+      const s = v.trim().slice(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+      return new Date().toISOString().slice(0, 10);
+    }
+    try { return v.toISOString().slice(0, 10); }
+    catch { return new Date().toISOString().slice(0, 10); }
+  })
   .pipe(
-    z.string()
-      .refine((v) => /^\d+(\.\d{1,2})?$/.test(v), "Must be a valid percentage")
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format")
   );
 
-/** Interest rate as string (0–100, up to 2 decimal places). */
+/** Percentage as string (0–100, up to any decimal places). Accepts string or number. */
+const percentStr = z
+  .union([z.string(), z.number(), z.null(), z.undefined()])
+  .transform((v) => {
+    if (v === null || v === undefined || v === "") return "0";
+    let s = String(v).trim().replace(/%/g, "").replace(/,/g, "").replace(/[^0-9.-]/g, "");
+    if (s === "" || s === "-" || s === ".") return "0";
+    if (s.startsWith(".")) s = "0" + s;
+    if (s.startsWith("-.")) s = "-0" + s.slice(1);
+    return s;
+  })
+  .pipe(
+    z.string()
+      .refine((v) => /^-?\d+(\.\d+)?$/.test(v), "Must be a valid percentage")
+  );
+
+/** Interest rate as string (0–100, up to any decimal places). */
 const interestRateStr = percentStr;
 
 /** String or number coerced to trimmed string with max length (for schemeCode, etc.). */
@@ -390,10 +423,14 @@ export const taxProfileUpdateSchema = z.object({
 
 export const watchlistCreateSchema = z.object({
   kind: z.enum(WATCHLIST_KINDS),
-  symbol: z.string().trim().max(30).nullable().optional(),
-  schemeCode: coercedStrMax(20).nullable().optional(),
-  label: nonEmptyStr.max(100),
-}).strict();
+  symbol: z.string().trim().max(50).nullable().optional(),
+  schemeCode: coercedStrMax(50).nullable().optional(),
+  label: nonEmptyStr.max(100).optional(),
+  name: nonEmptyStr.max(100).optional(),
+}).strict().transform((data) => ({
+  ...data,
+  label: data.label || data.name || data.symbol || data.schemeCode || "Tracked Asset",
+}));
 
 export const watchlistDeleteSchema = z.object({
   id: positiveInt,

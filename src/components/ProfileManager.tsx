@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, Badge } from "@/components/ui/Card";
 import { useRouter } from "next/navigation";
+import { IconUser } from "@/components/ui/Icons";
 
 export function ProfileManager() {
   const router = useRouter();
@@ -10,7 +11,6 @@ export function ProfileManager() {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    // Fetch current profile image
     fetch("/api/auth/session")
       .then((res) => res.json())
       .then((data) => {
@@ -48,29 +48,29 @@ export function ProfileManager() {
   };
 
   return (
-    <Card title="👤 User Profile" subtitle="Update your identity and profile picture">
+    <Card title="User Identity Profile" subtitle="Update your profile avatar and credential preferences">
       <div className="flex flex-col sm:flex-row items-center gap-6 p-4">
         <div className="relative group">
           <div 
-            className="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100 flex items-center justify-center text-3xl font-bold"
+            className="w-24 h-24 rounded-full border-2 border-indigo-500/40 shadow-xl overflow-hidden flex items-center justify-center"
             style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
           >
             {image ? (
               <img src={image} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              "👤"
+              <IconUser size={36} />
             )}
           </div>
-          <label className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full border shadow-sm cursor-pointer flex items-center justify-center hover:bg-gray-50 transition-colors">
-            <span className="text-xs">📷</span>
+          <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full border border-white/20 shadow-md cursor-pointer flex items-center justify-center transition-transform hover:scale-110" style={{ background: "var(--surface-3)", color: "var(--text-heading)" }}>
+            <span className="w-2.5 h-2.5 rounded-full bg-indigo-400" />
             <input type="file" className="hidden" accept="image/*" onChange={handleUpload} disabled={uploading} />
           </label>
         </div>
         <div className="flex-1 text-center sm:text-left">
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-            Click the camera icon to change your profile picture.
+          <p className="text-xs font-medium text-slate-300">
+            Click the indicator button on your avatar to upload a new profile image (PNG, JPG, WebP).
           </p>
-          {uploading && <p className="text-xs mt-2 animate-pulse" style={{ color: "var(--primary)" }}>Uploading image...</p>}
+          {uploading && <p className="text-xs font-bold font-mono mt-2 animate-pulse text-indigo-400">Uploading new avatar...</p>}
         </div>
       </div>
     </Card>

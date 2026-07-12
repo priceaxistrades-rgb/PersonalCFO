@@ -5,45 +5,73 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useSession } from "@/lib/session";
 import { useTheme, Theme } from "@/lib/theme";
+import {
+  IconDashboard, IconIncome, IconExpenses, IconInvestments,
+  IconMission, IconBrief, IconBudgets, IconBills, IconHealth,
+  IconNetWorth, IconMarkets, IconSavings, IconDebt, IconAI,
+  IconCoach, IconSimulator, IconOpportunities, IconStress,
+  IconDreams, IconTimeline, IconTax, IconInsurance, IconAnnual,
+  IconEmergency, IconFamily, IconReports, IconOnboarding,
+  IconSettings, IconUser, IconLogout
+} from "@/components/ui/Icons";
 
 const MOBILE_NAV = [
-  { href: "/", label: "Home", icon: "🏠" },
-  { href: "/income", label: "Income", icon: "💰" },
-  { href: "/expenses", label: "Spent", icon: "🧾" },
-  { href: "/markets", label: "Markets", icon: "📈" },
+  { href: "/", label: "Cockpit", icon: IconDashboard },
+  { href: "/income", label: "Income", icon: IconIncome },
+  { href: "/expenses", label: "Outflow", icon: IconExpenses },
+  { href: "/investments", label: "Vault", icon: IconInvestments },
 ];
 
-const MORE_LINKS = [
-  { href: "/budget", label: "Budget", icon: "📊" },
-  { href: "/bills", label: "Bills", icon: "🔔" },
-  { href: "/investments", label: "Invest", icon: "📈" },
-  { href: "/savings", label: "Savings", icon: "🐖" },
-  { href: "/debt", label: "Loans", icon: "🏦" },
-  { href: "/networth", label: "Net Worth", icon: "💎" },
-  { href: "/ai", label: "AI Twin", icon: "🤖" },
-  { href: "/dreams", label: "Dreams", icon: "✨" },
-  { href: "/tax", label: "Tax", icon: "🧮" },
-  { href: "/insurance", label: "Insurance", icon: "🛡️" },
-  { href: "/control", label: "Control", icon: "🚀" },
-  { href: "/brief", label: "Brief", icon: "☀️" },
-  { href: "/health", label: "Health", icon: "❤️" },
-  { href: "/family", label: "Family", icon: "👨‍👩‍👧‍👦" },
-  { href: "/wealth", label: "Wealth Map", icon: "🗺️" },
-  { href: "/simulator", label: "Simulator", icon: "🔬" },
-  { href: "/opportunities", label: "Opportunities", icon: "🔍" },
-  { href: "/stress", label: "Stress", icon: "😰" },
-  { href: "/coach", label: "Coach", icon: "🧠" },
-  { href: "/annual", label: "Annual", icon: "🗓️" },
-  { href: "/emergency", label: "Emergency", icon: "🚨" },
-  { href: "/reports", label: "Reports", icon: "📑" },
-  { href: "/settings", label: "Settings", icon: "⚙️" },
+const MORE_LINKS_GROUPS = [
+  {
+    title: "Cockpit & Capital Flow",
+    items: [
+      { href: "/control", label: "Mission Control", icon: IconMission },
+      { href: "/brief", label: "Morning Brief", icon: IconBrief },
+      { href: "/budget", label: "Budget Ceilings", icon: IconBudgets },
+      { href: "/bills", label: "Scheduled Bills", icon: IconBills },
+      { href: "/health", label: "Health Index", icon: IconHealth },
+    ],
+  },
+  {
+    title: "Asset Vault & Markets",
+    items: [
+      { href: "/networth", label: "Net Worth Deck", icon: IconNetWorth },
+      { href: "/markets", label: "Live Market Tickers", icon: IconMarkets },
+      { href: "/savings", label: "Milestone Vaults", icon: IconSavings },
+      { href: "/debt", label: "Loans & Debt", icon: IconDebt },
+    ],
+  },
+  {
+    title: "AI & Intelligence",
+    items: [
+      { href: "/ai", label: "AI Twin", icon: IconAI },
+      { href: "/coach", label: "Strategic Coach", icon: IconCoach },
+      { href: "/simulator", label: "Life Simulator", icon: IconSimulator },
+      { href: "/opportunities", label: "Optimization Scanner", icon: IconOpportunities },
+      { href: "/stress", label: "Stress Telemetry", icon: IconStress },
+    ],
+  },
+  {
+    title: "Life Strategy & Suite",
+    items: [
+      { href: "/dreams", label: "Dream Planner", icon: IconDreams },
+      { href: "/wealth", label: "Wealth Roadmap", icon: IconTimeline },
+      { href: "/tax", label: "Tax Shield Planner", icon: IconTax },
+      { href: "/insurance", label: "Insurance Policies", icon: IconInsurance },
+      { href: "/annual", label: "Annual Target Map", icon: IconAnnual },
+      { href: "/emergency", label: "Emergency Vault", icon: IconEmergency },
+      { href: "/family", label: "Household Profiles", icon: IconFamily },
+      { href: "/reports", label: "Analytics Reports", icon: IconReports },
+      { href: "/onboarding", label: "Setup Checklist", icon: IconOnboarding },
+      { href: "/settings", label: "Settings & Accounts", icon: IconSettings },
+    ],
+  },
 ];
 
-const THEMES: { id: Theme; label: string; emoji: string; color: string }[] = [
-  { id: "obsidian", label: "Obsidian", emoji: "🌙", color: "#818cf8" },
-  { id: "aurora",   label: "Aurora",   emoji: "🌅", color: "#6366f1" },
-  { id: "emerald",  label: "Emerald",  emoji: "🌿", color: "#14b8a6" },
-  { id: "royal",    label: "Royal",    emoji: "👑", color: "#fbbf24" },
+const THEMES: { id: Theme; label: string; color: string }[] = [
+  { id: "obsidian", label: "Obsidian", color: "#6366f1" },
+  { id: "aurora",   label: "Aurora",   color: "#0ea5e9" },
 ];
 
 export function MobileNav() {
@@ -56,121 +84,135 @@ export function MobileNav() {
 
   return (
     <>
-      {/* ─── Bottom Tab Bar ─── */}
+      {/* ─── Bottom Tab Bar (< 1024px) ─── */}
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t safe-area-bottom"
-        style={{ background: "var(--surface)", borderColor: "var(--border)" }}
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t safe-area-bottom backdrop-blur-2xl shadow-2xl select-none"
+        style={{ background: "var(--header)", borderColor: "var(--border)" }}
       >
-        <div className="flex items-center justify-around h-16">
+        <div className="flex items-center justify-around h-16 px-1">
           {MOBILE_NAV.map((item) => {
             const active = isActive(item.href);
+            const IconComp = item.icon;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`mobile-nav-item flex flex-col items-center justify-center flex-1 h-full ${active ? "active" : ""}`}
-                style={{ color: active ? "var(--primary)" : "var(--text-faint)" }}
+                className={`mobile-nav-item flex flex-col items-center justify-center flex-1 py-1 mx-0.5 rounded-xl transition-all duration-200 no-underline ${active ? "bg-white/[0.04]" : ""}`}
+                style={{ color: active ? "var(--primary)" : "var(--text-faint)", minHeight: 48 }}
               >
-                <span className="text-lg mb-0.5 transition-transform duration-150" style={{ transform: active ? "scale(1.15)" : "scale(1)" }}>
-                  {item.icon}
+                <span className="mb-1 transition-transform duration-200 flex items-center justify-center" style={{ transform: active ? "scale(1.15)" : "scale(1)" }}>
+                  <IconComp size={18} />
                 </span>
-                <span className="text-[10px] font-semibold" style={{ fontWeight: active ? 700 : 500 }}>{item.label}</span>
+                <span className="text-[10px] font-bold tracking-tight">{item.label}</span>
               </Link>
             );
           })}
           <button
             onClick={() => setShowMore(true)}
-            className={`mobile-nav-item flex flex-col items-center justify-center flex-1 h-full ${showMore ? "active" : ""}`}
-            style={{ color: showMore ? "var(--primary)" : "var(--text-faint)" }}
+            className={`mobile-nav-item flex flex-col items-center justify-center flex-1 py-1 mx-0.5 rounded-xl transition-all duration-200 border-none bg-transparent cursor-pointer ${showMore ? "bg-white/[0.04]" : ""}`}
+            style={{ color: showMore ? "var(--primary)" : "var(--text-faint)", minHeight: 48 }}
           >
-            <span className="text-lg mb-0.5">☰</span>
-            <span className="text-[10px] font-semibold">More</span>
+            <span className="mb-1 font-mono font-bold text-base flex items-center justify-center">☰</span>
+            <span className="text-[10px] font-bold tracking-tight">Suite</span>
           </button>
         </div>
       </nav>
 
-      {/* ─── More Sheet ─── */}
+      {/* ─── More Sheet Drawer ─── */}
       {showMore && (
-        <div className="lg:hidden fixed inset-0 z-[60]">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowMore(false)} />
+        <div className="lg:hidden fixed inset-0 z-[60] animate-fade-in select-none">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setShowMore(false)} />
           <div
-            className="absolute bottom-20 left-3 right-3 rounded-2xl p-5 max-h-[75vh] overflow-y-auto scale-in"
-            style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-lg)" }}
+            className="absolute bottom-16 left-2 right-2 rounded-3xl p-5 max-h-[82vh] overflow-y-auto border shadow-2xl transition-all duration-300"
+            style={{ background: "var(--surface)", borderColor: "var(--border-strong)" }}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg" style={{ color: "var(--text-heading)" }}>Menu</h3>
-              <button onClick={() => setShowMore(false)} className="btn btn-ghost w-9 h-9 rounded-full">✕</button>
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2.5">
+                <span className="w-8 h-8 rounded-xl flex items-center justify-center text-sm shadow-md bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
+                  <IconDashboard size={16} />
+                </span>
+                <h3 className="font-extrabold text-lg tracking-tight text-white">Sovereign Wealth Suite</h3>
+              </div>
+              <button onClick={() => setShowMore(false)} className="btn btn-ghost w-9 h-9 rounded-xl font-bold font-mono border border-white/[0.06]">✕</button>
             </div>
 
-            {/* Theme selector — at the top of More sheet */}
-            <div className="mb-4 p-3 rounded-xl" style={{ background: "var(--surface-2)" }}>
-              <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "var(--text-faint)" }}>🎨 Theme</p>
-              <div className="grid grid-cols-4 gap-2">
+            <div className="mb-5 p-3 rounded-xl border border-white/[0.06] bg-surface-2">
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-slate-400">Appearance</span>
+                <span className="text-[10px] font-mono text-indigo-400 font-bold capitalize">{hydrated ? theme : "obsidian"}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 p-1 rounded-xl border border-white/[0.06] bg-surface-3/50">
                 {THEMES.map((t) => {
                   const selected = hydrated && theme === t.id;
                   return (
                     <button
                       key={t.id}
                       onClick={() => setTheme(t.id)}
-                      className="flex flex-col items-center py-2 rounded-lg transition-all active:scale-95"
-                      style={{
-                        background: selected ? `${t.color}18` : "transparent",
-                        border: selected ? `2px solid ${t.color}` : "2px solid transparent",
-                      }}
+                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all border-none cursor-pointer ${
+                        selected ? "bg-primary text-white shadow-md scale-[1.02]" : "text-slate-400 hover:text-white bg-transparent"
+                      }`}
                     >
-                      <span className="text-base mb-0.5">{t.emoji}</span>
-                      <span className="text-[8px] font-bold" style={{ color: selected ? t.color : "var(--text-faint)" }}>{t.label}</span>
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style={{ background: t.color }} />
+                      <span className="tracking-tight">{t.label}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Quick links grid */}
-            <div className="grid grid-cols-3 gap-2.5 mb-4">
-              {MORE_LINKS.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setShowMore(false)}
-                  className="flex flex-col items-center p-3 rounded-xl transition-all duration-150 active:scale-95"
-                  style={{
-                    background: isActive(link.href) ? "var(--primary-soft)" : "var(--surface-2)",
-                    color: isActive(link.href) ? "var(--primary)" : "var(--text)",
-                  }}
-                >
-                  <span className="text-xl mb-1">{link.icon}</span>
-                  <span className="text-[10px] font-semibold text-center leading-tight">{link.label}</span>
-                </Link>
+            <div className="space-y-5 mb-6">
+              {MORE_LINKS_GROUPS.map((group) => (
+                <div key={group.title}>
+                  <p className="text-[10px] font-mono font-extrabold uppercase tracking-[0.14em] mb-2.5 px-1 text-slate-500">{group.title}</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {group.items.map((link) => {
+                      const IconComp = link.icon;
+                      return (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          onClick={() => setShowMore(false)}
+                          className="flex flex-col items-center justify-center p-3 rounded-xl transition-all duration-150 active:scale-95 border border-white/[0.04] hover:border-indigo-500/30 no-underline"
+                          style={{
+                            background: isActive(link.href) ? "var(--primary-soft)" : "var(--surface-2)",
+                            color: isActive(link.href) ? "var(--primary)" : "var(--text)",
+                            minHeight: 76,
+                          }}
+                        >
+                          <span className="mb-1.5 flex items-center justify-center"><IconComp size={20} /></span>
+                          <span className="text-[11px] font-bold text-center leading-tight tracking-tight">{link.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
               ))}
             </div>
 
-            {/* Account section — always visible */}
             {session && (
-              <div className="border-t pt-3 space-y-2" style={{ borderColor: "var(--border)" }}>
-                <div className="flex items-center gap-2.5 px-2 mb-2">
-                  <div className="w-8 h-8 rounded-full grid place-items-center text-xs font-bold" style={{ background: "var(--primary-soft)", color: "var(--primary)" }}>
-                    {session.profileImage ? <img src={session.profileImage} alt="" className="w-full h-full rounded-full object-cover" /> : session.name.charAt(0).toUpperCase()}
+              <div className="border-t pt-4 space-y-2 border-white/[0.08]">
+                <div className="flex items-center gap-3 px-2 mb-3">
+                  <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center text-sm font-mono font-extrabold ring-2 ring-primary/20 bg-indigo-500/20 text-indigo-300">
+                    {session.profileImage ? <img src={session.profileImage} alt="" className="w-full h-full object-cover" /> : <IconUser size={18} />}
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold truncate" style={{ color: "var(--text-heading)" }}>{session.name}</p>
-                    <p className="text-[10px] truncate" style={{ color: "var(--text-faint)" }}>{session.email}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold truncate text-white leading-snug">{session.name}</p>
+                    <p className="text-xs truncate font-mono text-slate-400">{session.email}</p>
                   </div>
                 </div>
-                <Link href="/settings" onClick={() => setShowMore(false)}
-                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium w-full"
-                  style={{ background: "var(--surface-2)", color: "var(--text)" }}
-                >
-                  ⚙️ Settings
-                </Link>
-                <button
-                  onClick={() => { logout(); setShowMore(false); }}
-                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold w-full"
-                  style={{ background: "var(--danger-soft)", color: "var(--danger)" }}
-                >
-                  🚪 Sign Out
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link href="/settings" onClick={() => setShowMore(false)}
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-colors bg-surface-2 hover:bg-surface-3 border border-white/[0.06] text-white no-underline"
+                  >
+                    <IconSettings size={15} /> <span>Settings</span>
+                  </Link>
+                  <button
+                    onClick={() => { logout(); setShowMore(false); }}
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-colors bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 cursor-pointer"
+                  >
+                    <IconLogout size={15} /> <span>Sign Out</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>

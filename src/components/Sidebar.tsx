@@ -3,357 +3,465 @@
 import { ProfileUploadModal } from "./ProfileUploadModal";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTheme, Theme } from "@/lib/theme";
 import { useMemberFilter } from "@/lib/filters";
 import { useSession } from "@/lib/session";
+import {
+  IconDashboard, IconMission, IconBrief, IconHealth, IconIncome,
+  IconExpenses, IconBudgets, IconBills, IconNetWorth, IconInvestments,
+  IconMarkets, IconSavings, IconDebt, IconAI, IconCoach, IconSimulator,
+  IconOpportunities, IconStress, IconDreams, IconTimeline, IconTax,
+  IconInsurance, IconAnnual, IconEmergency, IconFamily, IconReports,
+  IconOnboarding, IconUser, IconSettings, IconLogout
+} from "@/components/ui/Icons";
 
-// ─── Streamlined Nav — only the essentials ──────────────────────
-const NAV = [
+const NAV_GROUPS = [
   {
-    group: "Home",
+    group: "Cockpit",
+    icon: IconDashboard,
     items: [
-      { href: "/", label: "Dashboard", icon: "🏠" },
+      { href: "/", label: "Dashboard", icon: IconDashboard, desc: "Sovereign consolidated wealth & cash flow deck" },
+      { href: "/control", label: "Mission Control", icon: IconMission, desc: "Dual diagnostic gauges & stress telemetry" },
+      { href: "/brief", label: "Morning Brief", icon: IconBrief, desc: "Daily prioritized financial intelligence feed" },
+      { href: "/health", label: "Health Index", icon: IconHealth, desc: "4-pillar capital structure diagnostics" },
     ],
   },
   {
-    group: "Money",
+    group: "Capital Flow",
+    icon: IconIncome,
     items: [
-      { href: "/income", label: "Income", icon: "💰" },
-      { href: "/expenses", label: "Expenses", icon: "🧾" },
-      { href: "/budget", label: "Budget", icon: "📊" },
-      { href: "/bills", label: "Bills", icon: "🔔" },
+      { href: "/income", label: "Income Streams", icon: IconIncome, desc: "Salary, dividends & freelance revenue logs" },
+      { href: "/expenses", label: "Expenditures", icon: IconExpenses, desc: "Categorized outflows & spend leak telemetry" },
+      { href: "/budget", label: "Budget Ceilings", icon: IconBudgets, desc: "Monitored category allocation limits" },
+      { href: "/bills", label: "Scheduled Bills", icon: IconBills, desc: "Upcoming payables & subscription reminders" },
     ],
   },
   {
-    group: "Wealth",
+    group: "Asset Vault",
+    icon: IconInvestments,
     items: [
-      { href: "/investments", label: "Investments", icon: "📈" },
-      { href: "/markets", label: "Markets", icon: "🛰️" },
-      { href: "/savings", label: "Savings", icon: "🐖" },
-      { href: "/debt", label: "Debt", icon: "🏦" },
-      { href: "/networth", label: "Net Worth", icon: "💎" },
+      { href: "/networth", label: "Net Worth Deck", icon: IconNetWorth, desc: "Consolidated asset vs liability valuation" },
+      { href: "/investments", label: "Portfolio Assets", icon: IconInvestments, desc: "Equities, mutual funds & capital holdings" },
+      { href: "/markets", label: "Live Market Tickers", icon: IconMarkets, desc: "Real-time NSE stocks & AMFI scheme NAVs" },
+      { href: "/savings", label: "Milestone Vaults", icon: IconSavings, desc: "Goal reserves and target completion tracking" },
+      { href: "/debt", label: "Loans & Debt", icon: IconDebt, desc: "EMI obligations & amortization tracking" },
     ],
   },
   {
-    group: "Planning",
+    group: "Intelligence",
+    icon: IconAI,
     items: [
-      { href: "/ai", label: "AI Twin", icon: "🤖" },
-      { href: "/dreams", label: "Dream Planner", icon: "✨" },
-      { href: "/tax", label: "Tax", icon: "🧮" },
-      { href: "/insurance", label: "Insurance", icon: "🛡️" },
+      { href: "/ai", label: "AI Financial Twin", icon: IconAI, desc: "Autonomous wealth advisory & instant QA" },
+      { href: "/coach", label: "Strategic Coach", icon: IconCoach, desc: "Weekly actionable wealth management steps" },
+      { href: "/simulator", label: "Scenario Simulator", icon: IconSimulator, desc: "Model salary shocks, property & inflation" },
+      { href: "/opportunities", label: "Optimization Scanner", icon: IconOpportunities, desc: "Automated detection of savings potential" },
+      { href: "/stress", label: "Stress Telemetry", icon: IconStress, desc: "Real-time debt buffers & resilience factors" },
+    ],
+  },
+  {
+    group: "Life Strategy",
+    icon: IconTimeline,
+    items: [
+      { href: "/dreams", label: "Dream Planner", icon: IconDreams, desc: "Feasibility modeling for major aspirations" },
+      { href: "/wealth", label: "Wealth Roadmap", icon: IconTimeline, desc: "Compounding timeline & financial freedom path" },
+      { href: "/tax", label: "Tax Shield Planner", icon: IconTax, desc: "Old vs New regime comparative marginal engine" },
+      { href: "/insurance", label: "Insurance Policies", icon: IconInsurance, desc: "Monitored sum assured & renewal alerts" },
+      { href: "/annual", label: "Annual Target Map", icon: IconAnnual, desc: "Yearly progress towards capital milestones" },
+      { href: "/emergency", label: "Emergency Vault", icon: IconEmergency, desc: "Crisis checklist, contacts & secure notes" },
+      { href: "/family", label: "Household Profiles", icon: IconFamily, desc: "Manage multi-member isolation scope" },
+      { href: "/reports", label: "Analytics Reports", icon: IconReports, desc: "Historical inflow vs outflow breakdowns" },
+      { href: "/onboarding", label: "Setup Checklist", icon: IconOnboarding, desc: "Complete guide to initializing workspace" },
     ],
   },
 ];
 
-// ─── Everything else goes in "More" ────────────────────────────
-const MORE_LINKS = [
-  { href: "/control", label: "Mission Control", icon: "🚀" },
-  { href: "/brief", label: "Morning Brief", icon: "☀️" },
-  { href: "/health", label: "Health Score", icon: "❤️" },
-  { href: "/family", label: "Family", icon: "👨‍👩‍👧‍👦" },
-  { href: "/wealth", label: "Wealth Timeline", icon: "🗺️" },
-  { href: "/simulator", label: "Life Simulator", icon: "🔬" },
-  { href: "/opportunities", label: "Opportunities", icon: "🔍" },
-  { href: "/stress", label: "Stress Meter", icon: "😰" },
-  { href: "/coach", label: "Wealth Coach", icon: "🧠" },
-  { href: "/annual", label: "Annual Plans", icon: "🗓️" },
-  { href: "/emergency", label: "Emergency", icon: "🚨" },
-  { href: "/reports", label: "Reports", icon: "📑" },
-  { href: "/onboarding", label: "Onboarding", icon: "✅" },
+const THEMES: { id: Theme; label: string; color: string; desc: string }[] = [
+  { id: "obsidian", label: "Obsidian", color: "#6366f1", desc: "Dark Slate" },
+  { id: "aurora",   label: "Aurora",   color: "#0ea5e9", desc: "Light Canvas" },
 ];
-
-const THEMES: { id: Theme; label: string; emoji: string; color: string; gradient: string }[] = [
-  { id: "obsidian", label: "Obsidian", emoji: "🌙", color: "#818cf8", gradient: "linear-gradient(135deg, #6366f1, #818cf8)" },
-  { id: "aurora",   label: "Aurora",   emoji: "🌅", color: "#6366f1", gradient: "linear-gradient(135deg, #6366f1, #0ea5e9)" },
-  { id: "emerald",  label: "Emerald",  emoji: "🌿", color: "#14b8a6", gradient: "linear-gradient(135deg, #0d9488, #14b8a6)" },
-  { id: "royal",    label: "Royal",    emoji: "👑", color: "#fbbf24", gradient: "linear-gradient(135deg, #f59e0b, #fbbf24)" },
-];
-
-function ProfileIndicator() {
-  const { hasSelection, activeProfile, selectedIds, clear } = useMemberFilter();
-  if (!hasSelection) return null;
-  return (
-    <div className="px-4 py-3 border-t hidden lg:block" style={{ borderColor: "var(--border)" }}>
-      <p className="text-[9px] font-bold uppercase tracking-widest mb-2" style={{ color: "var(--text-faint)" }}>Profile</p>
-      <div className="flex items-center justify-between px-2 py-1.5 rounded-lg" style={{ background: "var(--primary-soft)" }}>
-        <span className="text-xs font-medium truncate" style={{ color: "var(--primary)" }}>
-          👤 {activeProfile || `${selectedIds.length} selected`}
-        </span>
-        <button onClick={clear} className="btn btn-ghost text-[10px] px-1.5 py-0.5">Reset</button>
-      </div>
-    </div>
-  );
-}
-
-/** Theme selector */
-function ThemeSelector({ hydrated, theme, setTheme, inline = false }: { hydrated: boolean; theme: Theme; setTheme: (t: Theme) => void; inline?: boolean }) {
-  return (
-    <div className={inline ? "px-3 py-3" : "px-4 py-3 border-t"} style={!inline ? { borderColor: "var(--border)" } : undefined}>
-      <p className="text-[9px] font-bold uppercase tracking-[0.1em] mb-2" style={{ color: "var(--text-faint)" }}>🎨 Theme</p>
-      <div className="grid grid-cols-4 gap-2">
-        {THEMES.map((t) => {
-          const selected = hydrated && theme === t.id;
-          return (
-            <button
-              key={t.id}
-              onClick={() => setTheme(t.id)}
-              title={t.label}
-              aria-label={`Switch to ${t.label}`}
-              className="flex flex-col items-center py-1.5 rounded-lg transition-all duration-200 active:scale-95"
-              style={{
-                background: selected ? `${t.color}18` : "var(--surface-3)",
-                border: selected ? `2px solid ${t.color}` : "2px solid transparent",
-              }}
-            >
-              <span className="text-sm leading-none mb-0.5">{t.emoji}</span>
-              <span className="text-[8px] font-bold" style={{ color: selected ? t.color : "var(--text-faint)" }}>{t.label}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function AuthButton() {
-  const { session, logout, loading } = useSession();
-  const [showUpload, setShowUpload] = useState(false);
-  const router = useRouter();
-
-  if (loading) {
-    return (
-      <div className="px-4 py-3 border-t" style={{ borderColor: "var(--border)" }}>
-        <div className="h-8 rounded-lg shimmer" />
-      </div>
-    );
-  }
-
-  if (!session) {
-    return (
-      <div className="px-4 py-3 border-t" style={{ borderColor: "var(--border)" }}>
-        <Link href="/login" className="btn btn-primary w-full py-2 text-xs">
-          🔐 Sign In
-        </Link>
-      </div>
-    );
-  }
-
-  return (
-    <div className="px-4 py-3 border-t" style={{ borderColor: "var(--border)" }}>
-      <div className="flex items-center gap-2.5 mb-2.5 group cursor-pointer" onClick={() => setShowUpload(true)}>
-        <div className="relative">
-          <div
-            className="w-9 h-9 rounded-full overflow-hidden grid place-items-center text-sm font-bold transition-all duration-200 group-hover:ring-2 group-hover:ring-[var(--primary)]"
-            style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
-          >
-            {session.profileImage ? (
-              <img src={session.profileImage} alt={session.name} className="w-full h-full object-cover" />
-            ) : (
-              session.name.charAt(0).toUpperCase()
-            )}
-          </div>
-          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full grid place-items-center text-[7px]" style={{ background: "var(--primary)", color: "#fff" }}>📷</div>
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold truncate" style={{ color: "var(--text-heading)" }}>{session.name}</p>
-          <p className="text-[10px] truncate" style={{ color: "var(--text-faint)" }}>{session.email}</p>
-        </div>
-      </div>
-      <button onClick={logout} className="btn btn-secondary w-full py-1.5 text-xs">
-        🚪 Sign Out
-      </button>
-      {showUpload && (
-        <ProfileUploadModal user={session} onUploadSuccess={() => { setShowUpload(false); router.refresh(); }} onClose={() => setShowUpload(false)} />
-      )}
-    </div>
-  );
-}
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, setTheme, hydrated } = useTheme();
   const [open, setOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const { session, logout, loading: authLoading } = useSession();
+  const { hasSelection, activeProfile, clear } = useMemberFilter();
+
+  // Smart Accordion Expansion: automatically open active hub by default
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    const activeGroup = NAV_GROUPS.find((g) => g.items.some((item) => pathname === item.href))?.group || "Cockpit";
+    return {
+      Cockpit: activeGroup === "Cockpit",
+      "Capital Flow": activeGroup === "Capital Flow",
+      "Asset Vault": activeGroup === "Asset Vault",
+      Intelligence: activeGroup === "Intelligence",
+      "Life Strategy": activeGroup === "Life Strategy",
+    };
+  });
+
+  useEffect(() => {
+    NAV_GROUPS.forEach((g) => {
+      if (g.items.some((item) => pathname === item.href)) {
+        setExpandedGroups((prev) => ({ ...prev, [g.group]: true }));
+      }
+    });
+  }, [pathname]);
+
+  const toggleGroup = (groupName: string) => {
+    setExpandedGroups((prev) => ({ ...prev, [groupName]: !prev[groupName] }));
+  };
 
   const closeSidebar = () => setOpen(false);
 
   return (
     <>
-      {/* ─── Mobile Header ─── */}
+      {/* ─── Mobile / Tablet Header (< 1024px) ─── */}
       <header
-        className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 h-14"
-        style={{ background: "var(--sidebar)", borderBottom: "1px solid var(--border)" }}
+        className="lg:hidden sticky top-0 z-50 flex items-center justify-between px-4 h-14 backdrop-blur-2xl border-b select-none"
+        style={{ background: "var(--header)", borderColor: "var(--border)" }}
       >
-        <Link href="/" className="font-bold tracking-tight flex items-center gap-2" style={{ color: "var(--text-heading)" }}>
-          <span className="w-8 h-8 rounded-lg grid place-items-center text-sm" style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))" }}>📊</span>
-          Personal CFO
+        <Link href="/" className="font-extrabold tracking-tight flex items-center gap-2.5 text-base no-underline" style={{ color: "var(--text-heading)" }}>
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-md bg-gradient-to-br from-indigo-500 to-purple-600 shrink-0">
+            <IconDashboard size={16} />
+          </div>
+          <span>Personal CFO</span>
         </Link>
         <div className="flex items-center gap-2">
           {session && !authLoading && (
-            <Link
-              href="/settings"
-              className="w-8 h-8 rounded-full grid place-items-center text-xs font-bold"
-              style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
+            <button
+              onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+              className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center text-xs font-mono font-bold ring-1 ring-white/10 shadow-sm bg-indigo-500/20 text-indigo-400 shrink-0 cursor-pointer"
             >
               {session.profileImage ? (
-                <img src={session.profileImage} alt="" className="w-full h-full rounded-full object-cover" />
+                <img src={session.profileImage} alt="" className="w-full h-full object-cover" />
               ) : (
                 session.name.charAt(0).toUpperCase()
               )}
-            </Link>
+            </button>
           )}
-          <button onClick={() => setOpen(!open)} className="btn btn-ghost w-10 h-10 text-lg" aria-label="Menu">
+          <button onClick={() => setOpen(!open)} className="btn btn-ghost w-10 h-10 text-base rounded-xl font-mono font-bold border border-white/[0.08] cursor-pointer" aria-label="Menu">
             {open ? "✕" : "☰"}
           </button>
         </div>
       </header>
 
-      {/* ─── Mobile Overlay ─── */}
-      {open && <div className="lg:hidden fixed inset-0 z-30 bg-black/60 backdrop-blur-sm" onClick={closeSidebar} />}
+      {/* ─── Mobile Overlay & Drawer ─── */}
+      {open && <div className="lg:hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-md transition-opacity" onClick={closeSidebar} />}
 
-      {/* ═══════════════════════════════════════════════════════════
-          DESKTOP: Compact sticky sidebar — 220px, no animation
-          ═══════════════════════════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════════════════════════════════════
+          DESKTOP: CANONICAL SOVEREIGN EXECUTIVE LEFT VERTICAL SIDEBAR (`w-[260px]`)
+          High-contrast collapsible accordion design.
+          ═══════════════════════════════════════════════════════════════════════ */}
       <aside
-        className="hidden lg:flex flex-col sticky top-0 z-40 h-screen w-[220px] flex-shrink-0"
-        style={{ background: "var(--sidebar)", borderRight: "1px solid var(--border)" }}
+        className="hidden lg:flex flex-col w-[260px] shrink-0 sticky top-0 h-screen overflow-y-auto overflow-x-hidden select-none border-r transition-colors no-scrollbar"
+        style={{ background: "var(--sidebar)", borderColor: "var(--border)" }}
       >
-        <div className="px-4 py-4 flex items-center gap-2.5 border-b" style={{ borderColor: "var(--border)" }}>
-          <div className="w-8 h-8 rounded-lg grid place-items-center text-sm shadow-md flex-shrink-0" style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))" }}>📊</div>
-          <div>
-            <p className="font-extrabold tracking-tight text-sm" style={{ color: "var(--text-heading)" }}>Personal CFO</p>
-            <p className="text-[8px] font-medium" style={{ color: "var(--text-faint)" }}>Family Wealth Suite</p>
+        {/* Top Brand & Scope Strip */}
+        <div className="p-4 border-b space-y-3 shrink-0" style={{ borderColor: "var(--border)" }}>
+          <Link href="/" className="flex items-center gap-3 no-underline group">
+            <div className="w-9 h-9 min-w-[36px] min-h-[36px] rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/25 shrink-0 transition-transform duration-200 group-hover:scale-105">
+              <IconDashboard size={18} />
+            </div>
+            <div className="min-w-0">
+              <span className="block leading-tight text-[15px] font-black tracking-tight" style={{ color: "var(--text-heading)" }}>
+                Personal CFO
+              </span>
+              <span className="block text-[9px] font-mono font-extrabold tracking-widest text-indigo-400 uppercase mt-0.5">
+                Sovereign OS v5.6
+              </span>
+            </div>
+          </Link>
+
+          {/* Scope Badge / Filter Link */}
+          <Link
+            href="/family"
+            className="flex items-center justify-between px-3 py-2 rounded-xl border transition-all duration-200 text-xs font-bold no-underline hover:border-indigo-500/50 hover:bg-surface-3"
+            style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" }}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-indigo-400 flex items-center justify-center shrink-0"><IconFamily size={15} /></span>
+              <span className="font-mono text-[11px] tracking-tight truncate">{activeProfile || "Consolidated Household"}</span>
+            </div>
+            {hasSelection ? (
+              <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse shrink-0" title="Scope filtered" />
+            ) : (
+              <span className="text-[10px] text-slate-500 font-mono">All</span>
+            )}
+          </Link>
+        </div>
+
+        {/* Scrollable Navigation Deck — Collapsible Executive Hubs */}
+        <nav className="flex-1 px-3 py-3 space-y-2 overflow-y-auto">
+          {NAV_GROUPS.map((section) => {
+            const GroupIcon = section.icon;
+            const isGroupActive = section.items.some((item) => pathname === item.href);
+            const isOpenGroup = expandedGroups[section.group] ?? isGroupActive;
+
+            return (
+              <div key={section.group} className="space-y-1">
+                {/* Section Header Accordion Trigger */}
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(section.group)}
+                  className={`w-full px-3 py-2 flex items-center justify-between text-[11px] font-mono font-extrabold uppercase tracking-[0.14em] rounded-xl transition-all duration-200 cursor-pointer border border-transparent ${
+                    isOpenGroup
+                      ? "text-indigo-400 dark:text-indigo-300 bg-indigo-500/10 dark:bg-indigo-500/15 border-indigo-500/20 shadow-sm"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <span className="flex items-center gap-2.5 min-w-0">
+                    <span className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-white/5 dark:bg-white/5">
+                      <GroupIcon size={14} />
+                    </span>
+                    <span className="truncate">{section.group}</span>
+                  </span>
+                  <span className="text-[9px] font-mono opacity-80 shrink-0 px-1.5 py-0.5 rounded bg-white/10 dark:bg-white/10">
+                    {isOpenGroup ? "▲" : "▼"}
+                  </span>
+                </button>
+
+                {/* Vertical Links List */}
+                {isOpenGroup && (
+                  <div className="space-y-1 pt-1 pb-1.5 pl-3 border-l-2 border-indigo-500/30 dark:border-indigo-500/30 ml-3 animate-fade-in">
+                    {section.items.map((item) => {
+                      const active = pathname === item.href;
+                      const ItemIcon = item.icon;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 no-underline border ${
+                            active
+                              ? "bg-indigo-600 dark:bg-indigo-600 text-white shadow-md shadow-indigo-600/25 border-indigo-500/40"
+                              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-surface-2 hover:translate-x-1 border-transparent"
+                          }`}
+                          style={{ minHeight: 38 }}
+                        >
+                          <span
+                            className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                              active ? "bg-white/20 text-white" : "bg-white/[0.03] text-slate-400 group-hover:text-white"
+                            }`}
+                          >
+                            <ItemIcon size={15} />
+                          </span>
+                          <span className="truncate tracking-tight flex-1">{item.label}</span>
+                          {active && <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0 shadow-sm" />}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+
+        {/* Bottom Executive Dock & Settings */}
+        <div className="p-3 border-t space-y-2.5 shrink-0 bg-surface-2/40" style={{ borderColor: "var(--border)" }}>
+          {/* Universal Quick Add Command Button */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center"))}
+            className="btn btn-primary w-full py-2.5 px-3 text-xs font-extrabold rounded-xl shadow-lg shadow-indigo-500/20 flex items-center justify-between gap-2 cursor-pointer hover:-translate-y-0.5 transition-all border border-indigo-400/30"
+            style={{ minHeight: 40 }}
+          >
+            <span className="flex items-center gap-2">
+              <span className="w-5 h-5 rounded-md bg-white/20 flex items-center justify-center text-white text-xs">+</span>
+              <span>Quick Entry Hub</span>
+            </span>
+            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/20 text-white">⌘K</span>
+          </button>
+
+          {/* Theme Selector (High contrast 2-pill toggle) */}
+          <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl border bg-surface-2" style={{ borderColor: "var(--border)" }}>
+            {THEMES.map((t) => {
+              const selected = hydrated && theme === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setTheme(t.id)}
+                  title={t.desc}
+                  className={`py-1.5 px-2 rounded-lg text-[11px] font-bold font-mono transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                    selected ? "bg-indigo-600 text-white shadow-sm border-indigo-500/40" : "text-slate-400 hover:text-white border-transparent hover:bg-surface-3"
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full shrink-0 shadow-sm" style={{ background: t.color }} />
+                  <span>{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* User Account / Profile Row */}
+          <div className="pt-1">
+            {session && !authLoading ? (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between p-2 rounded-xl border bg-surface-2" style={{ borderColor: "var(--border)" }}>
+                  <div className="flex items-center gap-2.5 min-w-0 cursor-pointer flex-1" onClick={() => setShowUpload(true)} title="Update Avatar">
+                    <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center text-xs font-mono font-extrabold bg-indigo-500/20 text-indigo-400 shrink-0 shadow-sm ring-1 ring-white/10">
+                      {session.profileImage ? (
+                        <img src={session.profileImage} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        session.name.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-black truncate leading-tight" style={{ color: "var(--text-heading)" }}>{session.name}</p>
+                      <p className="text-[10px] font-mono text-indigo-400 dark:text-indigo-300 truncate leading-tight">Sovereign Admin</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-1.5">
+                  <Link
+                    href="/settings"
+                    className="btn btn-secondary py-2 px-2.5 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5 border border-white/[0.06] hover:border-indigo-500/40 no-underline"
+                  >
+                    <IconSettings size={13} /> <span>Settings</span>
+                  </Link>
+                  <button
+                    onClick={() => logout()}
+                    className="btn btn-ghost py-2 px-2.5 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5 hover:bg-red-500/15 hover:text-red-400 border border-transparent hover:border-red-500/20 cursor-pointer"
+                  >
+                    <IconLogout size={13} /> <span>Sign Out</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="btn btn-primary w-full py-2.5 text-xs font-bold rounded-xl shadow-md flex items-center justify-center gap-2 no-underline"
+              >
+                <IconUser size={15} /> <span>Sign In to OS</span>
+              </Link>
+            )}
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-2.5 py-3 space-y-4">
-          {NAV.map((section) => (
-            <div key={section.group}>
-              <p className="px-2 mb-1.5 text-[9px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--text-faint)" }}>{section.group}</p>
-              <div className="space-y-0.5">
-                {section.items.map((item) => {
-                  const active = pathname === item.href;
-                  return (
-                    <Link key={item.href} href={item.href} className={`flex items-center gap-2 px-2 py-2 rounded-lg text-[12px] font-medium transition-colors duration-150 ${active ? "nav-active" : ""}`} style={{ color: active ? "var(--primary)" : "var(--text-muted)" }}>
-                      <span className="text-[13px]">{item.icon}</span><span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </nav>
-
-        <ProfileIndicator />
-        <AuthButton />
-        <ThemeSelector hydrated={hydrated} theme={theme} setTheme={setTheme} />
+        {showUpload && session && (
+          <ProfileUploadModal
+            user={session}
+            onUploadSuccess={() => { setShowUpload(false); router.refresh(); }}
+            onClose={() => setShowUpload(false)}
+          />
+        )}
       </aside>
 
       {/* ═══════════════════════════════════════════════════════════
-          MOBILE: Hamburger sidebar
-          Layout: Profile → Theme → Nav → [More] → Sign Out (fixed bottom)
+          MOBILE & TABLET: Slide-over Drawer (< 1024px)
           ═══════════════════════════════════════════════════════════ */}
       <aside
-        className={`lg:hidden fixed top-0 z-40 h-screen w-[280px] flex flex-col transition-transform duration-200 ease-out ${
+        className={`lg:hidden fixed top-0 left-0 z-50 h-screen w-[280px] flex flex-col transition-transform duration-300 cubic-bezier(.16, 1, .3, 1) border-r shadow-2xl ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ background: "var(--sidebar)", borderRight: "1px solid var(--border)" }}
+        style={{ background: "var(--sidebar)", borderColor: "var(--border)" }}
       >
-        {/* 1. Profile + Close */}
-        <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: "var(--border)" }}>
+        <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-10 h-10 rounded-full overflow-hidden grid place-items-center text-sm font-bold flex-shrink-0" style={{ background: "var(--primary-soft)", color: "var(--primary)" }}>
+            <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center text-xs font-mono font-extrabold shrink-0 shadow-sm bg-indigo-500/20 text-indigo-400">
               {session && !authLoading ? (
                 session.profileImage ? <img src={session.profileImage} alt="" className="w-full h-full object-cover" /> : session.name.charAt(0).toUpperCase()
-              ) : "👤"}
+              ) : <IconUser size={18} />}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold truncate" style={{ color: "var(--text-heading)" }}>
+              <p className="text-sm font-black truncate" style={{ color: "var(--text-heading)" }}>
                 {session && !authLoading ? session.name : "Personal CFO"}
               </p>
-              <p className="text-[10px] truncate" style={{ color: "var(--text-faint)" }}>
-                {session && !authLoading ? session.email : "Family Wealth Suite"}
+              <p className="text-[10px] truncate text-indigo-400 dark:text-indigo-300 font-mono">
+                Sovereign Admin · v5.6
               </p>
             </div>
           </div>
-          <button onClick={closeSidebar} className="btn btn-ghost w-9 h-9 flex-shrink-0">✕</button>
+          <button onClick={closeSidebar} className="btn btn-ghost w-9 h-9 rounded-xl shrink-0 font-mono font-bold border" style={{ borderColor: "var(--border)" }}>✕</button>
         </div>
 
-        {/* 2. Theme — RIGHT at the top */}
-        <ThemeSelector hydrated={hydrated} theme={theme} setTheme={setTheme} inline />
-
-        {/* 3. Nav links (scrollable middle) */}
-        <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-3">
-          {NAV.map((section) => (
-            <div key={section.group}>
-              <p className="px-2 mb-1 text-[9px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--text-faint)" }}>{section.group}</p>
-              <div className="space-y-0.5">
-                {section.items.map((item) => {
-                  const active = pathname === item.href;
-                  return (
-                    <Link key={item.href} href={item.href} onClick={closeSidebar}
-                      className={`flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-[13px] font-medium transition-colors duration-150 ${active ? "nav-active" : ""}`}
-                      style={{ color: active ? "var(--primary)" : "var(--text-muted)", minHeight: 44 }}
-                    >
-                      <span className="text-[15px]">{item.icon}</span><span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-
-          {/* More — collapsible */}
-          <div>
-            <button
-              className="flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-[13px] font-medium w-full"
-              style={{ color: "var(--text-muted)", minHeight: 44 }}
-              onClick={() => setMoreOpen(!moreOpen)}
-            >
-              <span className="text-[15px]">📑</span>
-              <span className="flex-1 text-left">More</span>
-              <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>{moreOpen ? "▲" : "▼"}</span>
-            </button>
-            {moreOpen && (
-              <div className="space-y-0.5 mt-0.5">
-                {MORE_LINKS.map((item) => {
-                  const active = pathname === item.href;
-                  return (
-                    <Link key={item.href} href={item.href} onClick={closeSidebar}
-                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12px] font-medium transition-colors duration-150 ${active ? "nav-active" : ""}`}
-                      style={{ color: active ? "var(--primary)" : "var(--text-faint)", minHeight: 40 }}
-                    >
-                      <span className="text-[14px]">{item.icon}</span><span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
+        <div className="p-3 border-b" style={{ borderColor: "var(--border)" }}>
+          <div className="grid grid-cols-2 gap-2 p-1 rounded-xl border bg-surface-2" style={{ borderColor: "var(--border)" }}>
+            {THEMES.map((t) => {
+              const selected = hydrated && theme === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setTheme(t.id)}
+                  className={`flex items-center justify-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold transition-all ${
+                    selected ? "bg-indigo-600 text-white shadow-md" : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full" style={{ background: t.color }} />
+                  <span>{t.label}</span>
+                </button>
+              );
+            })}
           </div>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto px-3 py-3.5 space-y-3">
+          {NAV_GROUPS.map((section) => {
+            const GroupIcon = section.icon;
+            const isOpenGroup = expandedGroups[section.group] ?? true;
+            return (
+              <div key={section.group} className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(section.group)}
+                  className="w-full px-3 py-2 flex items-center justify-between text-[11px] font-mono font-extrabold uppercase tracking-[0.14em] text-slate-500 rounded-xl transition-colors hover:bg-white/[0.03] cursor-pointer border border-transparent"
+                >
+                  <span className="flex items-center gap-2">
+                    <GroupIcon size={14} className="text-slate-500" />
+                    <span>{section.group}</span>
+                  </span>
+                  <span className="text-[9px] font-mono opacity-70">{isOpenGroup ? "▲" : "▼"}</span>
+                </button>
+                {isOpenGroup && (
+                  <div className="space-y-1 pt-0.5 border-l-2 border-indigo-500/30 ml-3 pl-3">
+                    {section.items.map((item) => {
+                      const active = pathname === item.href;
+                      const IconComp = item.icon;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={closeSidebar}
+                          className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all no-underline ${
+                            active ? "bg-indigo-600 text-white shadow-sm" : "text-slate-400 hover:text-white hover:bg-surface-2"
+                          }`}
+                          style={{ minHeight: 44 }}
+                        >
+                          <span className={`flex items-center justify-center shrink-0 ${active ? "text-white scale-110" : "text-slate-400"}`}><IconComp size={18} /></span>
+                          <span className="truncate">{item.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
-        {/* 4. Sign Out — ALWAYS pinned at bottom */}
-        <div className="border-t p-4 space-y-2" style={{ borderColor: "var(--border)" }}>
+        <div className="border-t p-4 space-y-2 bg-surface-2/40" style={{ borderColor: "var(--border)" }}>
           {session && !authLoading ? (
             <>
               <Link href="/settings" onClick={closeSidebar}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-medium w-full"
-                style={{ background: "var(--surface-2)", color: "var(--text)", minHeight: 44 }}
+                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold w-full border hover:bg-surface-3 no-underline"
+                style={{ background: "var(--surface)", color: "var(--text-heading)", borderColor: "var(--border)", minHeight: 44 }}
               >
-                <span>⚙️</span> Settings
+                <IconSettings size={15} /> <span>Settings & Accounts</span>
               </Link>
               <button
                 onClick={() => { logout(); closeSidebar(); }}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold w-full"
-                style={{ background: "var(--danger-soft)", color: "var(--danger)", minHeight: 44 }}
+                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold w-full transition-colors bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 cursor-pointer"
+                style={{ minHeight: 44 }}
               >
-                <span>🚪</span> Sign Out
+                <IconLogout size={15} /> <span>Sign Out</span>
               </button>
             </>
           ) : (
-            <Link href="/login" onClick={closeSidebar} className="btn btn-primary w-full py-2.5 text-sm">🔐 Sign In</Link>
+            <Link href="/login" onClick={closeSidebar} className="btn btn-primary w-full py-2.5 text-xs font-bold rounded-xl shadow-md flex items-center justify-center gap-2 no-underline"><IconUser size={15} /> <span>Sign In</span></Link>
           )}
         </div>
       </aside>

@@ -20,7 +20,7 @@ export default async function BriefPage() {
       <SectionTitle
         title="Morning CFO Brief"
         subtitle="Your personalized daily financial briefing"
-        action={<Badge tone="primary">☀️ Daily</Badge>}
+        action={<Badge tone="primary" className="font-bold">Daily Briefing</Badge>}
       />
       <BriefClient
         txns={txns}

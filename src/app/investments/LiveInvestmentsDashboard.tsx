@@ -8,6 +8,10 @@ import { DonutChart } from "@/components/ui/Charts";
 import { Table, Tr, Td } from "@/components/ui/Table";
 import { inr, num } from "@/lib/format";
 import { type MarketQuote, resolveLiveSymbol } from "@/lib/market";
+import {
+  IconInvestments, IconDashboard, IconTrendingUp, IconTrendingDown,
+  IconMarkets, IconRefresh, IconArrowRight, IconSparkles, IconAlert
+} from "@/components/ui/Icons";
 
 const TYPE_LABELS: Record<string, string> = {
   MutualFunds: "Mutual Funds",
@@ -25,6 +29,7 @@ export type Investment = {
   schemeCode: string | null;
   units: string | null;
   startDate: string | null;
+  memberId?: number | null;
 };
 
 export type LiveInvestment = Investment & {
@@ -58,7 +63,7 @@ function chartUrl(i: Investment) {
 }
 
 function displayPct(value: number | null) {
-  if (value === null || value === undefined || Number.isNaN(value)) return "—";
+  if (value === null || Number.isNaN(value)) return "—";
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
@@ -69,69 +74,32 @@ export function useLiveInvestments(investments: Investment[]) {
   const [error, setError] = useState("");
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Filter out fully-sold ghost holdings (invested=0, currentValue=0, no units)
-  const activeInvestments = useMemo(() =>
-    investments.filter(i => {
-      const inv = num(i.invested);
-      const cv = num(i.currentValue);
-      const u = num(i.units);
-      return inv > 0 || cv > 0 || u > 0;
-    }),
-    [investments]
-  );
-
-  const stocks = useMemo(
-    () => [...new Set(activeInvestments.filter(i => i.symbol && i.type === "Stocks").map((i) => i.symbol).filter(Boolean) as string[])],
-    [activeInvestments]
-  );
-  const mfs = useMemo(
-    () => [...new Set(activeInvestments.filter(i => i.schemeCode && i.type === "MutualFunds").map((i) => i.schemeCode).filter(Boolean) as string[])],
-    [activeInvestments]
-  );
-  // Resolve live symbols for non-stock/MF investment types (Gold, Silver, Crypto, etc.)
-  const extraSymbols = useMemo(() => {
-    const map: Record<string, string[]> = { commodity: [], crypto: [], index: [], reit: [], bond: [] };
-    activeInvestments.forEach((inv) => {
-      if (inv.type === "Stocks" || inv.type === "MutualFunds") return;
-      const resolved = resolveLiveSymbol(inv.type, inv.symbol);
-      if (resolved) {
-        if (!map[resolved.kind]) map[resolved.kind] = [];
-        if (!map[resolved.kind].includes(resolved.yahooSymbol)) {
-          map[resolved.kind].push(resolved.yahooSymbol);
-        }
-      }
-    });
-    return map;
-  }, [activeInvestments]);
+  const stocks = useMemo(() => [...new Set(investments.map((i) => i.symbol).filter(Boolean) as string[])], [investments]);
+  const mfs = useMemo(() => [...new Set(investments.map((i) => i.schemeCode).filter(Boolean) as string[])], [investments]);
 
   const loadQuotes = useCallback(async () => {
-    if (!stocks.length && !mfs.length && Object.values(extraSymbols).every(a => !a.length)) return;
+    if (!stocks.length && !mfs.length) return;
     setLoading(true);
     setError("");
     const params = new URLSearchParams();
     if (stocks.length) params.set("stocks", stocks.join(","));
     if (mfs.length) params.set("mf", mfs.join(","));
-    if (extraSymbols.commodity?.length) params.set("commodities", extraSymbols.commodity.join(","));
-    if (extraSymbols.crypto?.length) params.set("crypto", extraSymbols.crypto.join(","));
-    if (extraSymbols.index?.length) params.set("indices", extraSymbols.index.join(","));
-    if (extraSymbols.reit?.length) params.set("reits", extraSymbols.reit.join(","));
-    if (extraSymbols.bond?.length) params.set("bonds", extraSymbols.bond.join(","));
     try {
       const res = await fetch(`/api/market/quote?${params.toString()}`, { cache: "no-store" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to load live prices");
+      if (!res.ok) throw new Error(data.error || "Unable to sync live investment values");
       setQuotes(data.quotes || {});
       setUpdatedAt(new Date().toLocaleTimeString("en-IN"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load live prices");
+      setError(err instanceof Error ? err.message : "Unable to sync live values");
     } finally {
       setLoading(false);
     }
-  }, [stocks, mfs, extraSymbols]);
+  }, [stocks, mfs]);
 
   useEffect(() => {
     const start = setTimeout(() => void loadQuotes(), 0);
-    timerRef.current = setInterval(() => void loadQuotes(), 60000);
+    timerRef.current = setInterval(() => void loadQuotes(), 60_000);
     return () => {
       clearTimeout(start);
       if (timerRef.current) clearInterval(timerRef.current);
@@ -139,41 +107,27 @@ export function useLiveInvestments(investments: Investment[]) {
   }, [loadQuotes]);
 
   const liveInvestments = useMemo<LiveInvestment[]>(() => {
-    return activeInvestments.map((i) => {
-      // First try explicit stock/MF key
-      let key = instrumentKey(i);
-      let q = key ? quotes[key] : undefined;
-
-      // If no direct key match, try resolving via investment type (Gold, Silver, Crypto, etc.)
-      if (!q) {
-        const resolved = resolveLiveSymbol(i.type, i.symbol);
-        if (resolved) {
-          const resolvedKey = `${resolved.kind}:${resolved.yahooSymbol}`;
-          q = quotes[resolvedKey];
-          if (q) key = resolvedKey;
-        }
-      }
+    return investments.map((i) => {
+      const key = instrumentKey(i);
+      const quote = key ? quotes[key] : undefined;
       const units = num(i.units);
-      const invested = num(i.invested);
-      const storedCurrent = num(i.currentValue);
-      const hasLiveValue = Boolean(q?.ok && q.price > 0 && units > 0);
-      // Live value: prefer live price × units; fallback to stored currentValue; lastly invested
-      const liveCurrentValue = hasLiveValue
-        ? q!.price * units
-        : storedCurrent > 0
-          ? storedCurrent
-          : invested;
+      const manualCur = num(i.currentValue);
+      const livePrice = quote?.ok ? quote.price : null;
+      const liveCurrentValue = quote?.ok && quote.price > 0 && units > 0
+        ? quote.price * units
+        : manualCur;
+
       return {
         ...i,
         liveCurrentValue,
-        livePrice: q?.ok ? q.price : null,
-        liveChangePct: q?.ok ? q.changePct : null,
-        liveAsOf: q?.ok ? q.asOf : null,
-        liveCagr1Y: q?.ok ? q.cagr.y1 : null,
-        liveCagr3Y: q?.ok ? q.cagr.y3 : null,
-        liveCagr5Y: q?.ok ? q.cagr.y5 : null,
-        liveOk: Boolean(hasLiveValue),
-        liveError: q?.error,
+        livePrice,
+        liveChangePct: quote?.ok ? (quote.changePct ?? null) : null,
+        liveAsOf: quote?.ok ? quote.asOf : null,
+        liveCagr1Y: quote?.ok ? (quote.cagr?.y1 ?? null) : null,
+        liveCagr3Y: quote?.ok ? (quote.cagr?.y3 ?? null) : null,
+        liveCagr5Y: quote?.ok ? (quote.cagr?.y5 ?? null) : null,
+        liveOk: Boolean(quote?.ok && quote.price > 0 && units > 0),
+        liveError: quote?.error,
       };
     });
   }, [investments, quotes]);
@@ -181,81 +135,137 @@ export function useLiveInvestments(investments: Investment[]) {
   return { liveInvestments, loading, updatedAt, error, loadQuotes, quotes };
 }
 
-export function InvestmentKpis({ 
-  liveInvestments, 
-  loading, 
-  updatedAt, 
-  error, 
-  loadQuotes 
-}: { 
-  liveInvestments: LiveInvestment[], 
-  loading: boolean, 
-  updatedAt: string, 
-  error: string, 
-  loadQuotes: () => Promise<void> 
+export function LiveInvestmentsDashboard({
+  investments,
+  quotes,
+  loading,
+  updatedAt,
+  error,
+  loadQuotes,
+  onSell,
+}: {
+  investments: Investment[];
+  quotes: Record<string, MarketQuote>;
+  loading: boolean;
+  updatedAt: string;
+  error: string;
+  loadQuotes: () => Promise<void>;
+  onSell?: (i: LiveInvestment) => void;
 }) {
+  const liveInvestments = useMemo<LiveInvestment[]>(() => {
+    return investments.map((i) => {
+      const key = instrumentKey(i);
+      const quote = key ? quotes[key] : undefined;
+      const units = num(i.units);
+      const manualCur = num(i.currentValue);
+      const livePrice = quote?.ok ? quote.price : null;
+      const liveCurrentValue = quote?.ok && quote.price > 0 && units > 0
+        ? quote.price * units
+        : manualCur;
+
+      return {
+        ...i,
+        liveCurrentValue,
+        livePrice,
+        liveChangePct: quote?.ok ? (quote.changePct ?? null) : null,
+        liveAsOf: quote?.ok ? quote.asOf : null,
+        liveCagr1Y: quote?.ok ? (quote.cagr?.y1 ?? null) : null,
+        liveCagr3Y: quote?.ok ? (quote.cagr?.y3 ?? null) : null,
+        liveCagr5Y: quote?.ok ? (quote.cagr?.y5 ?? null) : null,
+        liveOk: Boolean(quote?.ok && quote.price > 0 && units > 0),
+        liveError: quote?.error,
+      };
+    });
+  }, [investments, quotes]);
+
   const invested = sumBy(liveInvestments, (i) => num(i.invested));
   const current = sumBy(liveInvestments, (i) => i.liveCurrentValue);
   const pnl = current - invested;
   const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0;
-  const cagrLinked = liveInvestments.filter((i) => i.liveCagr1Y !== null && i.liveCurrentValue > 0);
-  const weightedReturn = cagrLinked.length && current > 0
-    ? sumBy(cagrLinked, (i) => (i.liveCagr1Y ?? 0) * i.liveCurrentValue) / sumBy(cagrLinked, (i) => i.liveCurrentValue)
-    : 0;
   const liveLinked = liveInvestments.filter((i) => i.liveOk).length;
 
+  const cagrLinked = liveInvestments.filter((i) => i.liveCagr1Y !== null && i.liveCurrentValue > 0);
+  const weightedReturn = cagrLinked.length && current > 0
+    ? cagrLinked.reduce((s, i) => s + (i.liveCagr1Y ?? 0) * i.liveCurrentValue, 0) / cagrLinked.reduce((s, i) => s + i.liveCurrentValue, 0)
+    : 0;
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text-muted)" }}>
-          <span className="relative flex h-2.5 w-2.5">
-            <span
-              className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-              style={{ background: loading ? "var(--warning)" : "var(--success)" }}
-            />
-            <span
-              className="relative inline-flex rounded-full h-2.5 w-2.5"
-              style={{ background: loading ? "var(--warning)" : "var(--success)" }}
-            />
-          </span>
-          {loading ? "Updating live portfolio..." : updatedAt ? `Auto-updated ${updatedAt}` : "Live sync ready"}
-          <span>· Stocks refresh every 60s · MF NAV updates daily</span>
+    <div className="space-y-6 animate-fade-in w-full select-none">
+      {/* ─── SOVEREIGN COMMAND DECK HEADER ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b" style={{ borderColor: "var(--border)" }}>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-xl shadow-indigo-500/20 shrink-0">
+            <IconInvestments size={24} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: "var(--text-heading)" }}>Portfolio Assets & Holdings</h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-extrabold uppercase tracking-widest bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Portfolio v5.6</span>
+            </div>
+            <p className="text-xs sm:text-sm font-medium mt-0.5" style={{ color: "var(--text-muted)" }}>Equities, mutual funds, real estate holdings, and capital allocations with live market price synchronization</p>
+          </div>
         </div>
-        <button
-          onClick={loadQuotes}
-          disabled={loading}
-          className="text-xs font-medium no-print px-3 py-1.5 rounded-lg"
-          style={{ background: "var(--surface-3)", color: "var(--text)", opacity: loading ? 0.7 : 1 }}
-        >
-          🔄 Refresh now
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center"))}
+            className="btn btn-primary px-4 py-2.5 text-xs font-extrabold rounded-xl shadow-lg shadow-indigo-500/20 flex items-center gap-2 cursor-pointer"
+          >
+            <span>+ Log Investment Asset</span>
+            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/20 text-white">⌘K</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between flex-wrap gap-3 p-3.5 rounded-2xl border bg-surface-2 shadow-sm" style={{ borderColor: "var(--border)" }}>
+        <div className="flex items-center gap-3 text-xs font-bold" style={{ color: "var(--text-heading)" }}>
+          <span className="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 grid place-items-center shrink-0">
+            <IconMarkets size={16} />
+          </span>
+          <div>
+            <span className="block">{loading ? "Synchronizing real-time Indian quotes…" : updatedAt ? `Synced at ${updatedAt} · ${liveLinked} of ${liveInvestments.length} holdings live-linked` : "Live Ticker Feed Ready"}</span>
+            <span className="block text-[11px] font-medium text-slate-400">Automatic polling of NSE stocks & MF NAV daily closing figures</span>
+          </div>
+        </div>
+        <button onClick={loadQuotes} disabled={loading} className="btn btn-primary px-3.5 py-1.5 text-xs font-bold rounded-xl shadow-sm flex items-center gap-1.5 disabled:opacity-50">
+          <IconRefresh size={13} className={loading ? "animate-spin" : ""} /> <span>{loading ? "Polling NSE…" : "Poll Live Tickers"}</span>
         </button>
       </div>
 
       {error && (
-        <div className="rounded-lg p-3 text-sm" style={{ background: "var(--danger-soft)", color: "var(--danger)" }}>
-          {error}
+        <div className="rounded-xl p-3.5 text-xs font-bold border border-red-500/40 bg-red-500/10 text-red-400 flex items-center gap-2">
+          <IconAlert size={16} /> {error}
         </div>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 kpi-scroll lg:grid stagger">
-        <KpiCard label="Live Portfolio" value={inr(current, { compact: true })} icon="📈" tone="primary" sub={`${liveLinked}/${liveInvestments.length} live-linked`} privacyMode="global" privacyKey="investments-total" />
-        <KpiCard label="Total Invested" value={inr(invested, { compact: true })} icon="💼" tone="accent" privacyKey="investments-invested" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <KpiCard label="Live Portfolio" value={inr(current, { compact: true })} icon={<IconInvestments size={18} />} tone="primary" sub={`${liveLinked}/${liveInvestments.length} live-linked`} privacyMode="global" privacyKey="investments-total" />
+        <KpiCard label="Total Capital Invested" value={inr(invested, { compact: true })} icon={<IconDashboard size={18} />} tone="accent" privacyKey="investments-invested" />
         <KpiCard
-          label="Live P&L"
+          label="Unrealized P&L"
           value={inr(pnl, { compact: true })}
-          icon={pnl >= 0 ? "🟢" : "🔴"}
+          icon={pnl >= 0 ? <IconTrendingUp size={18} /> : <IconTrendingDown size={18} />}
           tone={pnl >= 0 ? "success" : "danger"}
           trend={{ dir: pnl >= 0 ? "up" : "down", text: `${pnlPct.toFixed(1)}%`, good: pnl >= 0 }}
           privacyKey="investments-pnl"
         />
-        <KpiCard label="Live 1Y CAGR" value={cagrLinked.length ? `${weightedReturn.toFixed(1)}%` : "—"} icon="🎯" tone="warning" sub="weighted from live quotes" privacyKey="investments-return" />
+        <KpiCard label="Weighted 1Y CAGR" value={cagrLinked.length ? `${weightedReturn.toFixed(1)}%` : "—"} icon={<IconMarkets size={18} />} tone="warning" sub="weighted from live quotes" privacyKey="investments-return" />
       </div>
+
+      <div className="bento-grid">
+        <div className="bento-col-8 flex flex-col">
+          <InvestmentHoldings liveInvestments={liveInvestments} onSell={onSell} />
+        </div>
+        <div className="bento-col-4 flex flex-col">
+          <InvestmentAllocation liveInvestments={liveInvestments} />
+        </div>
+      </div>
+
+      <InvestmentFooter />
     </div>
   );
 }
 
 export function InvestmentHoldings({ liveInvestments, onSell }: { liveInvestments: LiveInvestment[]; onSell?: (i: LiveInvestment) => void }) {
-  // Hide fully-sold holdings (invested=0, current=0, no units)
   const activeRows = liveInvestments.filter(i => {
     const inv = num(i.invested);
     const cv = i.liveCurrentValue;
@@ -266,83 +276,88 @@ export function InvestmentHoldings({ liveInvestments, onSell }: { liveInvestment
 
   return (
     <Card
-      title="Live Holdings"
-      subtitle="Stocks/MFs update automatically from live market data when symbol/code + units are present"
+      title="Live Holdings Archive"
+      subtitle="Equities & mutual funds synchronize dynamically via NSE tickers and AMFI scheme codes"
+      className="flex-1 flex flex-col justify-between"
       action={
         <Link
           href="/markets"
-          className="text-xs font-semibold no-print px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5"
-          style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
+          className="btn btn-ghost text-xs px-3 py-1.5 font-bold flex items-center gap-1 border"
+          style={{ borderColor: "var(--border)" }}
         >
-          🛰️ Live Markets
+          <span>Market Tickers</span> <IconArrowRight size={13} />
         </Link>
       }
     >
-      <Table headers={["Instrument", "Type", "Units", "Live Price", "Day", "Invested", "Live Current", "Live P&L", "1Y CAGR", "3Y", "5Y", "Chart"]} right={[2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}>
-        {rows.map((i) => {
-          const inv = num(i.invested);
-          const cur = i.liveCurrentValue;
-          const p = cur - inv;
-          const pp = inv > 0 ? (p / inv) * 100 : 0;
-          const chart = chartUrl(i);
-          return (
-            <Tr key={i.id}>
-              <Td strong>
-                {i.name}
-                <span className="block text-[10px]" style={{ color: i.liveOk ? "var(--success)" : "var(--text-faint)" }}>
-                  {i.liveOk ? `Live · ${i.liveAsOf || "now"}` : i.symbol || i.schemeCode ? "Waiting for quote / add units" : "Manual value"}
-                </span>
-              </Td>
-              <Td><Badge>{TYPE_LABELS[i.type] || i.type}</Badge></Td>
-              <Td right muted>{i.units || "—"}</Td>
-              <Td right>{i.livePrice ? inr(i.livePrice) : "—"}</Td>
-              <Td right>
-                {i.liveChangePct === null ? (
-                  <span style={{ color: "var(--text-faint)" }}>—</span>
-                ) : (
-                  <span style={{ color: i.liveChangePct >= 0 ? "var(--success)" : "var(--danger)" }}>
-                    {displayPct(i.liveChangePct)}
-                  </span>
-                )}
-              </Td>
-              <Td right muted>{inv > 0 ? inr(inv, { compact: true }) : "—"}</Td>
-              <Td right strong>{inr(cur, { compact: true })}</Td>
-              <Td right>
-                {inv > 0 ? (
-                  <span style={{ color: p >= 0 ? "var(--success)" : "var(--danger)" }}>
-                    {p >= 0 ? "+" : "−"}{inr(Math.abs(p), { compact: true })} ({pp.toFixed(1)}%)
-                  </span>
-                ) : (
-                  <span style={{ color: "var(--text-faint)" }}>Set avg price</span>
-                )}
-              </Td>
-              <Td right><span style={{ color: (i.liveCagr1Y ?? 0) >= 0 ? "var(--success)" : "var(--danger)" }}>{displayPct(i.liveCagr1Y)}</span></Td>
-              <Td right><span style={{ color: (i.liveCagr3Y ?? 0) >= 0 ? "var(--success)" : "var(--danger)" }}>{displayPct(i.liveCagr3Y)}</span></Td>
-              <Td right><span style={{ color: (i.liveCagr5Y ?? 0) >= 0 ? "var(--success)" : "var(--danger)" }}>{displayPct(i.liveCagr5Y)}</span></Td>
-              <Td right>
-                <div className="flex gap-1 justify-end no-print">
-                  {onSell && (Number(i.units || 0) > 0 || Number(i.invested || 0) > 0 || Number(i.currentValue || 0) > 0) && (
-                    <button onClick={() => onSell(i)} className="btn btn-ghost text-[11px] px-2 py-1" style={{ color: "var(--warning)" }}>📉 Sell</button>
-                  )}
-                  {chart ? (
-                  <a
-                    href={chart}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs px-2 py-1 rounded-lg no-print"
-                    style={{ background: "var(--primary-soft)", color: "var(--primary)" }}
-                  >
-                    Chart
-                  </a>
-                ) : (
-                  <span style={{ color: "var(--text-faint)" }}>—</span>
-                )}
-                </div>
-              </Td>
-            </Tr>
-          );
-        })}
-      </Table>
+      <div className="pt-2">
+        {rows.length ? (
+          <Table headers={["Instrument", "Type", "Units", "Live Price", "Day %", "Invested", "Live Current", "P&L / Yield", "1Y CAGR", "Actions"]} right={[2, 3, 4, 5, 6, 7, 8]}>
+            {rows.map((i) => {
+              const inv = num(i.invested);
+              const cur = i.liveCurrentValue;
+              const p = cur - inv;
+              const pp = inv > 0 ? (p / inv) * 100 : 0;
+              const chart = chartUrl(i);
+              return (
+                <Tr key={i.id}>
+                  <Td strong>
+                    <span className="block font-bold" style={{ color: "var(--text-heading)" }}>{i.name}</span>
+                    <span className="block text-[10px] font-mono mt-0.5" style={{ color: i.liveOk ? "var(--success)" : "var(--text-faint)" }}>
+                      {i.liveOk ? `Live · ${i.liveAsOf || "now"}` : i.symbol || i.schemeCode ? "Polling quote…" : "Manual valuation"}
+                    </span>
+                  </Td>
+                  <Td><Badge tone="primary">{TYPE_LABELS[i.type] || i.type}</Badge></Td>
+                  <Td right muted className="font-mono">{i.units || "—"}</Td>
+                  <Td right className="font-mono font-bold text-slate-200">{i.livePrice ? inr(i.livePrice) : "—"}</Td>
+                  <Td right className="font-mono font-bold">
+                    {i.liveChangePct === null ? (
+                      <span style={{ color: "var(--text-faint)" }}>—</span>
+                    ) : (
+                      <span style={{ color: i.liveChangePct >= 0 ? "var(--success)" : "var(--danger)" }}>
+                        {displayPct(i.liveChangePct)}
+                      </span>
+                    )}
+                  </Td>
+                  <Td right muted className="font-mono">{inv > 0 ? inr(inv, { compact: true }) : "—"}</Td>
+                  <Td right strong className="font-mono font-extrabold">{inr(cur, { compact: true })}</Td>
+                  <Td right className="font-mono font-bold">
+                    {inv > 0 ? (
+                      <span style={{ color: p >= 0 ? "var(--success)" : "var(--danger)" }}>
+                        {p >= 0 ? "+" : "−"}{inr(Math.abs(p), { compact: true })} ({pp.toFixed(1)}%)
+                      </span>
+                    ) : (
+                      <span style={{ color: "var(--text-faint)" }}>Set buy price</span>
+                    )}
+                  </Td>
+                  <Td right className="font-mono font-bold"><span style={{ color: (i.liveCagr1Y ?? 0) >= 0 ? "var(--success)" : "var(--danger)" }}>{displayPct(i.liveCagr1Y)}</span></Td>
+                  <Td right>
+                    <div className="flex gap-1.5 justify-end no-print">
+                      {onSell && (Number(i.units || 0) > 0 || Number(i.invested || 0) > 0 || Number(i.currentValue || 0) > 0) && (
+                        <button onClick={() => onSell(i)} className="btn btn-secondary text-[11px] px-2.5 py-1 font-bold border border-amber-500/30 text-amber-400 hover:bg-amber-500/10">Redeem</button>
+                      )}
+                      {chart ? (
+                        <a
+                          href={chart}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-ghost text-[11px] px-2.5 py-1 font-bold border"
+                          style={{ borderColor: "var(--border)" }}
+                        >
+                          Chart ↗
+                        </a>
+                      ) : (
+                        <span style={{ color: "var(--text-faint)" }}>—</span>
+                      )}
+                    </div>
+                  </Td>
+                </Tr>
+              );
+            })}
+          </Table>
+        ) : (
+          <div className="py-12 text-center text-slate-400 text-sm font-medium">Zero portfolio holdings recorded</div>
+        )}
+      </div>
     </Card>
   );
 }
@@ -356,27 +371,30 @@ export function InvestmentAllocation({ liveInvestments }: { liveInvestments: Liv
     .sort((a, b) => b.value - a.value);
 
   return (
-    <Card title="Asset Allocation" subtitle="By live current value">
-      <DonutChart data={allocation} centerLabel="Total" centerValue={inr(current, { compact: true })} />
+    <Card title="Asset Allocation Split" subtitle="Distribution by live current valuation" className="flex-1 flex flex-col justify-center">
+      {allocation.length ? (
+        <DonutChart data={allocation} centerLabel="Total Value" centerValue={inr(current, { compact: true })} />
+      ) : (
+        <div className="py-12 text-center text-slate-400 text-sm font-medium">No asset holdings logged</div>
+      )}
     </Card>
   );
 }
 
 export function InvestmentFooter() {
   return (
-    <Card className="!p-4" style={{ border: "1px solid var(--border-accent)" }}>
-      <div className="flex items-start gap-3">
-        <span className="text-lg flex-shrink-0">🔗</span>
-        <div className="space-y-1.5">
-          <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>Auto-Sync Note</p>
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            <strong style={{ color: "var(--success)" }}>Stocks & Mutual Funds:</strong> Enter symbol/scheme code + units + avg buy price → Current value auto-calculates as live price/NAV × units every 60 seconds.
+    <Card className="!p-4 border-indigo-500/30 bg-surface-2/60">
+      <div className="flex items-start gap-3.5">
+        <span className="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 grid place-items-center shrink-0 mt-0.5">
+          <IconSparkles size={16} />
+        </span>
+        <div className="space-y-1 text-xs">
+          <p className="font-extrabold" style={{ color: "var(--text-heading)" }}>Sovereign Synchronization Engine Protocol</p>
+          <p className="text-slate-300 leading-relaxed">
+            <strong className="text-emerald-400 font-mono font-bold">Equities & Mutual Funds:</strong> Inputting a valid NSE stock ticker (`RELIANCE.NS`) or AMFI mutual fund scheme code + units + average buy price enables dynamic valuation updates (`NAV × units`) polled every 60 seconds.
           </p>
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            <strong style={{ color: "var(--primary)" }}>FD, PPF, EPF, Real Estate, etc.:</strong> These do not have live exchange prices. Enter invested & current value manually — update when needed.
-          </p>
-          <p className="text-xs font-medium" style={{ color: "var(--warning)" }}>
-            💡 Tip: Always enter average buy price when adding stocks/MFs. This ensures accurate P&L tracking and invested amount display across Live Markets & Investment Dashboard.
+          <p className="text-slate-400 leading-relaxed">
+            <strong className="text-indigo-400 font-mono font-bold">Fixed Income & Real Estate:</strong> Fixed Deposits (`FD`), PPF, EPF, and physical real estate do not have live exchange order books. Input invested and current valuations manually.
           </p>
         </div>
       </div>

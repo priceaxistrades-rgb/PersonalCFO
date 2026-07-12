@@ -10,6 +10,7 @@ import {
   sumBy,
 } from "@/lib/data";
 import { BudgetsManager } from "./BudgetsManager";
+import { IconBudgets, IconExpenses, IconSavings, IconAlert } from "@/components/ui/Icons";
 
 export const dynamic = "force-dynamic";
 
@@ -36,41 +37,43 @@ export default async function BudgetPage() {
 
   return (
     <div className="space-y-6">
-      <SectionTitle title="Budget Planner" subtitle="Planned vs actual spending this month" />
+      <SectionTitle title="Budget Allocation Ceilings" subtitle="Planned monthly expenditure targets vs actual spending metrics" />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 kpi-scroll lg:grid stagger">
-        <KpiCard label="Monthly Budget" value={inr(totalBudget, { compact: true })} icon="📊" tone="primary" />
-        <KpiCard label="Spent So Far" value={inr(totalSpent, { compact: true })} icon="🧾" tone="danger" sub={`${usedPct.toFixed(0)}% used`} />
-        <KpiCard label="Remaining" value={inr(totalLeft, { compact: true })} icon="💵" tone={totalLeft >= 0 ? "success" : "danger"} />
-        <KpiCard label="Over Budget" value={String(overspent.length)} icon="⚠️" tone={overspent.length ? "danger" : "success"} sub="categories" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard label="Monthly Budget" value={inr(totalBudget, { compact: true })} icon={<IconBudgets size={18} />} tone="primary" />
+        <KpiCard label="Spent So Far" value={inr(totalSpent, { compact: true })} icon={<IconExpenses size={18} />} tone="danger" sub={`${usedPct.toFixed(0)}% used`} />
+        <KpiCard label="Remaining Allocation" value={inr(totalLeft, { compact: true })} icon={<IconSavings size={18} />} tone={totalLeft >= 0 ? "success" : "danger"} />
+        <KpiCard label="Over Ceiling" value={String(overspent.length)} icon={<IconAlert size={18} />} tone={overspent.length ? "danger" : "success"} sub="monitored categories" />
       </div>
 
       <BudgetsManager budgets={budgets} />
 
       {overspent.length > 0 && (
-        <Card className="!p-4" >
-          <div className="flex items-start gap-3">
-            <span className="text-xl">⚠️</span>
+        <Card className="!p-4 border-red-500/30 bg-red-500/10">
+          <div className="flex items-center gap-3">
+            <span className="w-9 h-9 rounded-xl bg-red-500/20 text-red-400 grid place-items-center shrink-0">
+              <IconAlert size={18} />
+            </span>
             <div>
-              <p className="text-sm font-semibold" style={{ color: "var(--danger)" }}>Overspending alert</p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                You&apos;ve exceeded budget in: {overspent.map((o) => o.category).join(", ")}. Consider rebalancing next month.
+              <p className="text-sm font-extrabold tracking-tight text-red-400">Ceiling Breach Alert</p>
+              <p className="text-xs mt-0.5 text-slate-300">
+                You have exceeded targeted ceilings in: <strong className="text-white">{overspent.map((o) => o.category).join(", ")}</strong>. Consider rebalancing or modifying category ceilings above.
               </p>
             </div>
           </div>
         </Card>
       )}
 
-      <Card title="Category Budgets" subtitle="Sorted by usage">
-        <Table headers={["Category", "Budget", "Spent", "Difference", "Progress", "Status"]} right={[1, 2, 3]}>
+      <Card title="Category Allocation Breakdown" subtitle="Ranked by ceiling utilization percentage">
+        <Table headers={["Category", "Budget Ceiling", "Actual Spent", "Variance", "Utilization Progress", "Status"]} right={[1, 2, 3]}>
           {rows.map((r) => {
             const tone = r.pct >= 100 ? "danger" : r.pct >= 80 ? "warning" : "success";
             return (
               <Tr key={r.category}>
-                <Td strong>{r.category}</Td>
-                <Td right muted>{inr(r.limit)}</Td>
-                <Td right strong>{inr(r.used)}</Td>
-                <Td right>
+                <Td strong><Badge tone="primary">{r.category}</Badge></Td>
+                <Td right muted className="font-mono">{inr(r.limit)}</Td>
+                <Td right strong className="font-mono">{inr(r.used)}</Td>
+                <Td right className="font-mono font-bold">
                   <span style={{ color: r.diff >= 0 ? "var(--success)" : "var(--danger)" }}>
                     {r.diff >= 0 ? "" : "−"}{inr(Math.abs(r.diff))}
                   </span>
@@ -82,7 +85,7 @@ export default async function BudgetPage() {
                 </Td>
                 <Td>
                   <Badge tone={tone}>
-                    {r.pct >= 100 ? "Over" : r.pct >= 80 ? "Watch" : "On track"} · {r.pct.toFixed(0)}%
+                    {r.pct >= 100 ? "Over" : r.pct >= 80 ? "Watch" : "On Track"} · {r.pct.toFixed(0)}%
                   </Badge>
                 </Td>
               </Tr>

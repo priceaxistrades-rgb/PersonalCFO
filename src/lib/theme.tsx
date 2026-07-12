@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
-export type Theme = "obsidian" | "aurora" | "emerald" | "royal";
+export type Theme = "obsidian" | "aurora";
 
 const ThemeContext = createContext<{
   theme: Theme;
@@ -10,7 +10,7 @@ const ThemeContext = createContext<{
   hydrated: boolean;
 }>({ theme: "obsidian", setTheme: () => {}, hydrated: false });
 
-const ALL_THEMES: Theme[] = ["obsidian", "aurora", "emerald", "royal"];
+const ALL_THEMES: Theme[] = ["obsidian", "aurora"];
 
 const isTheme = (value: string | null): value is Theme =>
   Boolean(value && ALL_THEMES.includes(value as Theme));
@@ -18,19 +18,20 @@ const isTheme = (value: string | null): value is Theme =>
 /** Map old theme names to new ones for backward compat */
 function migrateTheme(stored: string | null): Theme {
   if (isTheme(stored)) return stored;
-  // Legacy mappings
+  // Legacy mappings — all old/extra themes migrate to either obsidian or aurora
   const map: Record<string, Theme> = {
     light: "aurora",
     dark: "obsidian",
-    blue: "emerald",
-    black: "royal",
+    blue: "obsidian",
+    black: "obsidian",
     midnight: "obsidian",
     violet: "obsidian",
     slate: "obsidian",
-    contrast: "royal",
-    emerald: "emerald",
-    rose: "royal",
-    amber: "royal",
+    contrast: "obsidian",
+    emerald: "obsidian",
+    rose: "obsidian",
+    amber: "obsidian",
+    royal: "obsidian",
   };
   return (stored && map[stored]) || "obsidian";
 }
@@ -52,11 +53,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setTheme = (t: Theme) => {
     setThemeState(t);
-    // Add transition class for smooth theme switching
     document.documentElement.classList.add("theme-transition");
     document.documentElement.setAttribute("data-theme", t);
     localStorage.setItem("cfo-theme", t);
-    // Remove transition class after animation completes
     setTimeout(() => {
       document.documentElement.classList.remove("theme-transition");
     }, 350);

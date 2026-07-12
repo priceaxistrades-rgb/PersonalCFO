@@ -16,7 +16,7 @@ export default async function WealthTimelinePage() {
       <SectionTitle
         title="Wealth Timeline"
         subtitle="Your journey to financial milestones"
-        action={<Badge tone="primary">🗺️ Timeline</Badge>}
+        action={<Badge tone="primary" className="font-bold">Wealth Roadmap</Badge>}
       />
       <WealthTimelineClient txns={txns} accounts={accounts} investments={investments} debts={debts} goals={goals} />
     </div>

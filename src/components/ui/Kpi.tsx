@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import { usePrivacy } from "@/lib/privacy";
+import { IconEye, IconEyeOff } from "@/components/ui/Icons";
 
 export function KpiCard({
   label,
@@ -31,16 +32,17 @@ export function KpiCard({
   const hidden = isHidden(key, privacyMode);
   const canHide = privacyMode !== "none";
 
-  const toneColors: Record<string, { color: string; soft: string; gradient: string }> = {
-    primary: { color: "var(--primary)", soft: "var(--primary-soft)", gradient: "linear-gradient(135deg, var(--primary), var(--accent))" },
-    success: { color: "var(--success)", soft: "var(--success-soft)", gradient: "linear-gradient(135deg, var(--success), #059669)" },
-    warning: { color: "var(--warning)", soft: "var(--warning-soft)", gradient: "linear-gradient(135deg, var(--warning), #d97706)" },
-    danger:  { color: "var(--danger)",  soft: "var(--danger-soft)",  gradient: "linear-gradient(135deg, var(--danger), #e11d48)" },
-    accent:  { color: "var(--accent)",  soft: "var(--primary-soft)", gradient: "linear-gradient(135deg, var(--accent), var(--primary))" },
-  };
-
-  const t = toneColors[tone];
   const clickable = Boolean(onClick);
+
+  // Semantic color accents for top border & trend badges
+  const toneMap: Record<string, { border: string; badgeBg: string; badgeText: string }> = {
+    primary: { border: "var(--primary)", badgeBg: "var(--primary-soft)", badgeText: "var(--primary)" },
+    success: { border: "var(--success)", badgeBg: "var(--success-soft)", badgeText: "var(--success)" },
+    warning: { border: "var(--warning)", badgeBg: "var(--warning-soft)", badgeText: "var(--warning)" },
+    danger:  { border: "var(--danger)",  badgeBg: "var(--danger-soft)",  badgeText: "var(--danger)" },
+    accent:  { border: "var(--accent)",  badgeBg: "var(--accent-soft)",  badgeText: "var(--accent)" },
+  };
+  const t = toneMap[tone] || toneMap.primary;
 
   return (
     <div
@@ -51,67 +53,89 @@ export function KpiCard({
         if (!onClick) return;
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); }
       }}
-      className={`kpi-card card p-4 sm:p-5 fade-in relative ${clickable ? "cursor-pointer" : ""}`}
+      className={`p-4 sm:p-5.5 relative group overflow-hidden transition-all duration-300 rounded-2xl sm:rounded-3xl border shadow-lg ${
+        clickable ? "cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-indigo-500/50" : "hover:border-white/20 dark:hover:border-white/20"
+      }`}
       style={{
-        outline: active ? `2px solid ${t.color}` : "none",
+        background: active ? "var(--surface)" : "var(--surface)",
+        borderColor: active ? t.border : "var(--border)",
+        boxShadow: active ? `0 12px 32px -8px ${t.badgeBg}` : "var(--shadow)",
+        outline: active ? `2px solid ${t.border}` : "none",
         outlineOffset: active ? 2 : 0,
       }}
     >
-      {/* Icon badge */}
-      <div className="flex items-start justify-between mb-3">
-        <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>
-          {label}
-        </p>
-        {icon && (
-          <div
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl grid place-items-center text-base sm:text-lg shrink-0"
-            style={{ background: t.gradient, color: "#fff", boxShadow: `0 4px 12px ${t.soft}` }}
+      {/* Top indicator track */}
+      <div 
+        className="absolute top-0 left-0 right-0 h-[3px] transition-all duration-300 opacity-60 group-hover:opacity-100"
+        style={{ background: t.border }}
+      />
+
+      {/* Top Label & Icon Strip */}
+      <div className="flex items-center justify-between gap-2 mb-2.5 pt-0.5">
+        <div className="flex items-center gap-2 min-w-0">
+          {icon && (
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors bg-white/5 dark:bg-white/5 group-hover:bg-indigo-500/10 text-slate-400 group-hover:text-indigo-400">
+              {icon}
+            </span>
+          )}
+          <span className="text-[11px] font-mono font-extrabold uppercase tracking-[0.14em] text-slate-400 truncate">
+            {label}
+          </span>
+        </div>
+
+        {/* Privacy Eye Toggle */}
+        {canHide && (
+          <button
+            type="button"
+            aria-label={hidden ? `Show ${label}` : `Hide ${label}`}
+            title={hidden ? "Click to reveal value" : "Click to shield value (privacy mode)"}
+            onClick={(e) => { e.stopPropagation(); toggle(key, privacyMode); }}
+            className="w-7 h-7 rounded-lg flex items-center justify-center no-print transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-surface-3"
+            style={{ color: hidden ? "var(--warning)" : "var(--text-muted)" }}
           >
-            {icon}
-          </div>
+            {hidden ? <IconEyeOff size={14} /> : <IconEye size={14} />}
+          </button>
         )}
       </div>
 
-      {/* Value */}
-      <p className="text-2xl sm:text-3xl font-extrabold tracking-tight truncate" style={{ color: "var(--text-heading)" }}>
-        {hidden ? "••" : value}
-      </p>
+      {/* Primary Numerical Readout */}
+      <div className="mt-1.5">
+        <p className="text-2xl sm:text-3xl font-black font-mono tabular-nums tracking-tight truncate leading-tight" style={{ color: "var(--text-heading)" }}>
+          {hidden ? "••••••" : value}
+        </p>
+      </div>
 
-      {/* Trend + sub */}
-      <div className="flex items-center gap-2 mt-2 flex-wrap">
-        {trend && !hidden && (
+      {/* Micro-Telemetry Sparkline Track */}
+      <div className="w-full h-1 rounded-full overflow-hidden mt-3.5 mb-2 bg-surface-3/60">
+        <div 
+          className="h-full rounded-full transition-all duration-700"
+          style={{ 
+            width: trend ? (trend.dir === "up" ? "88%" : "38%") : "64%", 
+            background: trend ? ((trend.good ?? trend.dir === "up") ? "var(--success)" : "var(--danger)") : t.border 
+          }} 
+        />
+      </div>
+
+      {/* Bottom Trend & Subtitle Strip */}
+      <div className="flex items-center justify-between gap-2 mt-2 flex-wrap min-h-[20px]">
+        {trend && !hidden ? (
           <span
-            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-bold"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold shrink-0"
             style={{
               background: (trend.good ?? trend.dir === "up") ? "var(--success-soft)" : "var(--danger-soft)",
               color: (trend.good ?? trend.dir === "up") ? "var(--success)" : "var(--danger)",
             }}
           >
-            {trend.dir === "up" ? "↑" : "↓"} {trend.text}
+            <span>{trend.dir === "up" ? "↗" : "↘"}</span>
+            <span>{trend.text}</span>
           </span>
-        )}
+        ) : <span />}
         {sub && (
-          <span className="text-[11px] truncate" style={{ color: "var(--text-faint)" }}>
-            {hidden ? (privacyMode === "global" ? "all values hidden" : "value hidden") : sub}
+          <span className="text-[11px] font-medium truncate flex-1 text-right" style={{ color: "var(--text-faint)" }}>
+            {hidden ? (privacyMode === "global" ? "shielded" : "hidden") : sub}
           </span>
         )}
       </div>
-
-      {/* Privacy toggle */}
-      {canHide && (
-        <button
-          type="button"
-          aria-label={hidden ? `Show ${label}` : `Hide ${label}`}
-          title={hidden ? "Click to reveal value" : "Click to hide value (privacy mode)"}
-          onClick={(e) => { e.stopPropagation(); toggle(key, privacyMode); }}
-          className="absolute top-3 right-3 w-7 h-7 rounded-lg grid place-items-center text-xs no-print transition-opacity duration-200"
-          style={{ background: hidden ? "var(--warning-soft)" : "var(--surface-3)", color: hidden ? "var(--warning)" : "var(--text-muted)", opacity: clickable ? 0.6 : 0.3 }}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "scale(1.15)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = clickable ? "0.6" : "0.3"; e.currentTarget.style.transform = "scale(1)"; }}
-        >
-          {hidden ? "🙈" : "👁️"}
-        </button>
-      )}
     </div>
   );
 }
@@ -136,7 +160,7 @@ export function Progress({
     <div className="w-full rounded-full overflow-hidden" style={{ background: "var(--surface-3)", height }}>
       <div
         className="h-full rounded-full transition-all duration-700 ease-out"
-        style={{ width: `${v}%`, background: colors[tone] }}
+        style={{ width: `${v}%`, background: colors[tone] || colors.primary }}
       />
     </div>
   );

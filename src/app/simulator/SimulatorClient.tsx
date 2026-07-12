@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { Card, Badge } from "@/components/ui/Card";
 import { KpiCard } from "@/components/ui/Kpi";
+import { IconSimulator, IconNetWorth, IconSavings, IconEmergency, IconHealth } from "@/components/ui/Icons";
 import { inr } from "@/lib/format";
 import { buildTwinProfile, simulateScenario, type TwinProfile, type TwinScenario } from "@/lib/financial-twin";
 import type { TransactionRow, AccountRow, InvestmentRow, DebtRow, BillRow, GoalRow, InsuranceRow } from "@/lib/types";
@@ -70,13 +71,38 @@ export function SimulatorClient(data: SimulatorData) {
   const isPercent = selectedScenario?.unit === "%";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 animate-fade-in w-full">
+      {/* ─── SOVEREIGN COMMAND DECK HEADER ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b" style={{ borderColor: "var(--border)" }}>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-xl shadow-indigo-500/20 shrink-0">
+            <IconSimulator size={24} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: "var(--text-heading)" }}>Scenario Simulator & Shock Modeling</h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-extrabold uppercase tracking-widest bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Simulator v5.6</span>
+            </div>
+            <p className="text-xs sm:text-sm font-medium mt-0.5" style={{ color: "var(--text-muted)" }}>Model salary shocks, property acquisition feasibility, inflation impact, and emergency reserve stress resilience</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center"))}
+            className="btn btn-primary px-4 py-2.5 text-xs font-extrabold rounded-xl shadow-lg shadow-indigo-500/20 flex items-center gap-2 cursor-pointer"
+          >
+            <span>+ Log Financial Variable</span>
+            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/20 text-white">⌘K</span>
+          </button>
+        </div>
+      </div>
+
       {/* Current Position */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 kpi-scroll lg:grid stagger-wide slide-in-up">
-        <KpiCard label="Net Worth" value={inr(profile.netWorth, { compact: true })} icon="💎" tone="primary" />
-        <KpiCard label="Monthly Savings" value={inr(profile.monthlySavings, { compact: true })} icon="💰" tone="success" />
-        <KpiCard label="Emergency" value={`${profile.emergencyMonths.toFixed(1)} mo`} icon="🛟" tone={profile.emergencyMonths >= 6 ? "success" : "warning"} />
-        <KpiCard label="Health Score" value={`${profile.healthScore}/100`} icon="❤️" tone={profile.healthScore >= 60 ? "success" : "warning"} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <KpiCard label="Net Worth" value={inr(profile.netWorth, { compact: true })} icon={<IconNetWorth size={18} />} tone="primary" />
+        <KpiCard label="Monthly Savings" value={inr(profile.monthlySavings, { compact: true })} icon={<IconSavings size={18} />} tone="success" />
+        <KpiCard label="Emergency Cover" value={`${profile.emergencyMonths.toFixed(1)} mo`} icon={<IconEmergency size={18} />} tone={profile.emergencyMonths >= 6 ? "success" : "warning"} />
+        <KpiCard label="Health Index" value={`${profile.healthScore}/100`} icon={<IconHealth size={18} />} tone={profile.healthScore >= 60 ? "success" : "warning"} />
       </div>
 
       {/* Scenario Selection */}

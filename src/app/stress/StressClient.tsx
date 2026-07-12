@@ -2,6 +2,7 @@
 
 import { Card } from "@/components/ui/Card";
 import { Progress } from "@/components/ui/Kpi";
+import { IconAlert, IconStress } from "@/components/ui/Icons";
 import { inr } from "@/lib/format";
 import { calculateStress, type StressReport, type StressFactor } from "@/lib/stress-meter";
 import type { HealthScoreInput } from "@/lib/health-score-engine";
@@ -13,7 +14,32 @@ export function StressClient(data: Pick<HealthScoreInput, "txns" | "accounts" | 
   const tone = report.overallScore >= 70 ? "danger" : report.overallScore >= 50 ? "warning" : report.overallScore >= 25 ? "primary" : "success";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 animate-fade-in w-full">
+      {/* ─── SOVEREIGN COMMAND DECK HEADER ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b" style={{ borderColor: "var(--border)" }}>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-amber-600 flex items-center justify-center text-white shadow-xl shadow-red-500/20 shrink-0">
+            <IconStress size={24} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: "var(--text-heading)" }}>Stress Telemetry & Risk Diagnostics</h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-extrabold uppercase tracking-widest bg-red-500/10 text-red-500 border border-red-500/20">Telemetry v5.6</span>
+            </div>
+            <p className="text-xs sm:text-sm font-medium mt-0.5" style={{ color: "var(--text-muted)" }}>Real-time debt service coverage buffers, liquidity runway resilience, and financial burn factors</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center"))}
+            className="btn btn-primary px-4 py-2.5 text-xs font-extrabold rounded-xl shadow-lg shadow-indigo-500/20 flex items-center gap-2 cursor-pointer"
+          >
+            <span>+ Log Financial Event</span>
+            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/20 text-white">⌘K</span>
+          </button>
+        </div>
+      </div>
+
       {/* Main Score */}
       <Card className="text-center py-6">
         <div className="flex flex-col items-center">
@@ -31,7 +57,9 @@ export function StressClient(data: Pick<HealthScoreInput, "txns" | "accounts" | 
             </svg>
             <div className="absolute inset-0 grid place-items-center">
               <div>
-                <p className="text-4xl">{report.emoji}</p>
+                <span className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 grid place-items-center mx-auto mb-1">
+                  <IconStress size={22} />
+                </span>
                 <p className="text-2xl font-extrabold" style={{ color: `var(--${tone})` }}>{report.overallScore}</p>
                 <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>stress / 100</p>
               </div>
@@ -62,38 +90,42 @@ export function StressClient(data: Pick<HealthScoreInput, "txns" | "accounts" | 
       </div>
 
       {/* Factors */}
-      <Card title="📊 Stress Factors" subtitle="What's contributing to your financial stress">
+      <Card title="Stress Factors & Risk Telemetry" subtitle="Sub-index diagnostics contributing to your financial stress rating">
         <div className="space-y-4">
           {report.factors.map(f => (
-            <div key={f.id}>
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{f.icon}</span>
-                  <span className="text-sm font-bold" style={{ color: "var(--text-heading)" }}>{f.label}</span>
+            <div key={f.id} className="p-3.5 rounded-2xl border bg-surface-2" style={{ borderColor: "var(--border)" }}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-7 h-7 rounded-lg flex items-center justify-center bg-indigo-500/10 text-indigo-400">
+                    <IconAlert size={16} />
+                  </span>
+                  <span className="text-sm font-extrabold" style={{ color: "var(--text-heading)" }}>{f.label}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>{f.value}</span>
-                  <span className="text-xs font-bold" style={{ color: f.score >= 70 ? "var(--danger)" : f.score >= 40 ? "var(--warning)" : "var(--success)" }}>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-mono font-bold" style={{ color: "var(--text-muted)" }}>{f.value}</span>
+                  <span className="text-xs font-mono font-extrabold" style={{ color: f.score >= 70 ? "var(--danger)" : f.score >= 40 ? "var(--warning)" : "var(--success)" }}>
                     {100 - f.score}/100
                   </span>
                 </div>
               </div>
               <Progress value={100 - f.score} tone={f.score >= 70 ? "danger" : f.score >= 40 ? "warning" : "success"} height={6} />
-              <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>💡 {f.tip}</p>
+              <p className="text-xs mt-2.5 font-medium flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+                <span className="text-amber-400 font-bold">Action Tip:</span> <span>{f.tip}</span>
+              </p>
             </div>
           ))}
         </div>
       </Card>
 
       {/* Recommendations */}
-      <Card title="🎯 How to Reduce Stress" subtitle="Actionable steps to lower your score">
-        <div className="space-y-2">
+      <Card title="Stress Mitigation Protocol" subtitle="Prioritized actionable steps to strengthen cash runway and reduce liability pressure">
+        <div className="space-y-2.5 pt-1">
           {report.recommendations.map((rec, i) => (
-            <div key={i} className="flex items-start gap-3 p-3 rounded-xl" style={{ background: "var(--surface-2)" }}>
-              <span className="w-6 h-6 rounded-lg grid place-items-center text-xs font-bold flex-shrink-0" style={{ background: "var(--primary-soft)", color: "var(--primary)" }}>
+            <div key={i} className="flex items-start gap-3 p-3.5 rounded-xl border bg-surface-2 shadow-sm" style={{ borderColor: "var(--border)" }}>
+              <span className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-mono font-bold shrink-0 bg-primary-soft text-primary">
                 {i + 1}
               </span>
-              <p className="text-sm" style={{ color: "var(--text)" }}>{rec}</p>
+              <p className="text-xs sm:text-sm font-semibold leading-relaxed mt-0.5" style={{ color: "var(--text)" }}>{rec}</p>
             </div>
           ))}
         </div>

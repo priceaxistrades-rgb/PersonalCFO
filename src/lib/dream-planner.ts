@@ -62,14 +62,14 @@ export type DreamPlannerReport = {
 // ─── Dream Presets ────────────────────────────────────────────
 
 export const DREAM_PRESETS: { category: DreamCategory; label: string; icon: string; defaultAmount: number; defaultYears: number; color: string }[] = [
-  { category: "home", label: "Dream Home", icon: "🏠", defaultAmount: 5000000, defaultYears: 10, color: "#6366f1" },
-  { category: "car", label: "Dream Car", icon: "🚗", defaultAmount: 1500000, defaultYears: 3, color: "#f59e0b" },
-  { category: "travel", label: "World Tour", icon: "✈️", defaultAmount: 800000, defaultYears: 2, color: "#0ea5e9" },
-  { category: "education", label: "Child Education", icon: "🎓", defaultAmount: 2500000, defaultYears: 15, color: "#14b8a6" },
-  { category: "retirement", label: "Early Retirement", icon: "🏖️", defaultAmount: 30000000, defaultYears: 20, color: "#8b5cf6" },
-  { category: "business", label: "Start Business", icon: "💼", defaultAmount: 2000000, defaultYears: 5, color: "#ef4444" },
-  { category: "gadget", label: "Premium Gadget", icon: "📱", defaultAmount: 150000, defaultYears: 1, color: "#f97316" },
-  { category: "wedding", label: "Dream Wedding", icon: "💒", defaultAmount: 1000000, defaultYears: 3, color: "#ec4899" },
+  { category: "home", label: "Dream Home", icon: "HOME", defaultAmount: 5000000, defaultYears: 10, color: "#6366f1" },
+  { category: "car", label: "Dream Car", icon: "CAR", defaultAmount: 1500000, defaultYears: 3, color: "#f59e0b" },
+  { category: "travel", label: "World Tour", icon: "TRAVEL", defaultAmount: 800000, defaultYears: 2, color: "#0ea5e9" },
+  { category: "education", label: "Child Education", icon: "EDU", defaultAmount: 2500000, defaultYears: 15, color: "#14b8a6" },
+  { category: "retirement", label: "Early Retirement", icon: "RETIRE", defaultAmount: 30000000, defaultYears: 20, color: "#8b5cf6" },
+  { category: "business", label: "Start Business", icon: "BIZ", defaultAmount: 2000000, defaultYears: 5, color: "#ef4444" },
+  { category: "gadget", label: "Premium Gadget", icon: "TECH", defaultAmount: 150000, defaultYears: 1, color: "#f97316" },
+  { category: "wedding", label: "Dream Wedding", icon: "WED", defaultAmount: 1000000, defaultYears: 3, color: "#ec4899" },
 ];
 
 // ─── Constants ────────────────────────────────────────────────

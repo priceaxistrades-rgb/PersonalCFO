@@ -11,6 +11,9 @@ import { InsuranceManager } from "./InsuranceManager";
 import { TransactionsManager } from "./TransactionsManager";
 import { AICFOFeature } from "./AICFOFeature";
 import { AccountDataManager } from "@/components/AccountDataManager";
+import {
+  IconSettings, IconReports, IconSavings, IconExpenses, IconInvestments, IconFamily
+} from "@/components/ui/Icons";
 
 export const dynamic = "force-dynamic";
 
@@ -29,40 +32,44 @@ export default async function SettingsPage() {
   const hasAnyData = transactions.length > 0 || accounts.length > 0 || investments.length > 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-fade-in w-full select-none">
       <SectionTitle
-        title="Settings & Data Management"
-        subtitle="Manage all your data: add, edit, delete records"
-        action={<Badge tone="primary">Admin</Badge>}
+        title="Settings & Household Data Administration"
+        subtitle="Configure household profiles, register accounts, manage transactions, and import external records"
+        action={<Badge tone="primary" className="flex items-center gap-1.5"><IconSettings size={14} /> <span>Admin Console</span></Badge>}
       />
 
-      {/* Import Section - Always show for easy access */}
-      <Card title="📁 Import Data" subtitle="Upload Excel files to bulk import your financial data">
+      <Card title="Import Historical Excel Records" subtitle="Upload multi-sheet Excel (.xlsx) workbooks to bulk import transactions, accounts, and portfolio holdings">
         <FileUploader />
       </Card>
 
-
-
-      <Card title="🛡️ Account Data Safety" subtitle="Privacy controls and data reset">
+      <Card title="Data Privacy & Archive Protection" subtitle="Manage local cache telemetry, privacy preferences, and account reset options">
         <AccountDataManager />
       </Card>
 
       {/* Quick Stats */}
       {hasAnyData && (
-        <Card title="📊 Data Overview" subtitle="Summary of your tracked data">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Card title="Database Telemetry Overview" subtitle="Real-time count of active records across all household modules">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
             {[
-              { label: "Transactions", count: transactions.length, icon: "🧾" },
-              { label: "Accounts", count: accounts.length, icon: "🏦" },
-              { label: "Investments", count: investments.length, icon: "📈" },
-              { label: "Members", count: members.length, icon: "👨‍👩‍👧‍👦" },
-            ].map((item) => (
-              <div key={item.label} className="text-center p-3 rounded-xl" style={{ background: "var(--surface-2)" }}>
-                <div className="text-2xl mb-1">{item.icon}</div>
-                <div className="text-xl font-bold" style={{ color: "var(--text)" }}>{item.count}</div>
-                <div className="text-xs" style={{ color: "var(--text-muted)" }}>{item.label}</div>
-              </div>
-            ))}
+              { label: "Transactions", count: transactions.length, icon: IconExpenses },
+              { label: "Accounts", count: accounts.length, icon: IconSavings },
+              { label: "Investments", count: investments.length, icon: IconInvestments },
+              { label: "Family Profiles", count: members.length, icon: IconFamily },
+            ].map((item) => {
+              const IconComp = item.icon;
+              return (
+                <div key={item.label} className="p-4 rounded-2xl border border-white/[0.04] bg-surface-2 flex items-center gap-3.5">
+                  <span className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 grid place-items-center shrink-0">
+                    <IconComp size={20} />
+                  </span>
+                  <div>
+                    <div className="text-xl font-mono font-black text-white">{item.count}</div>
+                    <div className="text-xs font-semibold text-slate-400">{item.label}</div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </Card>
       )}

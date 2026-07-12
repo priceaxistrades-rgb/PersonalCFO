@@ -16,7 +16,7 @@ export default async function ControlPage() {
       <SectionTitle
         title="Mission Control"
         subtitle="Your financial command center — all insights in one place"
-        action={<Badge tone="primary">🚀 Command</Badge>}
+        action={<Badge tone="primary" className="font-bold tracking-wide">Command Center</Badge>}
       />
       <ControlClient txns={txns} accounts={accounts} investments={investments} debts={debts} bills={bills} goals={goals} insurance={insurance} budgets={budgets} />
     </div>

@@ -3,60 +3,67 @@
 import { Card, Badge } from "@/components/ui/Card";
 import Link from "next/link";
 import { useState } from "react";
+import {
+  IconAI, IconDashboard, IconTarget, IconInvestments,
+  IconOpportunities, IconSimulator, IconStress, IconArrowRight
+} from "@/components/ui/Icons";
 
 export function AICFOFeature() {
   const [expanded, setExpanded] = useState(false);
 
   return (
     <Card
-      title="🤖 AI CFO"
-      subtitle="Your intelligent financial advisor"
-      action={<Badge tone="warning">PRO</Badge>}
+      title="AI CFO Executive Suite"
+      subtitle="Your autonomous digital financial advisory architecture"
+      action={<Badge tone="primary">PRO ENGINE</Badge>}
     >
-      <div className="space-y-4">
-        <div className="p-4 rounded-xl text-center" style={{ background: "linear-gradient(135deg, var(--primary-soft), var(--accent-soft, var(--primary-soft)))", border: "1px solid var(--border-accent)" }}>
-          <div className="inline-flex w-14 h-14 rounded-2xl grid place-items-center text-3xl mb-3 shadow-lg" style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))", color: "#fff" }}>
-            🤖
+      <div className="space-y-6 pt-1">
+        <div className="p-6 rounded-2xl text-center border border-indigo-500/30 bg-gradient-to-br from-indigo-950/30 via-surface-2 to-surface shadow-xl">
+          <div className="inline-flex w-14 h-14 rounded-2xl grid place-items-center mb-4 shadow-lg text-white bg-gradient-to-tr from-indigo-500 to-purple-600">
+            <IconAI size={28} />
           </div>
-          <h3 className="text-lg font-bold mb-1" style={{ color: "var(--text-heading)" }}>AI Financial Twin</h3>
-          <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>
-            Your digital financial profile that understands your complete money picture. Ask anything — from &quot;Can I afford this?&quot; to &quot;What if I lose my job?&quot;
+          <h3 className="text-xl font-extrabold mb-1 tracking-tight text-white">Autonomous Financial Twin</h3>
+          <p className="text-sm font-medium mb-6 max-w-lg mx-auto text-slate-300 leading-relaxed">
+            Your digital financial profile that continuously monitors household capital allocation, tax brackets, and liability buffers. Ask analytical questions or simulate major life scenarios.
           </p>
-          <Link href="/ai" className="btn btn-primary py-2.5 px-6 text-sm">
-            🤖 Open AI Financial Twin
+          <Link href="/ai" className="btn btn-primary py-3 px-8 text-xs font-bold rounded-xl shadow-lg inline-flex items-center gap-2">
+            <span>Launch AI Financial Twin</span> <IconArrowRight size={14} />
           </Link>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-3">
           {[
-            { icon: "📊", title: "Smart Budget Analysis", desc: "AI analyzes your spending patterns and suggests optimal budgets" },
-            { icon: "🎯", title: "Goal Optimization", desc: "Get recommendations on how to reach your goals faster" },
-            { icon: "📉", title: "Risk Assessment", desc: "AI evaluates your investment portfolio risk and diversification" },
-            { icon: "💡", title: "Tax Savings Tips", desc: "Personalized tax-saving suggestions based on your income profile" },
-            { icon: "🔬", title: "Life Simulator", desc: "What if? Simulate salary changes, house purchase, job loss and more" },
-            { icon: "😰", title: "Stress Meter", desc: "Measure your financial stress level and get actionable advice" },
-          ].map((f, i) => (
-            <div key={i} className="p-3 rounded-lg flex gap-3" style={{ background: "var(--surface-2)", opacity: 0.7 }}>
-              <span className="text-xl flex-shrink-0">{f.icon}</span>
-              <div>
-                <p className="text-xs font-bold" style={{ color: "var(--text-heading)" }}>{f.title}</p>
-                <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{f.desc}</p>
+            { icon: IconDashboard, title: "Smart Budget Allocation", desc: "AI analyzes your spending velocity and recommends exact category ceilings" },
+            { icon: IconTarget, title: "Milestone Feasibility Engine", desc: "Calculates SIP requirements to reach retirement and major milestones" },
+            { icon: IconInvestments, title: "Concentration Risk Telemetry", desc: "Evaluates portfolio diversification and sector exposure ratios" },
+            { icon: IconOpportunities, title: "Tax Shield Optimization", desc: "Identifies Old vs New marginal regime efficiency and 80C/80D utilization" },
+            { icon: IconSimulator, title: "Life Scenario Modeling", desc: "Simulate salary changes, property purchase, and inflation shocks" },
+            { icon: IconStress, title: "Financial Stress Telemetry", desc: "Measures debt-to-income buffers and calculates household resilience" },
+          ].map((f, i) => {
+            const IconComp = f.icon;
+            return (
+              <div key={i} className="p-4 rounded-2xl flex items-start gap-3.5 border border-white/[0.04] bg-surface-2">
+                <span className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 grid place-items-center shrink-0 mt-0.5"><IconComp size={18} /></span>
+                <div>
+                  <p className="text-xs font-bold text-white">{f.title}</p>
+                  <p className="text-[11px] font-medium text-slate-400 leading-relaxed mt-0.5">{f.desc}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {!expanded ? (
-          <button onClick={() => setExpanded(true)} className="btn btn-primary w-full py-3 text-sm">
-            🔓 Upgrade to Pro — ₹199/month
+          <button onClick={() => setExpanded(true)} className="btn btn-secondary w-full py-3.5 text-xs font-bold rounded-xl border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/10">
+            Configure AI Advisory Parameters →
           </button>
         ) : (
-          <div className="p-4 rounded-lg text-center" style={{ background: "var(--warning-soft)", border: "1px solid var(--warning)" }}>
-            <p className="text-sm font-bold" style={{ color: "var(--warning)" }}>🚧 Pro Plan coming soon!</p>
-            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-              AI CFO is currently in development. You&apos;ll be the first to know when it launches.
+          <div className="p-5 rounded-2xl text-center border border-indigo-500/40 bg-indigo-500/10">
+            <p className="text-sm font-bold text-white">AI Engine Status: Active & Operational</p>
+            <p className="text-xs font-medium mt-1 text-slate-300 max-w-md mx-auto leading-relaxed">
+              Your real-time transaction feeds, market valuations, and tax profiles are currently linked with the AI Financial Twin.
             </p>
-            <button onClick={() => setExpanded(false)} className="btn btn-secondary mt-3 px-4 py-2 text-xs">Got it</button>
+            <button onClick={() => setExpanded(false)} className="btn btn-ghost mt-4 px-5 py-2 text-xs font-bold rounded-xl border border-white/10 text-white">Acknowledge</button>
           </div>
         )}
       </div>

@@ -23,19 +23,19 @@ export const viewport: Viewport = {
   maximumScale: 5,
   userScalable: true,
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#05060b" },
-    { media: "(prefers-color-scheme: light)", color: "#f5f7fb" },
+    { media: "(prefers-color-scheme: dark)", color: "#07080c" },
+    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
   ],
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" data-theme="obsidian" suppressHydrationWarning>
+    <html lang="en" data-theme="obsidian" suppressHydrationWarning className="theme-transition selection:bg-indigo-500/30 selection:text-white">
       <head>
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body className="antialiased" style={{ color: "var(--text)" }}>
+      <body className="antialiased min-h-screen font-sans selection:bg-indigo-500/20" style={{ color: "var(--text)" }}>
         <ThemeProvider>
           <SessionProvider>
             <PrivacyProvider>
@@ -43,7 +43,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 <ClientInit />
                 <a
                   href="#main-content"
-                  className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[200] focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-bold"
+                  className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[200] focus:px-5 focus:py-2.5 focus:rounded-xl focus:text-sm focus:font-extrabold shadow-2xl transition-all"
                   style={{ background: "var(--primary)", color: "#fff" }}
                 >
                   Skip to main content

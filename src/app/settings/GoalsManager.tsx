@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Badge } from "@/components/ui/Card";
 import { Table, Tr, Td } from "@/components/ui/Table";
+import { IconSavings } from "@/components/ui/Icons";
 import { inr, fmtDate } from "@/lib/format";
 
 const inputStyle = { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" };
@@ -70,12 +71,38 @@ export function GoalsManager({ goals }: { goals: { id: number; name: string; cat
   const pct = (saved: number, target: number) => target > 0 ? Math.round((saved / target) * 100) : 0;
 
   return (
-    <Card title="🎯 Savings Goals" subtitle={`${goals.length} goals`}>
-      <div className="flex justify-end mb-3 no-print">
-        <button onClick={() => setShowAdd(!showAdd)} className="btn btn-primary text-sm">
-          {showAdd ? "Cancel" : "+ Add Goal"}
-        </button>
+    <div className="space-y-6 animate-fade-in w-full">
+      {/* ─── SOVEREIGN COMMAND DECK HEADER ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b" style={{ borderColor: "var(--border)" }}>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-xl shadow-indigo-500/20 shrink-0">
+            <IconSavings size={24} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: "var(--text-heading)" }}>Milestone Capital Vaults</h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-extrabold uppercase tracking-widest bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Reserves v5.6</span>
+            </div>
+            <p className="text-xs sm:text-sm font-medium mt-0.5" style={{ color: "var(--text-muted)" }}>Set liquidity milestones, retirement accumulation targets, and emergency reserve progress</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center"))}
+            className="btn btn-primary px-4 py-2.5 text-xs font-extrabold rounded-xl shadow-lg shadow-indigo-500/20 flex items-center gap-2 cursor-pointer"
+          >
+            <span>+ Initialize Capital Vault</span>
+            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/20 text-white">⌘K</span>
+          </button>
+        </div>
       </div>
+
+      <Card title="Active Capital Vaults & Milestone Targets" subtitle={`${goals.length} capital reserves monitored across household accounts`}>
+        <div className="flex justify-end mb-4 no-print">
+          <button onClick={() => setShowAdd(!showAdd)} className="btn btn-primary text-xs font-extrabold px-4 py-2 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer">
+            {showAdd ? "Cancel Configuration ✕" : "+ Initialize New Vault"}
+          </button>
+        </div>
 
       {(showAdd || editing) && (
         <div className="space-y-4 mb-4 p-4 rounded-xl fade-in-up" style={{ background: "var(--surface-2)" }}>
@@ -179,5 +206,6 @@ export function GoalsManager({ goals }: { goals: { id: number; name: string; cat
         ))}
       </Table>
     </Card>
+    </div>
   );
 }

@@ -16,7 +16,7 @@ export default async function CoachPage() {
       <SectionTitle
         title="AI Wealth Coach"
         subtitle="Your weekly financial report & guidance"
-        action={<Badge tone="primary">🧠 Coach</Badge>}
+        action={<Badge tone="primary" className="flex items-center gap-1.5 font-bold">Wealth Advisory</Badge>}
       />
       <CoachClient txns={txns} accounts={accounts} investments={investments} debts={debts} bills={bills} goals={goals} insurance={insurance} budgets={budgets} />
     </div>

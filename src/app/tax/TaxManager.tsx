@@ -6,6 +6,7 @@ import { Card, Badge } from "@/components/ui/Card";
 import { Progress } from "@/components/ui/Kpi";
 import { estimateTax } from "@/lib/tax";
 import { inr } from "@/lib/format";
+import { IconTax, IconSparkles, IconCheck, IconAlert } from "@/components/ui/Icons";
 
 const inputStyle = { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" };
 
@@ -75,166 +76,186 @@ export function TaxManager({ initialProfile }: { initialProfile: any }) {
   const unusedDeductions = DEDUCTIONS.reduce((s, d) => s + Math.max(0, d.max - d.used), 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in w-full select-none">
+      {/* ─── SOVEREIGN COMMAND DECK HEADER ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b" style={{ borderColor: "var(--border)" }}>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-xl shadow-indigo-500/20 shrink-0">
+            <IconTax size={24} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: "var(--text-heading)" }}>Tax Shield & Marginal Rate Engine</h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-extrabold uppercase tracking-widest bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Tax Engine v5.6</span>
+            </div>
+            <p className="text-xs sm:text-sm font-medium mt-0.5" style={{ color: "var(--text-muted)" }}>Old vs New regime comparative marginal modeling, monitored 80C/80D deduction limits & capital gains calculations</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center"))}
+            className="btn btn-primary px-4 py-2.5 text-xs font-extrabold rounded-xl shadow-lg shadow-indigo-500/20 flex items-center gap-2 cursor-pointer"
+          >
+            <span>+ Log Taxable Profile</span>
+            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/20 text-white">⌘K</span>
+          </button>
+        </div>
+      </div>
+
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
-        <Card className="!p-4 text-center">
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>Total Income</p>
-          <p className="text-xl font-bold mt-1" style={{ color: "var(--text)" }}>{inr(totalIncome, { compact: true })}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="!p-4 text-center bg-surface-2 border" style={{ borderColor: "var(--border)" }}>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Income</p>
+          <p className="text-xl font-mono font-black mt-1" style={{ color: "var(--text-heading)" }}>{inr(totalIncome, { compact: true })}</p>
         </Card>
-        <Card className="!p-4 text-center">
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>Estimated Tax</p>
-          <p className="text-xl font-bold mt-1" style={{ color: "var(--danger)" }}>{inr(result.selectedTax)}</p>
-          <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>{form.regime} regime</p>
+        <Card className="!p-4 text-center bg-surface-2 border" style={{ borderColor: "var(--border)" }}>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Estimated Tax</p>
+          <p className="text-xl font-mono font-black mt-1 text-red-400">{inr(result.selectedTax)}</p>
+          <p className="text-[10px] uppercase font-mono font-bold text-indigo-400">{form.regime} regime</p>
         </Card>
-        <Card className="!p-4 text-center">
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>Effective Rate</p>
-          <p className="text-xl font-bold mt-1" style={{ color: "var(--warning)" }}>{effectiveRate.toFixed(1)}%</p>
+        <Card className="!p-4 text-center bg-surface-2 border" style={{ borderColor: "var(--border)" }}>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Effective Rate</p>
+          <p className="text-xl font-mono font-black mt-1 text-amber-400">{effectiveRate.toFixed(1)}%</p>
         </Card>
-        <Card className="!p-4 text-center">
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>Unused Deductions</p>
-          <p className="text-xl font-bold mt-1" style={{ color: "var(--success)" }}>{inr(unusedDeductions, { compact: true })}</p>
+        <Card className="!p-4 text-center bg-surface-2 border" style={{ borderColor: "var(--border)" }}>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Unused Deductions</p>
+          <p className="text-xl font-mono font-black mt-1 text-emerald-400">{inr(unusedDeductions, { compact: true })}</p>
         </Card>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2.5 no-print">
         <button
           onClick={() => setIsEditing(!isEditing)}
-          className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
-          style={{ background: "var(--primary)" }}
+          className="btn btn-primary px-5 py-2 text-xs font-bold rounded-xl shadow-md"
         >
-          {isEditing ? "Cancel" : "✏️ Edit Tax Profile"}
+          {isEditing ? "Cancel Edit" : "Configure Tax Profile"}
         </button>
         {initialProfile && (
           <button
             onClick={reset}
-            className="px-4 py-2 rounded-lg text-sm font-medium"
-            style={{ background: "var(--danger-soft)", color: "var(--danger)" }}
+            className="btn btn-secondary px-4 py-2 text-xs font-bold rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10"
           >
-            🗑 Reset Profile
+            Reset Profile
           </button>
         )}
       </div>
 
       {/* Edit Form */}
       {isEditing && (
-        <Card title="Edit Tax Details" subtitle="Update your income and deductions">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-              Tax Regime
+        <Card title="Configure Income & Deductions" subtitle="Update annual compensation parameters for exact tax calculations">
+          <div className="grid sm:grid-cols-2 gap-4 pt-1">
+            <label className="text-xs font-bold text-slate-300">
+              Selected Tax Regime
               <select
                 value={form.regime}
                 onChange={(e) => setForm({ ...form, regime: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg text-sm border mt-1"
-                style={inputStyle}
+                className="input mt-1.5 font-bold"
               >
-                <option value="new">New Regime (Lower rates, fewer deductions)</option>
-                <option value="old">Old Regime (Higher deductions allowed)</option>
+                <option value="new">New Regime (Lower marginal rates, zero 80C/HRA exemptions)</option>
+                <option value="old">Old Regime (Higher marginal rates, full exemptions allowed)</option>
               </select>
             </label>
             
             {FIELDS.map((field) => (
-              <label key={field.key} className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+              <label key={field.key} className="text-xs font-bold text-slate-300">
                 {field.label}
                 <input
                   type="number"
                   value={form[field.key as keyof typeof form]}
                   onChange={(e) => setForm({ ...form, [field.key]: Number(e.target.value) })}
-                  className="w-full px-3 py-2 rounded-lg text-sm border mt-1"
-                  style={inputStyle}
+                  className="input font-mono font-bold mt-1.5"
                   placeholder="0"
                 />
-                <span className="text-[10px] block mt-0.5" style={{ color: "var(--text-faint)" }}>
+                <span className="text-[10px] font-normal block mt-0.5 text-slate-400">
                   {field.hint}
                 </span>
               </label>
             ))}
           </div>
           
-          <div className="mt-4 p-4 rounded-xl" style={{ background: "var(--surface-2)" }}>
-            <h4 className="font-semibold mb-2 text-sm" style={{ color: "var(--text)" }}>
-              💡 Recommendation
+          <div className="mt-5 p-4 rounded-xl border border-indigo-500/30 bg-indigo-500/10">
+            <h4 className="font-extrabold mb-1 text-sm text-indigo-300 flex items-center gap-2">
+              <IconSparkles size={16} /> Recommendation Analysis
             </h4>
-            <p className="text-sm" style={{ color: result.recommended === form.regime ? "var(--success)" : "var(--warning)" }}>
+            <p className="text-xs font-semibold leading-relaxed" style={{ color: result.recommended === form.regime ? "var(--success)" : "var(--warning)" }}>
               {result.recommended === form.regime 
-                ? `✓ You are using the optimal regime. You'll save ${inr(Math.abs(result.taxOld - result.taxNew))} with ${result.recommended} regime.`
-                : `⚠️ Switch to ${result.recommended} regime to save ${inr(Math.abs(result.taxOld - result.taxNew))} in taxes.`}
+                ? `You are currently utilizing the optimal regime. You will save ${inr(Math.abs(result.taxOld - result.taxNew))} with the ${result.recommended.toUpperCase()} regime.`
+                : `Switch to the ${result.recommended.toUpperCase()} regime to save ${inr(Math.abs(result.taxOld - result.taxNew))} annually in income taxes.`}
             </p>
           </div>
           
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-2.5 mt-5">
             <button
               onClick={save}
-              className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
-              style={{ background: "var(--success)" }}
+              className="btn btn-success px-6 py-2.5 text-xs font-bold rounded-xl shadow-md"
             >
-              Save Tax Profile
+              Confirm & Save Tax Profile
             </button>
           </div>
         </Card>
       )}
 
-      {/* Tax Comparison */}
+      {/* Tax Regime Comparison */}
       {!isEditing && (
-        <Card title="Tax Regime Comparison" subtitle="Old vs New regime calculations">
-          <div className="grid sm:grid-cols-2 gap-4">
+        <Card title="Regime Comparative Assessment" subtitle="Side-by-side marginal rate calculations">
+          <div className="grid sm:grid-cols-2 gap-4 pt-1">
             <div 
-              className="p-4 rounded-xl border-2"
+              className="p-5 rounded-2xl border-2 transition-all"
               style={{ 
                 borderColor: result.recommended === "old" ? "var(--success)" : "var(--border)",
                 background: result.recommended === "old" ? "var(--success-soft)" : "var(--surface-2)"
               }}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold" style={{ color: "var(--text)" }}>Old Regime</span>
-                {result.recommended === "old" && <Badge tone="success">Recommended</Badge>}
+                <span className="font-extrabold text-base" style={{ color: "var(--text-heading)" }}>Old Regime</span>
+                {result.recommended === "old" && <Badge tone="success">Optimal Regime</Badge>}
               </div>
-              <p className="text-2xl font-bold" style={{ color: "var(--text)" }}>{inr(result.taxOld)}</p>
-              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-                Taxable: {inr(result.taxableOld)}
+              <p className="text-3xl font-black font-mono" style={{ color: "var(--text-heading)" }}>{inr(result.taxOld)}</p>
+              <p className="text-xs font-mono text-slate-400 mt-1">
+                Taxable Base: {inr(result.taxableOld)}
               </p>
             </div>
             
             <div 
-              className="p-4 rounded-xl border-2"
+              className="p-5 rounded-2xl border-2 transition-all"
               style={{ 
                 borderColor: result.recommended === "new" ? "var(--success)" : "var(--border)",
                 background: result.recommended === "new" ? "var(--success-soft)" : "var(--surface-2)"
               }}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold" style={{ color: "var(--text)" }}>New Regime</span>
-                {result.recommended === "new" && <Badge tone="success">Recommended</Badge>}
+                <span className="font-extrabold text-base" style={{ color: "var(--text-heading)" }}>New Regime</span>
+                {result.recommended === "new" && <Badge tone="success">Optimal Regime</Badge>}
               </div>
-              <p className="text-2xl font-bold" style={{ color: "var(--text)" }}>{inr(result.taxNew)}</p>
-              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-                Taxable: {inr(result.taxableNew)}
+              <p className="text-3xl font-black font-mono" style={{ color: "var(--text-heading)" }}>{inr(result.taxNew)}</p>
+              <p className="text-xs font-mono text-slate-400 mt-1">
+                Taxable Base: {inr(result.taxableNew)}
               </p>
             </div>
           </div>
           
           {result.cgTax > 0 && (
-            <p className="text-sm mt-4" style={{ color: "var(--text-muted)" }}>
-              + {inr(result.cgTax)} Capital Gains Tax (LTCG @12.5%)
+            <p className="text-xs font-mono font-bold text-slate-400 mt-4 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
+              + {inr(result.cgTax)} Long Term Capital Gains Tax (LTCG @ 12.5%)
             </p>
           )}
         </Card>
       )}
 
       {/* Deductions Progress */}
-      <Card title="Tax-Saving Deductions" subtitle="Track your 80C, 80D, and other deductions">
-        <div className="space-y-4">
+      <Card title="Deduction Utilization Tracking" subtitle="Monitored 80C, 80D, and Section 24 limits">
+        <div className="space-y-4 pt-1">
           {DEDUCTIONS.map((d) => {
             const pct = Math.min(100, (d.used / d.max) * 100);
             return (
-              <div key={d.label}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm font-medium" style={{ color: "var(--text)" }}>
+              <div key={d.label} className="p-3 rounded-xl border bg-surface-2" style={{ borderColor: "var(--border)" }}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold" style={{ color: "var(--text-heading)" }}>
                     {d.label}
-                    <span className="text-xs ml-2" style={{ color: "var(--text-faint)" }}>{d.note}</span>
+                    <span className="text-slate-400 font-normal ml-2">{d.note}</span>
                   </span>
-                  <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+                  <span className="text-xs font-mono font-bold text-slate-400">
                     {inr(d.used)} / {inr(d.max)}
                   </span>
                 </div>
@@ -247,20 +268,21 @@ export function TaxManager({ initialProfile }: { initialProfile: any }) {
 
       {/* Empty State */}
       {!initialProfile && !isEditing && (
-        <Card className="!p-8 text-center">
-          <div className="text-4xl mb-3">🧮</div>
-          <h3 className="font-semibold mb-2" style={{ color: "var(--text)" }}>No Tax Profile Set</h3>
-          <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>
-            Add your income details to calculate and compare tax under both regimes
+        <div className="card p-12 text-center border border-dashed rounded-2xl bg-surface-2/40" style={{ borderColor: "var(--border-strong)" }}>
+          <span className="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-400 grid place-items-center mx-auto mb-4">
+            <IconTax size={28} />
+          </span>
+          <h3 className="text-lg font-extrabold mb-1" style={{ color: "var(--text-heading)" }}>No Tax Profile Initialized</h3>
+          <p className="text-xs text-slate-400 mb-5 max-w-md mx-auto leading-relaxed">
+            Input your annual compensation parameters to compute marginal tax liability and determine your optimal regime.
           </p>
           <button
             onClick={() => setIsEditing(true)}
-            className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
-            style={{ background: "var(--primary)" }}
+            className="btn btn-primary px-6 py-2.5 text-xs font-bold rounded-xl shadow-md"
           >
-            + Create Tax Profile
+            + Initialize Tax Profile
           </button>
-        </Card>
+        </div>
       )}
     </div>
   );
