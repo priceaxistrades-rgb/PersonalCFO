@@ -25,10 +25,17 @@ export async function POST(req: Request) {
     if (!result.ok) return result.error;
     const b = result.data;
 
+    const dbType: "Cash" | "Bank" | "Wallet" | "Gold" | "RealEstate" | "Other" =
+      b.type === "Cash" || b.type === "Bank" || b.type === "Wallet" || b.type === "Gold" || b.type === "RealEstate" || b.type === "Other"
+        ? b.type
+        : b.type === "CreditCard"
+        ? "Bank"
+        : "Other";
+
     const [row] = await db.insert(accounts).values({
       userId: session.userId,
       name: b.name,
-      type: b.type,
+      type: dbType,
       category: b.category,
       balance: b.balance,
       memberId: b.memberId,
@@ -51,7 +58,14 @@ export async function PATCH(req: Request) {
     // Build safe update object — only explicitly provided fields
     const safeUpdates: Record<string, unknown> = {};
     if (updates.name !== undefined) safeUpdates.name = updates.name;
-    if (updates.type !== undefined) safeUpdates.type = updates.type;
+    if (updates.type !== undefined) {
+      safeUpdates.type =
+        updates.type === "Cash" || updates.type === "Bank" || updates.type === "Wallet" || updates.type === "Gold" || updates.type === "RealEstate" || updates.type === "Other"
+          ? updates.type
+          : updates.type === "CreditCard"
+          ? "Bank"
+          : "Other";
+    }
     if (updates.category !== undefined) safeUpdates.category = updates.category;
     if (updates.balance !== undefined) safeUpdates.balance = updates.balance;
     if (updates.memberId !== undefined) safeUpdates.memberId = updates.memberId;

@@ -36,13 +36,7 @@ export const POST = apiHandler(async (req, { log }) => {
     };
 
     const token = createSessionToken(session);
-    const headers: Record<string, string> = { "Set-Cookie": sessionCookieHeader(token) };
-
-    // Sliding session refresh
-    const refreshHeader = getSessionRefreshHeader({ ...session, exp: Date.now() + 7 * 24 * 60 * 60 * 1000, iat: Date.now() });
-    if (refreshHeader) {
-      headers["Set-Cookie"] = refreshHeader;
-    }
+    const headers: Record<string, string> = { "Set-Cookie": sessionCookieHeader(token, req) };
 
     log.info("Login successful", { userId: user.id });
 

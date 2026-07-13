@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { CATEGORY_GROUPS, BILL_CATEGORIES, INCOME_CATEGORIES } from "@/lib/categories";
@@ -35,6 +35,10 @@ export function QuickActionCenter({ accounts = [], investments = [], defaultOpen
   const [fetchedAccounts, setFetchedAccounts] = useState<any[]>([]);
   const [fetchedInvestments, setFetchedInvestments] = useState<any[]>([]);
   const [formType, setFormType] = useState<QuickAddType>("expense");
+  const [showAddAccount, setShowAddAccount] = useState(false);
+  const [newAccName, setNewAccName] = useState("");
+  const [newAccType, setNewAccType] = useState("Bank");
+  const [newAccBalance, setNewAccBalance] = useState("");
 
   const close = () => {
     setIsOpen(false);
@@ -85,6 +89,12 @@ export function QuickActionCenter({ accounts = [], investments = [], defaultOpen
           }
         })
         .catch(() => {});
+      fetch("/api/manage/investments")
+        .then((r) => r.json())
+        .then((d) => {
+          if (d && d.rows) setFetchedInvestments(d.rows);
+        })
+        .catch(() => {});
     }
   }, [isOpen, accounts.length, fetchedAccounts.length]);
 
@@ -123,7 +133,7 @@ export function QuickActionCenter({ accounts = [], investments = [], defaultOpen
           category: form.category || (formType === "income" ? "Salary" : "Food"),
           amount: form.amount || "0",
           txnDate: today,
-          accountId: form.accountId ? Number(form.accountId) : (activeAccounts[0]?.id || null),
+          accountId: form.accountId ? Number(form.accountId) : (activeAccounts[0]?.id || accounts[0]?.id || 1),
           note: form.note && form.note.trim() ? form.note.trim() : null,
         };
       } else if (formType === "goal") {
@@ -319,10 +329,83 @@ export function QuickActionCenter({ accounts = [], investments = [], defaultOpen
                     <input type="number" placeholder="0.00" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="input font-mono font-bold text-base" autoFocus />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-extrabold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Account Source</label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-[11px] font-extrabold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Account Source</label>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddAccount(!showAddAccount)}
+                        className="text-[11px] font-mono font-extrabold text-indigo-400 hover:text-indigo-300 cursor-pointer"
+                      >
+                        {showAddAccount ? "✕ Cancel" : "+ New Account Source"}
+                      </button>
+                    </div>
                     <select value={form.accountId} onChange={(e) => setForm({ ...form, accountId: Number(e.target.value) })} className="input font-medium">
                       {activeAccounts.map((a) => (<option key={a.id} value={a.id}>{a.name} ({a.type})</option>))}
                     </select>
+                    {showAddAccount && (
+                      <div className="mt-2 p-3 rounded-xl border border-indigo-500/30 bg-indigo-500/10 space-y-2 animate-fade-in">
+                        <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-300">Create Quick Household Account</p>
+                        <input
+                          placeholder="E.g. HDFC Salary Account or Cash Wallet"
+                          value={newAccName}
+                          onChange={(e) => setNewAccName(e.target.value)}
+                          className="input text-xs font-medium py-1.5"
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <select
+                            value={newAccType}
+                            onChange={(e) => setNewAccType(e.target.value)}
+                            className="input text-xs font-medium py-1.5"
+                          >
+                            <option value="Bank">Bank Account</option>
+                            <option value="Cash">Cash in Hand</option>
+                            <option value="Wallet">Digital Wallet</option>
+                            <option value="CreditCard">Credit Card</option>
+                            <option value="FixedDeposit">Fixed Deposit</option>
+                            <option value="PPF">PPF / Provident Fund</option>
+                            <option value="Gold">Gold Reserve</option>
+                            <option value="RealEstate">Real Estate</option>
+                            <option value="Other">Other Asset</option>
+                          </select>
+                          <input
+                            type="number"
+                            placeholder="Initial Bal (₹)"
+                            value={newAccBalance}
+                            onChange={(e) => setNewAccBalance(e.target.value)}
+                            className="input text-xs font-mono font-bold py-1.5"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!newAccName.trim()) return;
+                            try {
+                              const res = await fetch("/api/manage/accounts", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ name: newAccName.trim(), type: newAccType, category: "liquid", balance: newAccBalance || "0" }),
+                              });
+                              const data = await res.json().catch(() => ({}));
+                              if (res.ok && data.row) {
+                                setFetchedAccounts((prev) => [...prev, data.row]);
+                                setForm((prev) => ({ ...prev, accountId: data.row.id }));
+                                setShowAddAccount(false);
+                                setNewAccName("");
+                                setNewAccBalance("");
+                                router.refresh();
+                              } else {
+                                alert("Could not create account: " + (typeof data.error === "string" ? data.error : JSON.stringify(data.error) || "Validation error"));
+                              }
+                            } catch {
+                              alert("Network error communicating with database server.");
+                            }
+                          }}
+                          className="btn btn-primary w-full py-1.5 text-xs font-bold rounded-lg shadow-sm cursor-pointer"
+                        >
+                          + Save & Select Account
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -394,14 +477,18 @@ export function QuickActionCenter({ accounts = [], investments = [], defaultOpen
 }
 
 export function GlobalQuickActionModal() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   useEffect(() => {
-    const handleOpen = () => setOpen(true);
+    const handleOpen = () => {
+      if (window.location.pathname === "/") return;
+      setOpen(true);
+    };
     window.addEventListener("open-quick-action-center", handleOpen);
     return () => window.removeEventListener("open-quick-action-center", handleOpen);
   }, []);
 
-  if (!open) return null;
+  if (!open || pathname === "/") return null;
   return (
     <div className="fixed inset-0 z-[250]">
       <QuickActionCenter accounts={[]} investments={[]} defaultOpen={true} onClose={() => setOpen(false)} />

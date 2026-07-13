@@ -37,7 +37,7 @@ export const POST = apiHandler(async (req, { log }) => {
         status: 201,
         headers: {
           "Content-Type": "application/json",
-          "Set-Cookie": sessionCookieHeader(token),
+          "Set-Cookie": sessionCookieHeader(token, req),
           "X-Request-Id": `signup_${Date.now().toString(36)}`,
         },
       },

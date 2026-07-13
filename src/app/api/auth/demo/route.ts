@@ -28,7 +28,7 @@ export async function POST(req: Request) {
 
     return Response.json(
       { ok: true, session },
-      { headers: { "Set-Cookie": sessionCookieHeader(createSessionToken(session)) } },
+      { headers: { "Set-Cookie": sessionCookieHeader(createSessionToken(session), req) } },
     );
   } catch (err) {
     return Response.json({ error: "Demo setup failed" }, { status: 500 });

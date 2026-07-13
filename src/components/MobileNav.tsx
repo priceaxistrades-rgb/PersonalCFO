@@ -36,6 +36,7 @@ const MORE_LINKS_GROUPS = [
   {
     title: "Asset Vault & Markets",
     items: [
+      { href: "/settings#accounts", label: "Accounts & Wallets", icon: IconSavings },
       { href: "/networth", label: "Net Worth Deck", icon: IconNetWorth },
       { href: "/markets", label: "Live Market Tickers", icon: IconMarkets },
       { href: "/savings", label: "Milestone Vaults", icon: IconSavings },
@@ -126,22 +127,22 @@ export function MobileNav() {
             className="absolute bottom-16 left-2 right-2 rounded-3xl p-5 max-h-[82vh] overflow-y-auto border shadow-2xl transition-all duration-300"
             style={{ background: "var(--surface)", borderColor: "var(--border-strong)" }}
           >
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/[0.08]">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b" style={{ borderColor: "var(--border)" }}>
               <div className="flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-xl flex items-center justify-center text-sm shadow-md bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
                   <IconDashboard size={16} />
                 </span>
-                <h3 className="font-extrabold text-lg tracking-tight text-white">Sovereign Wealth Suite</h3>
+                <h3 className="font-black text-lg tracking-tight" style={{ color: "var(--text-heading)" }}>Sovereign Wealth Suite</h3>
               </div>
-              <button onClick={() => setShowMore(false)} className="btn btn-ghost w-9 h-9 rounded-xl font-bold font-mono border border-white/[0.06]">✕</button>
+              <button onClick={() => setShowMore(false)} className="btn btn-ghost w-9 h-9 rounded-xl font-bold font-mono border" style={{ borderColor: "var(--border)" }}>✕</button>
             </div>
 
-            <div className="mb-5 p-3 rounded-xl border border-white/[0.06] bg-surface-2">
+            <div className="mb-5 p-3 rounded-xl border bg-surface-2" style={{ borderColor: "var(--border)" }}>
               <div className="flex items-center justify-between mb-2 px-1">
                 <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-slate-400">Appearance</span>
                 <span className="text-[10px] font-mono text-indigo-400 font-bold capitalize">{hydrated ? theme : "obsidian"}</span>
               </div>
-              <div className="grid grid-cols-2 gap-2 p-1 rounded-xl border border-white/[0.06] bg-surface-3/50">
+              <div className="grid grid-cols-2 gap-2 p-1 rounded-xl border bg-surface-3/50" style={{ borderColor: "var(--border)" }}>
                 {THEMES.map((t) => {
                   const selected = hydrated && theme === t.id;
                   return (
@@ -149,7 +150,7 @@ export function MobileNav() {
                       key={t.id}
                       onClick={() => setTheme(t.id)}
                       className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all border-none cursor-pointer ${
-                        selected ? "bg-primary text-white shadow-md scale-[1.02]" : "text-slate-400 hover:text-white bg-transparent"
+                        selected ? "bg-indigo-600 text-white shadow-md scale-[1.02]" : "text-slate-400 hover:text-white bg-transparent"
                       }`}
                     >
                       <span className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style={{ background: t.color }} />
@@ -160,27 +161,28 @@ export function MobileNav() {
               </div>
             </div>
 
-            <div className="space-y-5 mb-6">
+            <div className="space-y-4 mb-6">
               {MORE_LINKS_GROUPS.map((group) => (
                 <div key={group.title}>
-                  <p className="text-[10px] font-mono font-extrabold uppercase tracking-[0.14em] mb-2.5 px-1 text-slate-500">{group.title}</p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <p className="text-[10px] font-mono font-extrabold uppercase tracking-[0.14em] mb-2 px-1 text-slate-500">{group.title}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {group.items.map((link) => {
                       const IconComp = link.icon;
+                      const active = isActive(link.href);
                       return (
                         <Link
                           key={link.href}
                           href={link.href}
                           onClick={() => setShowMore(false)}
-                          className="flex flex-col items-center justify-center p-3 rounded-xl transition-all duration-150 active:scale-95 border border-white/[0.04] hover:border-indigo-500/30 no-underline"
-                          style={{
-                            background: isActive(link.href) ? "var(--primary-soft)" : "var(--surface-2)",
-                            color: isActive(link.href) ? "var(--primary)" : "var(--text)",
-                            minHeight: 76,
-                          }}
+                          className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-150 active:scale-95 border no-underline ${
+                            active ? "bg-indigo-600 text-white shadow-sm border-indigo-500/40" : "bg-surface-2 hover:bg-surface-3 text-slate-300 border-transparent"
+                          }`}
+                          style={{ minHeight: 46 }}
                         >
-                          <span className="mb-1.5 flex items-center justify-center"><IconComp size={20} /></span>
-                          <span className="text-[11px] font-bold text-center leading-tight tracking-tight">{link.label}</span>
+                          <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${active ? "bg-white/20 text-white" : "bg-white/5 text-indigo-400"}`}>
+                            <IconComp size={16} />
+                          </span>
+                          <span className={`text-xs font-bold tracking-tight truncate ${active ? "text-white" : "text-text-heading"}`}>{link.label}</span>
                         </Link>
                       );
                     })}
@@ -190,19 +192,20 @@ export function MobileNav() {
             </div>
 
             {session && (
-              <div className="border-t pt-4 space-y-2 border-white/[0.08]">
-                <div className="flex items-center gap-3 px-2 mb-3">
-                  <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center text-sm font-mono font-extrabold ring-2 ring-primary/20 bg-indigo-500/20 text-indigo-300">
+              <div className="border-t pt-4 space-y-3" style={{ borderColor: "var(--border)" }}>
+                <div className="flex items-center gap-3 px-2 mb-2">
+                  <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center text-sm font-mono font-extrabold ring-2 ring-indigo-500/20 bg-indigo-500/20 text-indigo-400">
                     {session.profileImage ? <img src={session.profileImage} alt="" className="w-full h-full object-cover" /> : <IconUser size={18} />}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold truncate text-white leading-snug">{session.name}</p>
-                    <p className="text-xs truncate font-mono text-slate-400">{session.email}</p>
+                    <p className="text-sm font-black truncate" style={{ color: "var(--text-heading)" }}>{session.name}</p>
+                    <p className="text-[10px] truncate font-mono text-indigo-400">Sovereign Admin · v5.6</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <Link href="/settings" onClick={() => setShowMore(false)}
-                    className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-colors bg-surface-2 hover:bg-surface-3 border border-white/[0.06] text-white no-underline"
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-colors bg-surface-2 hover:bg-surface-3 border text-text-heading no-underline"
+                    style={{ borderColor: "var(--border)" }}
                   >
                     <IconSettings size={15} /> <span>Settings</span>
                   </Link>

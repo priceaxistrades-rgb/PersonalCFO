@@ -216,6 +216,31 @@ export default function LoginPage() {
                 </button>
               </form>
 
+              <button
+                type="button"
+                onClick={async () => {
+                  setLoading(true);
+                  setError("");
+                  try {
+                    const res = await fetch("/api/auth/demo", { method: "POST" });
+                    if (res.ok) {
+                      window.location.replace("/");
+                      return;
+                    } else {
+                      const data = await res.json().catch(() => ({}));
+                      setError(data.error || "Demo initialization failed");
+                    }
+                  } catch {
+                    setError("Network error. Please try again.");
+                  }
+                  setLoading(false);
+                }}
+                disabled={loading}
+                className="w-full py-3 px-4 rounded-xl text-xs font-mono font-extrabold border border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 transition-all flex items-center justify-center gap-2 cursor-pointer mt-3"
+              >
+                <span>⚡ Launch Instant Demo Cockpit (1-Click)</span>
+              </button>
+
               <div className="pt-4 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-slate-400 font-mono">
                 <span className="flex items-center gap-1.5"><IconCheck size={12} className="text-emerald-400" /> Signed HTTP-Only Cookie</span>
                 <span>Zero Password Log</span>

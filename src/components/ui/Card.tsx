@@ -40,8 +40,8 @@ export function Card({
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-indigo-500/50 via-purple-500/40 to-transparent opacity-40 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
       {(title || action) && (
-        <header className="flex items-start justify-between mb-5 sm:mb-6 gap-4 border-b pb-4 -mx-1 px-1 relative z-10" style={{ borderColor: "var(--border)" }}>
-          <div className="min-w-0 flex-1">
+        <header className="flex flex-col sm:flex-row sm:items-start justify-between mb-5 sm:mb-6 gap-3 sm:gap-4 border-b pb-4 -mx-1 px-1 relative z-10" style={{ borderColor: "var(--border)" }}>
+          <div className="min-w-0 flex-1 w-full sm:w-auto">
             {title && (
               <h3 className="text-base sm:text-lg font-black tracking-tight" style={{ color: "var(--text-heading)" }}>
                 {title}
@@ -53,7 +53,7 @@ export function Card({
               </p>
             )}
           </div>
-          {action && <div className="shrink-0 flex items-center gap-2">{action}</div>}
+          {action && <div className="shrink-0 flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">{action}</div>}
         </header>
       )}
       <div className="relative z-10">{children}</div>

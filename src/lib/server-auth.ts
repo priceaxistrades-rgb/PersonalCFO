@@ -73,13 +73,25 @@ function shouldRefreshSession(session: AppSession): boolean {
   return remaining > 0 && remaining < (DEFAULT_SESSION_DAYS * 24 * 60 * 60 * 1000) / 2;
 }
 
-export function sessionCookieHeader(token: string) {
-  const secure = process.env.NODE_ENV === "production";
+export function sessionCookieHeader(token: string, req?: Request) {
+  let secure = false;
+  if (req && typeof req.url === "string") {
+    const isHttps = req.url.startsWith("https://") || req.headers.get("x-forwarded-proto") === "https";
+    secure = isHttps && !req.url.includes("localhost") && !req.url.includes("127.0.0.1");
+  } else if (process.env.VERCEL_URL || process.env.RAILWAY_STATIC_URL) {
+    secure = true;
+  }
   return `${COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${DEFAULT_SESSION_DAYS * 24 * 60 * 60}; ${secure ? "Secure; " : ""}`;
 }
 
-export function clearSessionCookieHeader() {
-  const secure = process.env.NODE_ENV === "production";
+export function clearSessionCookieHeader(req?: Request) {
+  let secure = false;
+  if (req && typeof req.url === "string") {
+    const isHttps = req.url.startsWith("https://") || req.headers.get("x-forwarded-proto") === "https";
+    secure = isHttps && !req.url.includes("localhost") && !req.url.includes("127.0.0.1");
+  } else if (process.env.VERCEL_URL || process.env.RAILWAY_STATIC_URL) {
+    secure = true;
+  }
   return `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; ${secure ? "Secure; " : ""}`;
 }
 

@@ -57,7 +57,16 @@ const nonNegMoneyStr = z
 const positiveInt = z.number().int().positive();
 
 /** Optional positive integer ID (nullable). */
-const optionalIntId = z.union([z.number().int().positive(), z.null(), z.undefined(), z.string().transform((v) => (v && !isNaN(Number(v)) ? Number(v) : null))]).transform((v) => (typeof v === "number" && v > 0 ? v : null));
+const optionalIntId = z
+  .union([
+    z.number().int().positive(),
+    z.null(),
+    z.undefined(),
+    z.string().transform((v) => (v && !isNaN(Number(v)) ? Number(v) : null)),
+  ])
+  .transform((v) => (typeof v === "number" && v > 0 ? v : null))
+  .optional()
+  .nullable();
 
 /** Non-empty trimmed string. */
 const nonEmptyStr = z.string().trim().min(1, "Required");
@@ -108,7 +117,7 @@ function coercedStrMax(maxLen: number) {
 
 // ─── Enum Constants ─────────────────────────────────────────────
 
-const ACCOUNT_TYPES = ["Cash", "Bank", "Wallet", "Gold", "RealEstate", "Other"] as const;
+const ACCOUNT_TYPES = ["Cash", "Bank", "Wallet", "CreditCard", "FixedDeposit", "PPF", "Gold", "RealEstate", "Other"] as const;
 const ACCOUNT_CATEGORIES = ["asset", "liquid"] as const;
 const TRANSACTION_TYPES = ["income", "expense"] as const;
 const INVESTMENT_TYPES = [
@@ -166,7 +175,7 @@ export const accountCreateSchema = z.object({
   name: nonEmptyStr.max(100),
   type: z.enum(ACCOUNT_TYPES),
   category: z.enum(ACCOUNT_CATEGORIES).default("liquid"),
-  balance: nonNegMoneyStr.default("0"),
+  balance: moneyStr.default("0"),
   memberId: optionalIntId,
 }).strict();
 

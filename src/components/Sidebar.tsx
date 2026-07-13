@@ -13,7 +13,7 @@ import {
   IconMarkets, IconSavings, IconDebt, IconAI, IconCoach, IconSimulator,
   IconOpportunities, IconStress, IconDreams, IconTimeline, IconTax,
   IconInsurance, IconAnnual, IconEmergency, IconFamily, IconReports,
-  IconOnboarding, IconUser, IconSettings, IconLogout
+  IconOnboarding, IconUser, IconSettings, IconLogout, IconSearch
 } from "@/components/ui/Icons";
 
 const NAV_GROUPS = [
@@ -41,6 +41,7 @@ const NAV_GROUPS = [
     group: "Asset Vault",
     icon: IconInvestments,
     items: [
+      { href: "/settings#accounts", label: "Bank Accounts & Wallets", icon: IconSavings, desc: "Bank accounts, cash balances, credit cards & digital wallets" },
       { href: "/networth", label: "Net Worth Deck", icon: IconNetWorth, desc: "Consolidated asset vs liability valuation" },
       { href: "/investments", label: "Portfolio Assets", icon: IconInvestments, desc: "Equities, mutual funds & capital holdings" },
       { href: "/markets", label: "Live Market Tickers", icon: IconMarkets, desc: "Real-time NSE stocks & AMFI scheme NAVs" },
@@ -131,6 +132,16 @@ export function Sidebar() {
           <span>Personal CFO</span>
         </Link>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("open-global-search"))}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-mono font-bold border cursor-pointer hover:bg-surface-3 transition-colors text-indigo-400 shrink-0"
+            style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}
+            aria-label="Search"
+            title="Search workspace (⌘F)"
+          >
+            <IconSearch size={16} />
+          </button>
           {session && !authLoading && (
             <button
               onClick={() => setUserDropdownOpen(!userDropdownOpen)}
@@ -149,8 +160,46 @@ export function Sidebar() {
         </div>
       </header>
 
-      {/* ─── Mobile Overlay & Drawer ─── */}
-      {open && <div className="lg:hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-md transition-opacity" onClick={closeSidebar} />}
+      {/* ─── Mobile Overlay & Popovers ─── */}
+      {(open || userDropdownOpen) && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-md transition-opacity"
+          onClick={() => { closeSidebar(); setUserDropdownOpen(false); }}
+        />
+      )}
+
+      {userDropdownOpen && (
+        <div
+          className="lg:hidden fixed top-16 right-3 w-64 rounded-2xl p-4 border shadow-2xl space-y-3 z-[100] animate-scale-in"
+          style={{ background: "var(--surface)", borderColor: "var(--border-strong)" }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center gap-3 pb-3 border-b" style={{ borderColor: "var(--border)" }}>
+            <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center text-sm font-mono font-extrabold bg-indigo-500/20 text-indigo-400 shrink-0">
+              {session?.profileImage ? <img src={session.profileImage} alt="" className="w-full h-full object-cover" /> : session?.name?.charAt(0).toUpperCase() || "A"}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-black truncate" style={{ color: "var(--text-heading)" }}>{session?.name || "Sovereign Admin"}</p>
+              <p className="text-[10px] font-mono text-indigo-400 truncate">Sovereign OS · v5.6</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Link
+              href="/settings"
+              onClick={() => setUserDropdownOpen(false)}
+              className="btn btn-secondary py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border border-white/[0.08] no-underline"
+            >
+              <IconSettings size={14} /> <span>Settings</span>
+            </Link>
+            <button
+              onClick={() => { logout(); setUserDropdownOpen(false); }}
+              className="btn btn-ghost py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1 hover:bg-red-500/15 text-red-400 border border-transparent cursor-pointer"
+            >
+              <IconLogout size={14} /> <span>Sign Out</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════════
           DESKTOP: CANONICAL SOVEREIGN EXECUTIVE LEFT VERTICAL SIDEBAR (`w-[260px]`)
@@ -192,6 +241,20 @@ export function Sidebar() {
               <span className="text-[10px] text-slate-500 font-mono">All</span>
             )}
           </Link>
+
+          {/* Universal Search Box Trigger */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("open-global-search"))}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl border transition-all duration-200 text-xs font-bold cursor-pointer hover:border-indigo-500/50 hover:bg-surface-3"
+            style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-muted)" }}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="text-indigo-400 flex items-center justify-center shrink-0"><IconSearch size={15} /></span>
+              <span className="truncate tracking-tight font-medium text-slate-400">Search workspace…</span>
+            </div>
+            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/20 dark:bg-black/30 text-slate-400 shrink-0">⌘F</span>
+          </button>
         </div>
 
         {/* Scrollable Navigation Deck — Collapsible Executive Hubs */}
@@ -355,7 +418,7 @@ export function Sidebar() {
           MOBILE & TABLET: Slide-over Drawer (< 1024px)
           ═══════════════════════════════════════════════════════════ */}
       <aside
-        className={`lg:hidden fixed top-0 left-0 z-50 h-screen w-[280px] flex flex-col transition-transform duration-300 cubic-bezier(.16, 1, .3, 1) border-r shadow-2xl ${
+        className={`lg:hidden fixed top-0 left-0 z-50 h-[100dvh] w-[280px] flex flex-col transition-transform duration-300 cubic-bezier(.16, 1, .3, 1) border-r shadow-2xl ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ background: "var(--sidebar)", borderColor: "var(--border)" }}
@@ -443,7 +506,7 @@ export function Sidebar() {
           })}
         </nav>
 
-        <div className="border-t p-4 space-y-2 bg-surface-2/40" style={{ borderColor: "var(--border)" }}>
+        <div className="border-t p-4 pb-6 space-y-2.5 bg-surface-2/40 shrink-0 safe-area-bottom" style={{ borderColor: "var(--border)" }}>
           {session && !authLoading ? (
             <>
               <Link href="/settings" onClick={closeSidebar}
