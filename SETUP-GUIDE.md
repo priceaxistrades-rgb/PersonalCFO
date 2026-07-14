@@ -13,7 +13,7 @@ Complete guide to get PersonalCFO running with password reset emails working.
 5. Click **"Create Project"**
 6. You'll see a connection string like:
    ```
-   postgresql://neondb_owner:AbCdEf12345@ep-cool-name-12345.us-east-2.aws.neon.tech/neondb?sslmode=require
+   postgresql://neondb_owner:AbCdEf12345@ep-cool-name-12345.us-east-2.aws.neon.tech/neondb?sslmode=verify-full
    ```
 7. **Copy this** — you'll need it as `DATABASE_URL`
 
@@ -49,7 +49,7 @@ Complete guide to get PersonalCFO running with password reset emails working.
 
 | Name | Value | How to get it |
 |------|-------|---------------|
-| `DATABASE_URL` | `postgresql://neondb_owner:xxxxx@ep-xxx.neon.tech/neondb?sslmode=require` | From Step 1 |
+| `DATABASE_URL` | `postgresql://neondb_owner:xxxxx@ep-xxx.neon.tech/neondb?sslmode=verify-full` | From Step 1 |
 | `AUTH_SECRET` | (generate one — see below) | Run the command below |
 | `NEXT_PUBLIC_APP_URL` | `https://your-project.vercel.app` | Your Vercel URL (shown at top) |
 
@@ -66,16 +66,16 @@ Copy the output (e.g., `k8jH3nF9xQ2mP7wR...`) and paste as the value.
 
 ## Step 3: Run Database Migration
 
-After your first deploy, you need to create the database tables:
+Database schema changes must run from a controlled deployment environment, not from a browser request.
 
-1. Go to your Vercel project dashboard
-2. Your app URL is shown at the top (e.g., `https://personal-cfo-xyz123.vercel.app`)
-3. Open this URL in your browser:
-   ```
-   https://personal-cfo-xyz123.vercel.app/api/migrate
-   ```
-4. You'll see a JSON response with migration results
-5. If you see `"success": true` — your tables are created ✅
+From a trusted machine or CI job with `DATABASE_URL` configured:
+
+```bash
+npm ci
+npm run db:push
+```
+
+Review the Drizzle migration output before confirming any production change. The deprecated `/api/migrate` browser endpoint is disabled.
 
 ---
 
@@ -167,7 +167,7 @@ After your first deploy, you need to create the database tables:
 
 | Variable | Required | Example |
 |----------|----------|---------|
-| `DATABASE_URL` | ✅ Yes | `postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=require` |
+| `DATABASE_URL` | ✅ Yes | `postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=verify-full` |
 | `AUTH_SECRET` | ✅ Yes | `k8jH3nF9xQ2mP7wR...` (run `openssl rand -base64 32`) |
 | `NEXT_PUBLIC_APP_URL` | ✅ Yes | `https://personal-cfo.vercel.app` |
 | `RESEND_API_KEY` | ✅ For emails | `re_xxxxxxxxxxxx` |
@@ -184,7 +184,7 @@ After your first deploy, you need to create the database tables:
 
 ### Can't sign up / login fails
 - Check `DATABASE_URL` is correct in Vercel env vars
-- Run `/api/migrate` again to ensure tables exist
+- From a trusted deployment environment, run `npm run db:push` and review the output
 
 ### Password reset email not received
 - Check spam/junk folder

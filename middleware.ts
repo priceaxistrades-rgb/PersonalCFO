@@ -1,74 +1,14 @@
-import { NextResponse, type NextRequest } from "next/server";
-
-const PUBLIC_PATHS = ["/login", "/signup", "/api/auth/login", "/api/auth/signup", "/api/auth/demo", "/api/health"];
-const SESSION_COOKIE = "pcfo_session";
-
 /**
- * CSRF Protection: Validate Origin header on state-changing requests.
- * Browsers always send the Origin header on cross-origin POST/PATCH/DELETE requests.
- * If Origin is present and doesn't match our host, the request is cross-site → reject.
- * Same-site requests either have no Origin header or a matching one.
+ * Compatibility entrypoint for hosts that still discover Next's middleware
+ * convention. The implementation lives in proxy.ts so authentication and
+ * security-header policy has one source of truth.
  */
-function isCsrfSafe(req: NextRequest): boolean {
-  const method = req.method.toUpperCase();
-  // Only check state-changing methods
-  if (!["POST", "PATCH", "DELETE", "PUT"].includes(method)) return true;
 
-  const origin = req.headers.get("origin");
-  // No Origin header = same-origin navigation (browser behavior) → allow
-  if (!origin) return true;
+import type { NextRequest } from "next/server";
+import { proxy } from "./proxy";
 
-  const host = req.headers.get("host");
-  if (!host) return false;
-
-  // Build the expected origin from the request's actual protocol.
-  // Use x-forwarded-proto if behind a reverse proxy (Vercel, etc.),
-  // otherwise infer from the request URL (fixes local dev over http).
-  const forwardedProto = req.headers.get("x-forwarded-proto");
-  const protocol = forwardedProto || req.nextUrl.protocol.replace(":", "");
-  const expectedOrigin = `${protocol}://${host}`;
-
-  return origin === expectedOrigin;
-}
-
-export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-
-  // Allow public paths and static assets
-  if (
-    PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/favicon") ||
-    pathname.startsWith("/manifest") ||
-    pathname.startsWith("/uploads/")
-  ) {
-    return NextResponse.next();
-  }
-
-  // ─── CSRF Check ────────────────────────────────────────────
-  if (!isCsrfSafe(req)) {
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "CSRF check failed — invalid Origin" }, { status: 403 });
-    }
-    const login = req.nextUrl.clone();
-    login.pathname = "/login";
-    return NextResponse.redirect(login);
-  }
-
-  // ─── Authentication Check ──────────────────────────────────
-  const hasSession = Boolean(req.cookies.get(SESSION_COOKIE)?.value);
-
-  if (!hasSession) {
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    }
-    const login = req.nextUrl.clone();
-    login.pathname = "/login";
-    login.searchParams.set("next", pathname);
-    return NextResponse.redirect(login);
-  }
-
-  return NextResponse.next();
+export function middleware(request: NextRequest) {
+  return proxy(request);
 }
 
 export const config = {

@@ -125,7 +125,7 @@ export function PortfolioSyncDashboard({
     healthScore = Math.min(100, healthScore);
 
     return { totalInvested, totalCurrent, totalPnl, totalPnlPct, dayChange, byType, byCategory, topGainers, topLosers, liveCount, weightedCagr, estAnnualIncome, totalReturnPct, healthScore };
-  }, [holdings, quotes]);
+  }, [holdings]);
 
   const typeAlloc = useMemo(() =>
     [...stats.byType.entries()].map(([label, v]) => ({ label, value: v.current, color: TYPE_COLORS[label] || TYPE_COLORS["Alternative Assets"] })).sort((a, b) => b.value - a.value),

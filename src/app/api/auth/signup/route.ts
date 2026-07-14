@@ -1,13 +1,13 @@
 import { createUser, normalizeEmail } from "@/lib/auth";
 import { createSessionToken, sessionCookieHeader } from "@/lib/server-auth";
-import { getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { getClientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { validate, signupSchema } from "@/lib/validation";
 import { apiHandler, apiSuccess, apiError } from "@/lib/api-utils";
 import { logger } from "@/lib/logger";
 
 export const POST = apiHandler(async (req, { log }) => {
   const ip = getClientIp(req);
-  const limited = rateLimit(`signup:${ip}`, 5, 60_000);
+  const limited = await rateLimitAsync(`signup:${ip}`, 5, 60_000);
   if (!limited.ok) return rateLimitResponse(limited.resetAt);
 
   try {

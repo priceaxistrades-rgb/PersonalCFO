@@ -372,7 +372,7 @@ export function FilteredExpenses({ expenses, members, accounts = [] }: { expense
                 <IconExpenses size={24} />
               </span>
               <p className="text-sm font-bold" style={{ color: "var(--text-heading)" }}>No expenses logged for this timeframe</p>
-              <p className="text-xs text-slate-400 mt-1">Use '+ Log Expense' above or Universal Quick Entry to log daily spending.</p>
+              <p className="text-xs text-slate-400 mt-1">Use &apos;+ Log Expense&apos; above or Universal Quick Entry to log daily spending.</p>
             </div>
           )}
         </div>

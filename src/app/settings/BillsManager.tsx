@@ -246,7 +246,7 @@ export function BillsManager({ bills }: { bills: { id: number; name: string; cat
             </Tr>
           ))}
           {!bills.length && (
-            <Tr><Td muted className="py-8 text-center" strong>No recurring bills or subscriptions scheduled yet. Click '+ Schedule New Bill' to begin.</Td><Td muted>—</Td><Td right muted>—</Td><Td muted>—</Td><Td muted>—</Td><Td muted>—</Td><Td right muted>—</Td></Tr>
+            <Tr><Td muted className="py-8 text-center" strong>No recurring bills or subscriptions scheduled yet. Click &apos;+ Schedule New Bill&apos; to begin.</Td><Td muted>—</Td><Td right muted>—</Td><Td muted>—</Td><Td muted>—</Td><Td muted>—</Td><Td right muted>—</Td></Tr>
           )}
         </Table>
       </Card>

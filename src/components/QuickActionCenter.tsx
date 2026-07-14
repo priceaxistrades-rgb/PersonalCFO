@@ -96,7 +96,7 @@ export function QuickActionCenter({ accounts = [], investments = [], defaultOpen
         })
         .catch(() => {});
     }
-  }, [isOpen, accounts.length, fetchedAccounts.length]);
+  }, [isOpen, accounts.length, fetchedAccounts.length, form.accountId]);
 
   const INCOME_CATS = INCOME_CATEGORIES;
   const EXPENSE_CATEGORIES = Object.values(CATEGORY_GROUPS).flat();
@@ -222,14 +222,14 @@ export function QuickActionCenter({ accounts = [], investments = [], defaultOpen
   return (
     <div className="relative mb-6">
       {!isOpen ? (
-        <div className="p-1 rounded-2xl bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-amber-500/20 border border-white/10 shadow-lg">
+        <div className="quick-entry-shell p-1 rounded-2xl bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-amber-500/20 border border-white/10 shadow-lg">
           <button
             onClick={() => setIsOpen(true)}
-            className="w-full py-3.5 px-6 rounded-xl text-sm font-bold flex items-center justify-between gap-4 transition-all duration-300 group hover:shadow-xl"
+            className="quick-entry-button w-full py-3.5 px-6 rounded-xl text-sm font-bold flex items-center justify-between gap-4 transition-all duration-300 group"
             style={{ background: "var(--surface)", color: "var(--text-heading)" }}
           >
             <span className="flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg grid place-items-center text-base shadow-md transition-transform group-hover:scale-110" style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))", color: "#fff" }}>
+              <span className="quick-entry-icon w-8 h-8 rounded-lg grid place-items-center text-base shadow-md" style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))", color: "#fff" }}>
                 <IconLightning size={16} />
               </span>
               <span className="text-left">
@@ -237,7 +237,7 @@ export function QuickActionCenter({ accounts = [], investments = [], defaultOpen
                 <span className="block text-[11px] font-medium text-slate-400">Log Transactions, Bills, Investments, Goals & Loans instantly</span>
               </span>
             </span>
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold bg-white/[0.05] border border-white/[0.08] text-indigo-400 group-hover:bg-indigo-500/10">
+            <span className="quick-entry-cta hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold bg-white/[0.05] border border-white/[0.08] text-indigo-400">
               <span>+ Add Entry</span>
               <span className="text-[10px]">⌘K</span>
             </span>

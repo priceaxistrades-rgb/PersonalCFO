@@ -82,8 +82,8 @@ export function InvestmentForm({
     const symbol = form.symbol;
     const type = form.type;
     if (!symbol && !["Gold", "Silver", "Crypto", "RealEstate", "Bonds"].includes(type)) {
-      setFetchedLivePrice(0);
-      return;
+      const clearTimer = window.setTimeout(() => setFetchedLivePrice(0), 0);
+      return () => window.clearTimeout(clearTimer);
     }
     let active = true;
     const fetchPrice = async () => {
@@ -103,7 +103,10 @@ export function InvestmentForm({
             else params.set("stocks", resolved.yahooSymbol);
           }
         }
-        if (!params.toString()) { setLivePriceLoading(false); return; }
+        if (!params.toString()) {
+          window.setTimeout(() => setLivePriceLoading(false), 0);
+          return;
+        }
         const res = await fetch(`/api/market/quote?${params.toString()}`, { cache: "no-store" });
         const data = await res.json();
         if (active && data.quotes) {
@@ -122,55 +125,60 @@ export function InvestmentForm({
 
   // When priceMode changes to "live", auto-fill avgPrice with live price
   useEffect(() => {
-    if (priceMode === "live" && effectiveLivePrice > 0 && !editingInvestment) {
+    if (priceMode !== "live" || effectiveLivePrice <= 0 || editingInvestment) return;
+    const timer = window.setTimeout(() => {
       setForm((prev) => {
         const invested = Number((Number(prev.units || 0) * effectiveLivePrice).toFixed(2));
         const currentValue = invested; // at buy time, invested ≈ current
         return { ...prev, avgPrice: effectiveLivePrice, invested, currentValue };
       });
-    }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [priceMode, effectiveLivePrice, editingInvestment]);
 
   useEffect(() => {
-    if (editingInvestment) {
-      const units = Number(editingInvestment.units) || 0;
-      const invested = Number(editingInvestment.invested) || 0;
-      const avgPrice = units > 0 ? invested / units : 0;
-      setForm({
-        name: editingInvestment.name,
-        type: editingInvestment.type,
-        avgPrice: Math.round(avgPrice * 100) / 100,
-        invested,
-        currentValue: Number(editingInvestment.currentValue),
-        annualReturn: Number(editingInvestment.annualReturn),
-        symbol: editingInvestment.symbol || "",
-        schemeCode: editingInvestment.schemeCode || "",
-        units: editingInvestment.units || "",
-        startDate: editingInvestment.startDate || "",
-      });
-      setStockQuery(editingInvestment.symbol || "");
-      setMfQuery(editingInvestment.schemeCode || "");
-    } else if (initialData) {
-      const iType = initialData.type || (initialData.schemeCode ? "MutualFunds" : "Stocks");
-      setForm({
-        name: initialData.name || "",
-        type: iType,
-        avgPrice: 0,
-        invested: 0,
-        currentValue: 0,
-        annualReturn: 0,
-        symbol: initialData.symbol || "",
-        schemeCode: initialData.schemeCode || "",
-        units: "",
-        startDate: "",
-      });
-      setStockQuery(initialData.symbol || "");
-      setMfQuery(initialData.schemeCode || "");
-    } else {
-      setForm({ name: "", type: "Stocks", avgPrice: 0, invested: 0, currentValue: 0, annualReturn: 0, symbol: "", schemeCode: "", units: "", startDate: "" });
-      setStockQuery("");
-      setMfQuery("");
-    }
+    const timer = window.setTimeout(() => {
+      if (editingInvestment) {
+        const units = Number(editingInvestment.units) || 0;
+        const invested = Number(editingInvestment.invested) || 0;
+        const avgPrice = units > 0 ? invested / units : 0;
+        setForm({
+          name: editingInvestment.name,
+          type: editingInvestment.type,
+          avgPrice: Math.round(avgPrice * 100) / 100,
+          invested,
+          currentValue: Number(editingInvestment.currentValue),
+          annualReturn: Number(editingInvestment.annualReturn),
+          symbol: editingInvestment.symbol || "",
+          schemeCode: editingInvestment.schemeCode || "",
+          units: editingInvestment.units || "",
+          startDate: editingInvestment.startDate || "",
+        });
+        setStockQuery(editingInvestment.symbol || "");
+        setMfQuery(editingInvestment.schemeCode || "");
+      } else if (initialData) {
+        const iType = initialData.type || (initialData.schemeCode ? "MutualFunds" : "Stocks");
+        setForm({
+          name: initialData.name || "",
+          type: iType,
+          avgPrice: 0,
+          invested: 0,
+          currentValue: 0,
+          annualReturn: 0,
+          symbol: initialData.symbol || "",
+          schemeCode: initialData.schemeCode || "",
+          units: "",
+          startDate: "",
+        });
+        setStockQuery(initialData.symbol || "");
+        setMfQuery(initialData.schemeCode || "");
+      } else {
+        setForm({ name: "", type: "Stocks", avgPrice: 0, invested: 0, currentValue: 0, annualReturn: 0, symbol: "", schemeCode: "", units: "", startDate: "" });
+        setStockQuery("");
+        setMfQuery("");
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [editingInvestment, initialData]);
 
   const recalcFromUnits = (units: string, avgPrice: number) => {
@@ -194,7 +202,10 @@ export function InvestmentForm({
   useEffect(() => {
     if (form.type !== "Stocks") return;
     const q = stockQuery.trim();
-    if (!q) { setStockResults([]); return; }
+    if (!q) {
+      const clearTimer = window.setTimeout(() => setStockResults([]), 0);
+      return () => window.clearTimeout(clearTimer);
+    }
     let active = true;
     const timer = setTimeout(() => {
       setSearching(true);
@@ -210,7 +221,10 @@ export function InvestmentForm({
   useEffect(() => {
     if (form.type !== "MutualFunds") return;
     const q = mfQuery.trim();
-    if (q.length < 2) { setMfResults([]); return; }
+    if (q.length < 2) {
+      const clearTimer = window.setTimeout(() => setMfResults([]), 0);
+      return () => window.clearTimeout(clearTimer);
+    }
     let active = true;
     const timer = setTimeout(() => {
       setSearching(true);
@@ -422,7 +436,7 @@ export function InvestmentForm({
           {stockResults.length > 0 && (
             <div className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto rounded-xl border shadow-xl" style={{ background: "var(--surface)", borderColor: "var(--border)" }} role="listbox" aria-label="Stock search results">
               {stockResults.map((s) => (
-                <button key={s.symbol} onClick={() => chooseStock(s)} className="w-full text-left px-3 py-2.5 border-b text-sm hover:opacity-80 transition-opacity" style={{ borderColor: "var(--border)", color: "var(--text)" }} role="option" aria-label={`${s.name} (${s.symbol})`}>
+                <button key={s.symbol} onClick={() => chooseStock(s)} className="w-full text-left px-3 py-2.5 border-b text-sm hover:opacity-80 transition-opacity" style={{ borderColor: "var(--border)", color: "var(--text)" }} role="option" aria-selected="false" aria-label={`${s.name} (${s.symbol})`}>
                   <span className="font-medium">{s.name}</span>
                   <span className="block text-[11px]" style={{ color: "var(--text-faint)" }}>{s.symbol} · {s.exchange}{s.sector ? ` · ${s.sector}` : ""}</span>
                 </button>
@@ -439,7 +453,7 @@ export function InvestmentForm({
           {mfResults.length > 0 && (
             <div className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto rounded-xl border shadow-xl" style={{ background: "var(--surface)", borderColor: "var(--border)" }} role="listbox" aria-label="Mutual fund search results">
               {mfResults.map((m) => (
-                <button key={m.schemeCode} onClick={() => chooseMf(m)} className="w-full text-left px-3 py-2.5 border-b text-sm hover:opacity-80 transition-opacity" style={{ borderColor: "var(--border)", color: "var(--text)" }} role="option" aria-label={m.schemeName}>
+                <button key={m.schemeCode} onClick={() => chooseMf(m)} className="w-full text-left px-3 py-2.5 border-b text-sm hover:opacity-80 transition-opacity" style={{ borderColor: "var(--border)", color: "var(--text)" }} role="option" aria-selected="false" aria-label={m.schemeName}>
                   <span className="font-medium">{m.schemeName}</span>
                   <span className="block text-[11px]" style={{ color: "var(--text-faint)" }}>Scheme Code: {m.schemeCode}</span>
                 </button>

@@ -138,6 +138,24 @@ export async function getAllTransactions() {
   return db.select().from(transactions).where(eq(transactions.userId, userId)).orderBy(desc(transactions.txnDate), desc(transactions.id));
 }
 
+/**
+ * Dashboard calculations only need a bounded history window. Reports and the
+ * paginated transaction API remain available for full-history access.
+ */
+export async function getDashboardTransactions(months = 24) {
+  const userId = await uid();
+  const safeMonths = Math.min(60, Math.max(1, Math.floor(months)));
+  const since = new Date();
+  since.setMonth(since.getMonth() - safeMonths);
+  const sinceDate = since.toISOString().slice(0, 10);
+
+  return db
+    .select()
+    .from(transactions)
+    .where(and(eq(transactions.userId, userId), gte(transactions.txnDate, sinceDate)))
+    .orderBy(desc(transactions.txnDate), desc(transactions.id));
+}
+
 export async function getBudgets() {
   const userId = await uid();
   return db.select().from(budgets).where(eq(budgets.userId, userId)).orderBy(asc(budgets.id));
@@ -223,34 +241,35 @@ export async function syncAccountBalances() {
   logger.info("Syncing account balances", { userId });
 
   try {
-    // Use SQL SUM instead of loading all transactions into memory
-    const allAccs = await db.select().from(accounts).where(eq(accounts.userId, userId));
+    // Aggregate in PostgreSQL instead of loading the user's entire
+    // transaction history into the application process.
+    const aggregated = await db
+      .select({
+        id: accounts.id,
+        balance: sql<string>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' THEN ${transactions.amount} ELSE -${transactions.amount} END), 0)`,
+      })
+      .from(accounts)
+      .leftJoin(
+        transactions,
+        and(eq(transactions.accountId, accounts.id), eq(transactions.userId, userId)),
+      )
+      .where(eq(accounts.userId, userId))
+      .groupBy(accounts.id);
 
-    // For each account, compute balance from transactions
-    const balances = new Map<number, bigint>();
-    allAccs.forEach((a) => balances.set(a.id, 0n));
-
-    // Still need to iterate transactions for per-account balance,
-    // but this is more efficient than loading everything
-    const allTxns = await db.select().from(transactions).where(eq(transactions.userId, userId));
-
-    for (const t of allTxns) {
-      if (t.accountId) {
-        const amount = toPaise(t.amount);
-        const delta = t.type === "income" ? amount : -amount;
-        balances.set(t.accountId, (balances.get(t.accountId) || 0n) + delta);
-      }
-    }
-
-    if (balances.size > 0) {
+    if (aggregated.length > 0) {
       await db.transaction(async (tx) => {
-        for (const [id, bal] of balances.entries()) {
-          await tx.update(accounts).set({ balance: fromPaise(bal) }).where(eq(accounts.id, id));
+        for (const account of aggregated) {
+          // PostgreSQL NUMERIC performs the exact decimal arithmetic. The
+          // value is normalized through paise conversion before persistence.
+          await tx
+            .update(accounts)
+            .set({ balance: fromPaise(toPaise(account.balance)) })
+            .where(and(eq(accounts.id, account.id), eq(accounts.userId, userId)));
         }
       });
     }
 
-    logger.info("Account balances synced", { userId, accountCount: balances.size });
+    logger.info("Account balances synced", { userId, accountCount: aggregated.length });
     return { success: true };
   } catch (err) {
     logger.error("Failed to sync account balances", err, { userId });

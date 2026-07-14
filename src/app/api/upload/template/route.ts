@@ -1,8 +1,11 @@
-import { catchErr } from "@/lib/catch";
 import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";
+import { isSession, requireApiSession } from "@/lib/server-auth";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const session = requireApiSession(req);
+  if (!isSession(session)) return session;
+
   const wb = new ExcelJS.Workbook();
   
   // 1. Transactions Sheet
@@ -60,10 +63,11 @@ export async function GET() {
     { header: "Outstanding", key: "outstanding", width: 15 },
     { header: "Interest Rate %", key: "rate", width: 15 },
     { header: "EMI", key: "emi", width: 15 },
+    { header: "Tenure (Months)", key: "tenure", width: 18 },
     { header: "Member", key: "member", width: 20 },
   ];
-  debtSheet.addRow({ name: "Home Loan", type: "HomeLoan", principal: 5000000, outstanding: 4000000, rate: 8.5, emi: 40000, member: "Self" });
-  debtSheet.getCell("A10").value = "💡 Guide: Enter interest rate as a number (e.g. 8.5 for 8.5%).";
+  debtSheet.addRow({ name: "Home Loan", type: "HomeLoan", principal: 5000000, outstanding: 4000000, rate: 8.5, emi: 40000, tenure: 240, member: "Self" });
+  debtSheet.getCell("A10").value = "💡 Guide: Enter interest rate as a number and tenure in months (e.g. 240).";
   debtSheet.getCell("A10").font = { italic: true, color: { argb: "FF64748B" } };
 
   const buffer = await wb.xlsx.writeBuffer();

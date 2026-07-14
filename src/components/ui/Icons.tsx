@@ -28,6 +28,17 @@ export function IconDashboard({ size = 18, className = "", style, ...props }: Ic
   );
 }
 
+export function IconSuite({ size = 18, className = "", style, ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 flex-shrink-0 ${className}`} style={iconStyle(size, style)} {...props}>
+      <rect x="3" y="3" width="7" height="7" rx="2" />
+      <rect x="14" y="3" width="7" height="7" rx="2" />
+      <rect x="3" y="14" width="7" height="7" rx="2" />
+      <rect x="14" y="14" width="7" height="7" rx="2" />
+    </svg>
+  );
+}
+
 export function IconMission({ size = 18, className = "", style, ...props }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 flex-shrink-0 ${className}`} style={iconStyle(size, style)} {...props}>

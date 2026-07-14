@@ -156,12 +156,19 @@ export function apiHandler(handler: HandlerFn) {
  * CSP header value — strict but allows inline styles (needed for CSS variables)
  * and the app's own scripts.
  */
+const cspScriptSources = process.env.NODE_ENV === "production"
+  ? "'self' 'unsafe-inline'"
+  : "'self' 'unsafe-inline' 'unsafe-eval'";
+
 export const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  `script-src ${cspScriptSources}`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob:",
   "connect-src 'self' https://api.mfapi.in https://query1.finance.yahoo.com",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "form-action 'self'",
   "frame-ancestors 'none'",
 ].join("; ");

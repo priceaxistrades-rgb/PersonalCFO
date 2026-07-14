@@ -1,7 +1,7 @@
 import { catchErr } from "@/lib/catch";
 import { createSessionToken, sessionCookieHeader } from "@/lib/server-auth";
 import { ensureDemoUserWithData } from "@/lib/demo";
-import { getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { getClientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   // Rate limit demo login attempts
   const ip = getClientIp(req);
-  const limited = rateLimit(`demo:${ip}`, 3, 60_000); // 3 attempts per minute
+  const limited = await rateLimitAsync(`demo:${ip}`, 3, 60_000); // 3 attempts per minute
   if (!limited.ok) return rateLimitResponse(limited.resetAt);
 
   try {

@@ -112,6 +112,22 @@ export function Sidebar() {
     });
   }, [pathname]);
 
+  useEffect(() => {
+    if (!open && !userDropdownOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      setUserDropdownOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, userDropdownOpen]);
+
   const toggleGroup = (groupName: string) => {
     setExpandedGroups((prev) => ({ ...prev, [groupName]: !prev[groupName] }));
   };
@@ -122,7 +138,7 @@ export function Sidebar() {
     <>
       {/* ─── Mobile / Tablet Header (< 1024px) ─── */}
       <header
-        className="lg:hidden sticky top-0 z-50 flex items-center justify-between px-4 h-14 backdrop-blur-2xl border-b select-none"
+        className="mobile-top-bar lg:hidden sticky top-0 z-50 flex items-center justify-between px-4 h-14 backdrop-blur-2xl border-b select-none"
         style={{ background: "var(--header)", borderColor: "var(--border)" }}
       >
         <Link href="/" className="font-extrabold tracking-tight flex items-center gap-2.5 text-base no-underline" style={{ color: "var(--text-heading)" }}>
@@ -137,14 +153,15 @@ export function Sidebar() {
             onClick={() => window.dispatchEvent(new CustomEvent("open-global-search"))}
             className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-mono font-bold border cursor-pointer hover:bg-surface-3 transition-colors text-indigo-400 shrink-0"
             style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}
-            aria-label="Search"
+              aria-label="Search"
             title="Search workspace (⌘F)"
           >
             <IconSearch size={16} />
           </button>
           {session && !authLoading && (
             <button
-              onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+              onClick={() => { setUserDropdownOpen(!userDropdownOpen); setOpen(false); }}
+              aria-expanded={userDropdownOpen}
               className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center text-xs font-mono font-bold ring-1 ring-white/10 shadow-sm bg-indigo-500/20 text-indigo-400 shrink-0 cursor-pointer"
             >
               {session.profileImage ? (
@@ -154,7 +171,7 @@ export function Sidebar() {
               )}
             </button>
           )}
-          <button onClick={() => setOpen(!open)} className="btn btn-ghost w-10 h-10 text-base rounded-xl font-mono font-bold border border-white/[0.08] cursor-pointer" aria-label="Menu">
+          <button onClick={() => { setOpen(!open); setUserDropdownOpen(false); }} aria-expanded={open} className="btn btn-ghost w-10 h-10 text-base rounded-xl font-mono font-bold border border-white/[0.08] cursor-pointer" aria-label="Menu">
             {open ? "✕" : "☰"}
           </button>
         </div>
@@ -163,7 +180,7 @@ export function Sidebar() {
       {/* ─── Mobile Overlay & Popovers ─── */}
       {(open || userDropdownOpen) && (
         <div
-          className="lg:hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-md transition-opacity"
+          className="lg:hidden fixed inset-0 z-[70] bg-black/70 backdrop-blur-md transition-opacity"
           onClick={() => { closeSidebar(); setUserDropdownOpen(false); }}
         />
       )}
@@ -206,13 +223,13 @@ export function Sidebar() {
           High-contrast collapsible accordion design.
           ═══════════════════════════════════════════════════════════════════════ */}
       <aside
-        className="hidden lg:flex flex-col w-[260px] shrink-0 sticky top-0 h-screen overflow-y-auto overflow-x-hidden select-none border-r transition-colors no-scrollbar"
+        className="app-sidebar hidden lg:flex flex-col w-[260px] shrink-0 sticky top-0 h-screen overflow-y-auto overflow-x-hidden select-none border-r transition-colors no-scrollbar"
         style={{ background: "var(--sidebar)", borderColor: "var(--border)" }}
       >
         {/* Top Brand & Scope Strip */}
         <div className="p-4 border-b space-y-3 shrink-0" style={{ borderColor: "var(--border)" }}>
           <Link href="/" className="flex items-center gap-3 no-underline group">
-            <div className="w-9 h-9 min-w-[36px] min-h-[36px] rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/25 shrink-0 transition-transform duration-200 group-hover:scale-105">
+            <div className="sidebar-brand-mark w-9 h-9 min-w-[36px] min-h-[36px] rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/25 shrink-0">
               <IconDashboard size={18} />
             </div>
             <div className="min-w-0">
@@ -228,7 +245,7 @@ export function Sidebar() {
           {/* Scope Badge / Filter Link */}
           <Link
             href="/family"
-            className="flex items-center justify-between px-3 py-2 rounded-xl border transition-all duration-200 text-xs font-bold no-underline hover:border-indigo-500/50 hover:bg-surface-3"
+            className="sidebar-scope-link flex items-center justify-between px-3 py-2 rounded-xl border transition-all duration-200 text-xs font-bold no-underline"
             style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" }}
           >
             <div className="flex items-center gap-2 min-w-0">
@@ -246,7 +263,7 @@ export function Sidebar() {
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("open-global-search"))}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-xl border transition-all duration-200 text-xs font-bold cursor-pointer hover:border-indigo-500/50 hover:bg-surface-3"
+            className="sidebar-search-trigger w-full flex items-center justify-between px-3 py-2 rounded-xl border transition-all duration-200 text-xs font-bold cursor-pointer"
             style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-muted)" }}
           >
             <div className="flex items-center gap-2.5 min-w-0">
@@ -270,7 +287,8 @@ export function Sidebar() {
                 <button
                   type="button"
                   onClick={() => toggleGroup(section.group)}
-                  className={`w-full px-3 py-2 flex items-center justify-between text-[11px] font-mono font-extrabold uppercase tracking-[0.14em] rounded-xl transition-all duration-200 cursor-pointer border border-transparent ${
+                  aria-expanded={isOpenGroup}
+                  className={`sidebar-group-toggle w-full px-3 py-2 flex items-center justify-between text-[11px] font-mono font-extrabold uppercase tracking-[0.14em] rounded-xl transition-all duration-200 cursor-pointer border border-transparent ${
                     isOpenGroup
                       ? "text-indigo-400 dark:text-indigo-300 bg-indigo-500/10 dark:bg-indigo-500/15 border-indigo-500/20 shadow-sm"
                       : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/[0.04]"
@@ -289,7 +307,7 @@ export function Sidebar() {
 
                 {/* Vertical Links List */}
                 {isOpenGroup && (
-                  <div className="space-y-1 pt-1 pb-1.5 pl-3 border-l-2 border-indigo-500/30 dark:border-indigo-500/30 ml-3 animate-fade-in">
+                  <div className="sidebar-nav-list space-y-1 pt-1 pb-1.5 pl-3 border-l-2 border-indigo-500/30 dark:border-indigo-500/30 ml-3 animate-fade-in">
                     {section.items.map((item) => {
                       const active = pathname === item.href;
                       const ItemIcon = item.icon;
@@ -297,15 +315,15 @@ export function Sidebar() {
                         <Link
                           key={item.href}
                           href={item.href}
-                          className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 no-underline border ${
+                          className={`sidebar-nav-link flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 no-underline border ${
                             active
-                              ? "bg-indigo-600 dark:bg-indigo-600 text-white shadow-md shadow-indigo-600/25 border-indigo-500/40"
+                              ? "sidebar-nav-link-active bg-indigo-600 dark:bg-indigo-600 text-white shadow-md shadow-indigo-600/25 border-indigo-500/40"
                               : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-surface-2 hover:translate-x-1 border-transparent"
                           }`}
                           style={{ minHeight: 38 }}
                         >
                           <span
-                            className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                            className={`sidebar-nav-icon w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
                               active ? "bg-white/20 text-white" : "bg-white/[0.03] text-slate-400 group-hover:text-white"
                             }`}
                           >
@@ -329,7 +347,7 @@ export function Sidebar() {
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center"))}
-            className="btn btn-primary w-full py-2.5 px-3 text-xs font-extrabold rounded-xl shadow-lg shadow-indigo-500/20 flex items-center justify-between gap-2 cursor-pointer hover:-translate-y-0.5 transition-all border border-indigo-400/30"
+            className="sidebar-quick-add btn btn-primary w-full py-2.5 px-3 text-xs font-extrabold rounded-xl shadow-lg shadow-indigo-500/20 flex items-center justify-between gap-2 cursor-pointer border border-indigo-400/30"
             style={{ minHeight: 40 }}
           >
             <span className="flex items-center gap-2">
@@ -418,7 +436,7 @@ export function Sidebar() {
           MOBILE & TABLET: Slide-over Drawer (< 1024px)
           ═══════════════════════════════════════════════════════════ */}
       <aside
-        className={`lg:hidden fixed top-0 left-0 z-50 h-[100dvh] w-[280px] flex flex-col transition-transform duration-300 cubic-bezier(.16, 1, .3, 1) border-r shadow-2xl ${
+        className={`app-sidebar lg:hidden fixed top-0 left-0 z-[80] h-[100dvh] w-[min(280px,88vw)] flex flex-col safe-area-top transition-transform duration-300 cubic-bezier(.16, 1, .3, 1) border-r shadow-2xl ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ background: "var(--sidebar)", borderColor: "var(--border)" }}
@@ -471,7 +489,8 @@ export function Sidebar() {
                 <button
                   type="button"
                   onClick={() => toggleGroup(section.group)}
-                  className="w-full px-3 py-2 flex items-center justify-between text-[11px] font-mono font-extrabold uppercase tracking-[0.14em] text-slate-500 rounded-xl transition-colors hover:bg-white/[0.03] cursor-pointer border border-transparent"
+                  aria-expanded={isOpenGroup}
+                  className="sidebar-group-toggle w-full px-3 py-2 flex items-center justify-between text-[11px] font-mono font-extrabold uppercase tracking-[0.14em] text-slate-500 rounded-xl transition-colors cursor-pointer border border-transparent"
                 >
                   <span className="flex items-center gap-2">
                     <GroupIcon size={14} className="text-slate-500" />
@@ -489,8 +508,8 @@ export function Sidebar() {
                           key={item.href}
                           href={item.href}
                           onClick={closeSidebar}
-                          className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all no-underline ${
-                            active ? "bg-indigo-600 text-white shadow-sm" : "text-slate-400 hover:text-white hover:bg-surface-2"
+                          className={`sidebar-mobile-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all no-underline ${
+                            active ? "sidebar-mobile-link-active bg-indigo-600 text-white shadow-sm" : "text-slate-400 hover:text-white hover:bg-surface-2"
                           }`}
                           style={{ minHeight: 44 }}
                         >
