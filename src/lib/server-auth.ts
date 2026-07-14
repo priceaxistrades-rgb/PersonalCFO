@@ -17,13 +17,22 @@ const REFRESH_THRESHOLD_MS = 24 * 60 * 60 * 1000; // Refresh if > 24h remaining
 
 function getSecret(): string {
   const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
-  if (!secret || secret === "dev-only-change-me-personal-cfo-secret") {
-    if (process.env.NODE_ENV === "production") {
-      logger.fatal("AUTH_SECRET is not set or using default value in production! All sessions are forgeable.");
+  const isProduction = process.env.NODE_ENV === "production";
+  const isStrongEnough = typeof secret === "string" && secret.length >= 32;
+
+  if (!secret || !isStrongEnough || secret === "dev-only-change-me-personal-cfo-secret") {
+    const message = "AUTH_SECRET must be configured with at least 32 random characters before sessions can be issued.";
+    if (isProduction) {
+      // Never issue forgeable sessions in production. A hard failure is safer
+      // than silently falling back to a known signing key.
+      logger.fatal(message);
+      throw new Error("Server authentication is not configured");
     }
-    logger.warn("AUTH_SECRET not set — using insecure default. Set AUTH_SECRET env var immediately.");
+
+    logger.warn(`${message} Development-only fallback is active.`);
     return "dev-only-change-me-personal-cfo-secret";
   }
+
   return secret;
 }
 

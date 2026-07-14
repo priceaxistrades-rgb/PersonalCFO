@@ -382,7 +382,7 @@ export function FilteredIncome({
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
           <button
-            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center"))}
+            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center", { detail: { type: "income" } }))}
             className="btn btn-primary px-4 py-2.5 text-xs font-extrabold rounded-xl shadow-lg shadow-indigo-500/20 flex items-center gap-2 cursor-pointer"
           >
             <span>+ Log Income Stream</span>
@@ -514,7 +514,7 @@ export function FilteredIncome({
                   <IconIncome size={24} />
                 </span>
                 <p className="text-sm font-bold" style={{ color: "var(--text-heading)" }}>No income logged this month</p>
-                <p className="text-xs text-slate-400 mt-1">Use the '+ Log Income' button above or Universal Quick Entry to log your salary and inflows.</p>
+                <p className="text-xs text-slate-400 mt-1">Use the &apos;+ Log Income&apos; button above or Universal Quick Entry to log your salary and inflows.</p>
               </div>
             )
           )}

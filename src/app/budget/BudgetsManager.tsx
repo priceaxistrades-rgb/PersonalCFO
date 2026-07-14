@@ -191,7 +191,7 @@ export function BudgetsManager({ budgets }: { budgets: { id: number; category: s
           </Tr>
         ))}
         {!budgets.length && (
-          <Tr><Td muted className="py-8 text-center" strong>No budget limits configured. Click '+ Set Category Ceiling' to monitor expenditures.</Td><Td muted>—</Td><Td right muted>—</Td></Tr>
+          <Tr><Td muted className="py-8 text-center" strong>No budget limits configured. Click &apos;+ Set Category Ceiling&apos; to monitor expenditures.</Td><Td muted>—</Td><Td right muted>—</Td></Tr>
         )}
       </Table>
     </Card>

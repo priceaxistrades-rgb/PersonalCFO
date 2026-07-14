@@ -11,7 +11,7 @@ export default function ResetPasswordClient() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
-  const [tokenStatus, setTokenStatus] = useState<TokenStatus>("checking");
+  const [tokenStatus, setTokenStatus] = useState<TokenStatus>(() => token ? "checking" : "not_found");
   const [form, setForm] = useState({ password: "", confirmPassword: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -21,10 +21,7 @@ export default function ResetPasswordClient() {
 
   // Validate token on mount
   useEffect(() => {
-    if (!token) {
-      setTokenStatus("not_found");
-      return;
-    }
+    if (!token) return;
     let active = true;
     fetch(`/api/auth/reset-password?token=${encodeURIComponent(token)}`)
       .then((r) => r.json())
@@ -262,7 +259,7 @@ export default function ResetPasswordClient() {
                 </button>
               </div>
               {form.confirmPassword && form.password !== form.confirmPassword && (
-                <p className="text-[11px] mt-1 font-medium" style={{ color: "var(--danger)" }}>Passwords don't match</p>
+                <p className="text-[11px] mt-1 font-medium" style={{ color: "var(--danger)" }}>Passwords don&apos;t match</p>
               )}
               {form.confirmPassword && form.password === form.confirmPassword && form.password.length >= 8 && (
                 <p className="text-[11px] mt-1 font-medium" style={{ color: "var(--success)" }}>✓ Passwords match</p>

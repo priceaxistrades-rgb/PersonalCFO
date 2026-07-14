@@ -53,8 +53,9 @@ export function KpiCard({
         if (!onClick) return;
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); }
       }}
-      className={`p-4 sm:p-5.5 relative group overflow-hidden transition-all duration-300 rounded-2xl sm:rounded-3xl border shadow-lg ${
-        clickable ? "cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:border-indigo-500/50" : "hover:border-white/20 dark:hover:border-white/20"
+      data-tone={tone}
+      className={`kpi-card p-4 sm:p-5.5 relative group overflow-hidden transition-all duration-300 rounded-2xl sm:rounded-3xl border shadow-lg ${
+        clickable ? "cursor-pointer" : ""
       }`}
       style={{
         background: active ? "var(--surface)" : "var(--surface)",
@@ -74,7 +75,7 @@ export function KpiCard({
       <div className="flex items-center justify-between gap-2 mb-2.5 pt-0.5">
         <div className="flex items-center gap-2 min-w-0">
           {icon && (
-            <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors bg-white/5 dark:bg-white/5 group-hover:bg-indigo-500/10 text-slate-400 group-hover:text-indigo-400">
+            <span className="kpi-card-icon w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors bg-white/5 dark:bg-white/5 text-slate-400">
               {icon}
             </span>
           )}
@@ -100,7 +101,7 @@ export function KpiCard({
 
       {/* Primary Numerical Readout */}
       <div className="mt-1.5">
-        <p className="text-2xl sm:text-3xl font-black font-mono tabular-nums tracking-tight truncate leading-tight" style={{ color: "var(--text-heading)" }}>
+        <p className="kpi-card-value text-2xl sm:text-3xl font-black font-mono tabular-nums tracking-tight truncate leading-tight" style={{ color: "var(--text-heading)" }}>
           {hidden ? "••••••" : value}
         </p>
       </div>

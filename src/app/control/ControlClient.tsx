@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Card, Badge } from "@/components/ui/Card";
 import { KpiCard } from "@/components/ui/Kpi";
 import { inr } from "@/lib/format";
@@ -27,6 +28,7 @@ type ControlProps = {
 };
 
 export function ControlClient(data: ControlProps) {
+  const [calculationTime] = useState(() => Date.now());
   const mc = generateMissionControl(data);
 
   const healthGrade = mc.healthScore.overall >= 90 ? "A+" : mc.healthScore.overall >= 80 ? "A" : mc.healthScore.overall >= 70 ? "B+" : mc.healthScore.overall >= 60 ? "B" : mc.healthScore.overall >= 50 ? "C" : mc.healthScore.overall >= 40 ? "D" : "F";
@@ -314,7 +316,7 @@ export function ControlClient(data: ControlProps) {
                 <div className="space-y-2.5 pt-1">
                   {mc.upcomingBills.map((b, i) => {
                     const due = new Date(b.dueDate);
-                    const daysUntil = Math.ceil((due.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                    const daysUntil = Math.ceil((due.getTime() - calculationTime) / (1000 * 60 * 60 * 24));
                     const urgent = daysUntil <= 3;
                     return (
                       <div key={i} className="flex items-center justify-between p-2.5 rounded-xl border" style={{ background: urgent ? "var(--danger-soft)" : "var(--surface-2)", borderColor: "var(--border)" }}>
