@@ -12,7 +12,7 @@ import {
   IconCoach, IconSimulator, IconOpportunities, IconStress,
   IconDreams, IconTimeline, IconTax, IconInsurance, IconAnnual,
   IconEmergency, IconFamily, IconReports, IconOnboarding,
-  IconSettings, IconUser, IconLogout
+  IconSettings, IconUser, IconLogout, IconSuite
 } from "@/components/ui/Icons";
 
 const MOBILE_NAV = [
@@ -125,10 +125,12 @@ export function MobileNav() {
           <button
             onClick={() => setShowMore(true)}
             aria-expanded={showMore}
-            className={`mobile-nav-item flex flex-col items-center justify-center flex-1 py-1 mx-0.5 rounded-xl transition-all duration-200 border-none bg-transparent cursor-pointer ${showMore ? "bg-white/[0.04]" : ""}`}
+            className={`mobile-suite-button mobile-nav-item flex flex-col items-center justify-center flex-1 py-1 mx-0.5 rounded-xl transition-all duration-200 border-none bg-transparent cursor-pointer ${showMore ? "mobile-suite-active bg-white/[0.04]" : ""}`}
             style={{ color: showMore ? "var(--primary)" : "var(--text-faint)", minHeight: 48 }}
           >
-            <span className="mb-1 font-mono font-bold text-base flex items-center justify-center">☰</span>
+            <span className="mobile-suite-icon mb-1 w-7 h-7 rounded-xl flex items-center justify-center">
+              <IconSuite size={17} />
+            </span>
             <span className="text-[10px] font-bold tracking-tight">Suite</span>
           </button>
         </div>
@@ -145,7 +147,7 @@ export function MobileNav() {
             <div className="flex items-center justify-between pb-3 mb-4 border-b" style={{ borderColor: "var(--border)" }}>
               <div className="flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-xl flex items-center justify-center text-sm shadow-md bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
-                  <IconDashboard size={16} />
+                  <IconSuite size={16} />
                 </span>
                 <h3 className="font-black text-lg tracking-tight" style={{ color: "var(--text-heading)" }}>Sovereign Wealth Suite</h3>
               </div>
