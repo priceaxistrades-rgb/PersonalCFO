@@ -5,7 +5,7 @@ import { MemberSelectorClient } from "@/components/MemberSelectorClient";
 import { QuickActionCenter } from "@/components/QuickActionCenter";
 import { PrivacyToggle } from "@/components/PrivacyToggle";
 import {
-  getAllTransactions,
+  getDashboardTransactions,
   getBills,
   getDebts,
   getGoals,
@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 export default async function Dashboard() {
   const [user, txns, bills, debts, goals, invs, accs, members] = await Promise.all([
     getCurrentUser(),
-    getAllTransactions(),
+    getDashboardTransactions(),
     getBills(),
     getDebts(),
     getGoals(),

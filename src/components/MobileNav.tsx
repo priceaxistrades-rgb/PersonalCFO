@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "@/lib/session";
 import { useTheme, Theme } from "@/lib/theme";
 import {
@@ -81,16 +81,30 @@ export function MobileNav() {
   const { session, logout } = useSession();
   const { theme, setTheme, hydrated } = useTheme();
 
+  useEffect(() => {
+    if (!showMore) return;
+    const previousOverflow = document.body.style.overflow;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowMore(false);
+    };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [showMore]);
+
   const isActive = (href: string) => pathname === href;
 
   return (
     <>
       {/* ─── Bottom Tab Bar (< 1024px) ─── */}
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t safe-area-bottom backdrop-blur-2xl shadow-2xl select-none"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t mobile-tab-bar backdrop-blur-2xl shadow-2xl select-none"
         style={{ background: "var(--header)", borderColor: "var(--border)" }}
       >
-        <div className="flex items-center justify-around h-16 px-1">
+        <div className="flex items-center justify-around min-h-16 px-1">
           {MOBILE_NAV.map((item) => {
             const active = isActive(item.href);
             const IconComp = item.icon;
@@ -110,6 +124,7 @@ export function MobileNav() {
           })}
           <button
             onClick={() => setShowMore(true)}
+            aria-expanded={showMore}
             className={`mobile-nav-item flex flex-col items-center justify-center flex-1 py-1 mx-0.5 rounded-xl transition-all duration-200 border-none bg-transparent cursor-pointer ${showMore ? "bg-white/[0.04]" : ""}`}
             style={{ color: showMore ? "var(--primary)" : "var(--text-faint)", minHeight: 48 }}
           >
@@ -121,10 +136,10 @@ export function MobileNav() {
 
       {/* ─── More Sheet Drawer ─── */}
       {showMore && (
-        <div className="lg:hidden fixed inset-0 z-[60] animate-fade-in select-none">
+        <div className="lg:hidden fixed inset-0 z-[90] animate-fade-in select-none">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setShowMore(false)} />
           <div
-            className="absolute bottom-16 left-2 right-2 rounded-3xl p-5 max-h-[82vh] overflow-y-auto border shadow-2xl transition-all duration-300"
+            className="mobile-more-sheet absolute left-2 right-2 rounded-3xl p-5 overflow-y-auto overscroll-contain border shadow-2xl transition-all duration-300"
             style={{ background: "var(--surface)", borderColor: "var(--border-strong)" }}
           >
             <div className="flex items-center justify-between pb-3 mb-4 border-b" style={{ borderColor: "var(--border)" }}>

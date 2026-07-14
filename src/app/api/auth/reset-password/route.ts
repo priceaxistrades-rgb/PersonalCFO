@@ -1,21 +1,12 @@
 import { db } from "@/db";
-import { passwordResetTokens } from "@/db/schema";
-import { users } from "@/db/schema";
-import { eq, and, gt, isNull } from "drizzle-orm";
-import { z } from "zod";
-import { validate } from "@/lib/validation";
+import { passwordResetTokens, users } from "@/db/schema";
+import { eq, and, gt, isNull, or } from "drizzle-orm";
+import { validate, resetPasswordSchema } from "@/lib/validation";
 import { catchErr } from "@/lib/catch";
 import { logger } from "@/lib/logger";
-import { updateUserPassword } from "@/lib/auth";
-
-const resetPasswordSchema = z.object({
-  token: z.string().min(1, "Reset token is required"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string().min(1, "Please confirm your password"),
-}).strict().refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
+import { hashPassword } from "@/lib/auth";
+import { hashPasswordResetToken } from "@/lib/password-reset";
+import { clearSessionCookieHeader } from "@/lib/server-auth";
 
 export async function POST(req: Request) {
   try {
@@ -23,12 +14,18 @@ export async function POST(req: Request) {
     const result = validate(resetPasswordSchema, raw);
     if (!result.ok) return result.error;
     const { token, password } = result.data;
+    const tokenDigest = hashPasswordResetToken(token);
 
-    // Find the reset token
+    // New tokens are stored as digests. The raw-token branch is retained for
+    // the short transition window so tokens issued by the previous release do
+    // not fail unexpectedly.
     const [resetToken] = await db.select()
       .from(passwordResetTokens)
       .where(and(
-        eq(passwordResetTokens.token, token),
+        or(
+          eq(passwordResetTokens.token, tokenDigest),
+          eq(passwordResetTokens.token, token),
+        ),
         isNull(passwordResetTokens.usedAt),
         gt(passwordResetTokens.expiresAt, new Date()),
       ))
@@ -54,24 +51,41 @@ export async function POST(req: Request) {
       );
     }
 
-    // Mark token as used FIRST (prevent replay attacks)
-    await db.update(passwordResetTokens)
-      .set({ usedAt: new Date() })
-      .where(eq(passwordResetTokens.id, resetToken.id));
+    const hashedPassword = await hashPassword(password);
+    const now = new Date();
 
-    // Update the password
-    await updateUserPassword(user.id, password);
+    // Claim the token and update the password atomically. A conditional update
+    // prevents two concurrent requests from replaying the same reset token.
+    await db.transaction(async (tx) => {
+      const [claimed] = await tx.update(passwordResetTokens)
+        .set({ usedAt: now })
+        .where(and(
+          eq(passwordResetTokens.id, resetToken.id),
+          isNull(passwordResetTokens.usedAt),
+          gt(passwordResetTokens.expiresAt, now),
+        ))
+        .returning({ id: passwordResetTokens.id });
 
-    // Clean up all expired and used tokens for this user
-    await db.delete(passwordResetTokens)
-      .where(eq(passwordResetTokens.userId, user.id));
+      if (!claimed) throw new Error("Reset token was already used or expired");
 
-    logger.info("Password reset successful", { userId: user.id, email: user.email });
+      await tx.update(users)
+        .set({ password: hashedPassword, updatedAt: now })
+        .where(eq(users.id, user.id));
 
-    return Response.json({
-      ok: true,
-      message: "Password has been reset successfully. You can now sign in with your new password.",
+      // Remove all remaining reset tokens for this account.
+      await tx.delete(passwordResetTokens)
+        .where(eq(passwordResetTokens.userId, user.id));
     });
+
+    logger.info("Password reset successful", { userId: user.id });
+
+    return Response.json(
+      {
+        ok: true,
+        message: "Password has been reset successfully. You can now sign in with your new password.",
+      },
+      { headers: { "Set-Cookie": clearSessionCookieHeader(req) } },
+    );
   } catch (err) {
     catchErr("reset-password POST", err);
     return Response.json(
@@ -87,17 +101,21 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const token = searchParams.get("token");
 
-    if (!token) {
-      return Response.json({ ok: false, valid: false, error: "No token provided" }, { status: 400 });
+    if (!token || token.length > 256) {
+      return Response.json({ ok: false, valid: false, error: "No valid token provided" }, { status: 400 });
     }
 
+    const tokenDigest = hashPasswordResetToken(token);
     const [resetToken] = await db.select({
       id: passwordResetTokens.id,
       expiresAt: passwordResetTokens.expiresAt,
       usedAt: passwordResetTokens.usedAt,
     })
       .from(passwordResetTokens)
-      .where(eq(passwordResetTokens.token, token))
+      .where(or(
+        eq(passwordResetTokens.token, tokenDigest),
+        eq(passwordResetTokens.token, token),
+      ))
       .limit(1);
 
     if (!resetToken) {

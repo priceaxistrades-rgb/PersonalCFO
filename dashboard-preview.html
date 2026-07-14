@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="obsidian">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PersonalCFO — v7 Horizon</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+html,body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,system-ui,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;min-height:100vh}
+
+[data-theme="obsidian"]{
+  --bg:#050507;--bg-raised:#0c0c10;--bg-subtle:#12121a;
+  --surface:rgba(17,17,26,0.7);--surface-hover:rgba(28,28,40,0.7);--surface-active:rgba(39,39,58,0.6);
+  --border:rgba(129,140,248,0.12);--border-subtle:rgba(129,140,248,0.06);--border-focus:rgba(129,140,248,0.4);
+  --text:#f0f0ff;--text-secondary:#9d9db5;--text-tertiary:#6b6b8a;--text-faint:#4a4a66;
+  --primary:#818cf8;--primary-hover:#a5b4fc;--primary-muted:rgba(129,140,248,0.15);--primary-subtle:rgba(129,140,248,0.06);
+  --accent:#38bdf8;--accent-muted:rgba(56,189,248,0.15);
+  --success:#34d399;--success-muted:rgba(52,211,153,0.15);
+  --warning:#fbbf24;--warning-muted:rgba(251,191,36,0.15);
+  --danger:#f87171;--danger-muted:rgba(248,113,113,0.15);
+  --sidebar-bg:rgba(8,8,14,0.85);--sidebar-border:rgba(129,140,248,0.08);
+  --gradient-mesh:radial-gradient(ellipse 80% 50% at 20% 0%,rgba(129,140,248,0.15),transparent 60%),radial-gradient(ellipse 60% 40% at 80% 10%,rgba(56,189,248,0.1),transparent 50%),radial-gradient(ellipse 50% 60% at 50% 100%,rgba(139,92,246,0.08),transparent 60%);
+  --gradient-card:linear-gradient(135deg,rgba(129,140,248,0.06) 0%,rgba(56,189,248,0.03) 100%);
+  --gradient-accent:linear-gradient(135deg,#818cf8,#38bdf8);
+  --gradient-success:linear-gradient(135deg,#34d399,#06b6d4);
+  --gradient-danger:linear-gradient(135deg,#f87171,#fb923c);
+  --radius-lg:18px;--radius:12px;--radius-md:14px;
+}
+
+[data-theme="aurora"]{
+  --bg:#f8f9fc;--bg-raised:#fff;--bg-subtle:#f0f1f6;
+  --surface:rgba(255,255,255,0.8);--surface-hover:rgba(248,249,252,0.9);--surface-active:rgba(238,240,246,0.8);
+  --border:rgba(79,70,229,0.1);--border-subtle:rgba(79,70,229,0.05);--border-focus:rgba(79,70,229,0.3);
+  --text:#0f172a;--text-secondary:#475569;--text-tertiary:#64748b;--text-faint:#94a3b8;
+  --primary:#6366f1;--primary-hover:#818cf8;--primary-muted:rgba(99,102,241,0.1);--primary-subtle:rgba(99,102,241,0.04);
+  --accent:#0ea5e9;--accent-muted:rgba(14,165,233,0.1);
+  --success:#10b981;--success-muted:rgba(16,185,129,0.1);
+  --warning:#f59e0b;--warning-muted:rgba(245,158,11,0.1);
+  --danger:#ef4444;--danger-muted:rgba(239,68,68,0.1);
+  --sidebar-bg:rgba(255,255,255,0.85);--sidebar-border:rgba(79,70,229,0.06);
+  --gradient-mesh:radial-gradient(ellipse 80% 50% at 20% 0%,rgba(99,102,241,0.06),transparent 60%),radial-gradient(ellipse 60% 40% at 80% 10%,rgba(14,165,233,0.04),transparent 50%);
+  --gradient-card:linear-gradient(135deg,rgba(99,102,241,0.03) 0%,rgba(14,165,233,0.02) 100%);
+  --gradient-accent:linear-gradient(135deg,#6366f1,#0ea5e9);
+  --gradient-success:linear-gradient(135deg,#10b981,#06b6d4);
+  --gradient-danger:linear-gradient(135deg,#ef4444,#f97316);
+}
+
+[data-theme="emerald"]{
+  --bg:#020d07;--bg-raised:#061a0e;--bg-subtle:#0a2516;
+  --surface:rgba(7,26,15,0.75);--surface-hover:rgba(12,37,24,0.7);--surface-active:rgba(20,48,34,0.6);
+  --border:rgba(45,212,191,0.12);--border-subtle:rgba(45,212,191,0.06);--border-focus:rgba(45,212,191,0.35);
+  --text:#ecfdf5;--text-secondary:#6ee7b7;--text-tertiary:#34d399;--text-faint:#1a7a52;
+  --primary:#2dd4bf;--primary-hover:#5eead4;--primary-muted:rgba(45,212,191,0.15);--primary-subtle:rgba(45,212,191,0.06);
+  --accent:#34d399;--accent-muted:rgba(52,211,153,0.15);
+  --success:#22c55e;--success-muted:rgba(34,197,94,0.15);
+  --warning:#eab308;--warning-muted:rgba(234,179,8,0.15);
+  --danger:#ef4444;--danger-muted:rgba(239,68,68,0.15);
+  --sidebar-bg:rgba(3,13,7,0.85);--sidebar-border:rgba(45,212,191,0.06);
+  --gradient-mesh:radial-gradient(ellipse 80% 50% at 20% 0%,rgba(45,212,191,0.12),transparent 60%),radial-gradient(ellipse 60% 40% at 80% 10%,rgba(52,211,153,0.08),transparent 50%);
+  --gradient-card:linear-gradient(135deg,rgba(45,212,191,0.06) 0%,rgba(52,211,153,0.03) 100%);
+  --gradient-accent:linear-gradient(135deg,#2dd4bf,#34d399);
+  --gradient-success:linear-gradient(135deg,#22c55e,#2dd4bf);
+  --gradient-danger:linear-gradient(135deg,#ef4444,#f97316);
+}
+
+[data-theme="royal"]{
+  --bg:#070311;--bg-raised:#0e0820;--bg-subtle:#160e30;
+  --surface:rgba(18,8,34,0.75);--surface-hover:rgba(26,14,50,0.7);--surface-active:rgba(34,21,66,0.6);
+  --border:rgba(251,191,36,0.1);--border-subtle:rgba(251,191,36,0.05);--border-focus:rgba(251,191,36,0.35);
+  --text:#fce7c8;--text-secondary:#d4a76a;--text-tertiary:#b08950;--text-faint:#7a5c38;
+  --primary:#fbbf24;--primary-hover:#fcd34d;--primary-muted:rgba(251,191,36,0.15);--primary-subtle:rgba(251,191,36,0.06);
+  --accent:#e879f9;--accent-muted:rgba(232,121,249,0.15);
+  --success:#34d399;--success-muted:rgba(52,211,153,0.15);
+  --warning:#fb923c;--warning-muted:rgba(251,146,60,0.15);
+  --danger:#f87171;--danger-muted:rgba(248,113,113,0.15);
+  --sidebar-bg:rgba(5,2,16,0.85);--sidebar-border:rgba(251,191,36,0.05);
+  --gradient-mesh:radial-gradient(ellipse 80% 50% at 20% 0%,rgba(251,191,36,0.1),transparent 60%),radial-gradient(ellipse 60% 40% at 80% 10%,rgba(232,121,249,0.06),transparent 50%);
+  --gradient-card:linear-gradient(135deg,rgba(251,191,36,0.05) 0%,rgba(232,121,249,0.03) 100%);
+  --gradient-accent:linear-gradient(135deg,#fbbf24,#e879f9);
+  --gradient-success:linear-gradient(135deg,#34d399,#2dd4bf);
+  --gradient-danger:linear-gradient(135deg,#f87171,#fb923c);
+}
+
+/* Mesh BG */
+body::before{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;background:var(--gradient-mesh);animation:mesh 20s ease-in-out infinite alternate}
+@keyframes mesh{0%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
+body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse 60% 40% at 50% -10%,var(--primary-subtle),transparent 60%)}
+
+.layout{display:flex;min-height:100vh}
+.sidebar{width:220px;flex-shrink:0;background:var(--sidebar-bg);backdrop-filter:blur(20px) saturate(1.3);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sidebar-logo{padding:16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border-subtle)}
+.sidebar-logo-icon{width:34px;height:34px;border-radius:10px;background:var(--gradient-accent);color:#fff;display:grid;place-items:center;box-shadow:0 4px 16px var(--primary-muted)}
+.sidebar-group{margin-bottom:16px}
+.sidebar-group-label{padding:0 8px;margin-bottom:4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint)}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:var(--radius);font-size:12px;font-weight:500;color:var(--text-secondary);cursor:pointer;transition:all .15s}
+.sidebar-item:hover{background:var(--surface-hover);color:var(--text)}
+.sidebar-item.active{background:var(--primary-muted);color:var(--primary);font-weight:600;box-shadow:0 0 16px var(--primary-subtle)}
+
+.main{flex:1;min-width:0;padding:32px;max-width:1440px}
+
+/* GLASS CARD */
+.card{background:var(--surface);backdrop-filter:blur(24px) saturate(1.4);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);box-shadow:0 2px 8px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.03);transition:transform .3s cubic-bezier(.22,1,.36,1),box-shadow .3s ease,border-color .3s ease;position:relative;overflow:hidden;padding:20px}
+.card::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:var(--gradient-card);opacity:.5}
+.card:hover{border-color:var(--border);box-shadow:0 8px 32px rgba(0,0,0,.4),0 0 40px var(--primary-subtle);transform:translateY(-2px)}
+
+/* 3D KPI CARD */
+.kpi-card{background:var(--surface);backdrop-filter:blur(24px) saturate(1.4);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);box-shadow:0 2px 8px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.04);transition:transform .3s cubic-bezier(.22,1,.36,1),box-shadow .3s ease,border-color .3s ease;cursor:pointer;position:relative;overflow:hidden;padding:20px 24px}
+.kpi-card::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:var(--gradient-card);opacity:.6}
+.kpi-card:hover{border-color:var(--primary-muted);box-shadow:0 8px 32px rgba(0,0,0,.4),0 0 30px var(--primary-subtle);transform:translateY(-4px) scale(1.01)}
+.kpi-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-tertiary);margin-bottom:12px}
+.kpi-icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center}
+.kpi-value{font-size:32px;font-weight:700;letter-spacing:-.03em;color:var(--text);font-variant-numeric:tabular-nums}
+.kpi-trend{display:inline-flex;align-items:center;gap:2px;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700}
+
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;backdrop-filter:blur(8px)}
+.badge-primary{background:var(--primary-muted);color:var(--primary);border:1px solid var(--primary-muted)}
+.badge-success{background:var(--success-muted);color:var(--success);border:1px solid var(--success-muted)}
+
+.progress-bar{width:100%;height:5px;border-radius:99px;background:var(--surface-active);overflow:hidden}
+.progress-fill{height:100%;border-radius:99px;transition:width .7s ease-out}
+
+.insight-card{background:var(--surface);backdrop-filter:blur(24px) saturate(1.4);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:16px;display:flex;gap:12px;align-items:flex-start;transition:all .3s cubic-bezier(.22,1,.36,1)}
+.insight-card:hover{border-color:var(--border);box-shadow:0 8px 32px rgba(0,0,0,.3);transform:translateY(-2px)}
+.insight-icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex-shrink:0}
+
+.score-row{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;margin:0 -8px;border-radius:8px}
+
+@keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.fade-in-up{animation:fadeInUp .35s cubic-bezier(.22,1,.36,1) both}
+.stagger>*:nth-child(1){animation-delay:0ms}.stagger>*:nth-child(2){animation-delay:60ms}.stagger>*:nth-child(3){animation-delay:120ms}.stagger>*:nth-child(4){animation-delay:180ms}
+
+.theme-switcher{position:fixed;bottom:20px;right:20px;z-index:100;display:flex;gap:8px;background:var(--surface);backdrop-filter:blur(24px);padding:8px 12px;border-radius:16px;border:1px solid var(--border-subtle);box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.theme-switcher button{width:28px;height:28px;border-radius:8px;border:2px solid transparent;cursor:pointer;transition:all .2s}
+.theme-switcher button.active{border-color:currentColor;box-shadow:0 0 12px currentColor}
+</style>
+</head>
+<body>
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon"><i data-lucide="wallet" style="width:16px;height:16px"></i></div>
+      <div><div style="font-weight:700;font-size:14px;color:var(--text);letter-spacing:-.025em">PersonalCFO</div><div style="font-size:9px;color:var(--text-faint)">Family Wealth Suite</div></div>
+    </div>
+    <nav style="flex:1;padding:12px 8px">
+      <div class="sidebar-group"><div class="sidebar-group-label">Overview</div><div class="sidebar-item active"><i data-lucide="layout-dashboard" style="width:15px;height:15px"></i> Dashboard</div></div>
+      <div class="sidebar-group"><div class="sidebar-group-label">Money</div><div class="sidebar-item"><i data-lucide="arrow-down-circle" style="width:15px;height:15px"></i> Income</div><div class="sidebar-item"><i data-lucide="arrow-up-circle" style="width:15px;height:15px"></i> Expenses</div><div class="sidebar-item"><i data-lucide="pie-chart" style="width:15px;height:15px"></i> Budget</div><div class="sidebar-item"><i data-lucide="bell" style="width:15px;height:15px"></i> Bills</div></div>
+      <div class="sidebar-group"><div class="sidebar-group-label">Wealth</div><div class="sidebar-item"><i data-lucide="trending-up" style="width:15px;height:15px"></i> Investments</div><div class="sidebar-item"><i data-lucide="satellite" style="width:15px;height:15px"></i> Markets</div><div class="sidebar-item"><i data-lucide="piggy-bank" style="width:15px;height:15px"></i> Savings</div><div class="sidebar-item"><i data-lucide="building-2" style="width:15px;height:15px"></i> Debt</div><div class="sidebar-item"><i data-lucide="diamond" style="width:15px;height:15px"></i> Net Worth</div></div>
+      <div class="sidebar-group"><div class="sidebar-group-label">Planning</div><div class="sidebar-item"><i data-lucide="bot" style="width:15px;height:15px"></i> AI Twin</div><div class="sidebar-item"><i data-lucide="sparkles" style="width:15px;height:15px"></i> Dreams</div><div class="sidebar-item"><i data-lucide="calculator" style="width:15px;height:15px"></i> Tax</div><div class="sidebar-item"><i data-lucide="shield" style="width:15px;height:15px"></i> Insurance</div></div>
+    </nav>
+    <div style="padding:12px;border-top:1px solid var(--border-subtle)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="width:32px;height:32px;border-radius:10px;background:var(--gradient-accent);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700;box-shadow:0 4px 12px var(--primary-muted)">R</div>
+        <div><div style="font-size:12px;font-weight:600;color:var(--text)">Rahul Sharma</div><div style="font-size:10px;color:var(--text-tertiary)">rahul@email.com</div></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;padding:10px;border-top:1px solid var(--border-subtle)">
+      <div style="flex:1;height:24px;border-radius:6px;background:#818cf8;opacity:.9"></div>
+      <div style="flex:1;height:24px;border-radius:6px;background:#6366f1;opacity:.5"></div>
+      <div style="flex:1;height:24px;border-radius:6px;background:#14b8a6;opacity:.5"></div>
+      <div style="flex:1;height:24px;border-radius:6px;background:#fbbf24;opacity:.5"></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- KPI ROW 1 -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px" class="stagger fade-in-up">
+      <div class="kpi-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><div class="kpi-label">Net Worth</div><div class="kpi-icon" style="background:var(--gradient-accent);color:#fff;box-shadow:0 4px 16px var(--primary-muted)"><i data-lucide="diamond" style="width:18px;height:18px"></i></div></div>
+        <div class="kpi-value">₹24.5L</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:12px"><span style="font-size:11px;color:var(--text-tertiary)">Assets − Liabilities</span></div>
+      </div>
+      <div class="kpi-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><div class="kpi-label">Cash</div><div class="kpi-icon" style="background:var(--gradient-success);color:#fff;box-shadow:0 4px 16px var(--success-muted)"><i data-lucide="banknote" style="width:18px;height:18px"></i></div></div>
+        <div class="kpi-value">₹3.2L</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:12px"><span style="font-size:11px;color:var(--text-tertiary)">Bank: ₹2.8L</span></div>
+      </div>
+      <div class="kpi-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><div class="kpi-label">Income</div><div class="kpi-icon" style="background:var(--gradient-success);color:#fff;box-shadow:0 4px 16px var(--success-muted)"><i data-lucide="arrow-down-circle" style="width:18px;height:18px"></i></div></div>
+        <div class="kpi-value">₹1.45L</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:12px"><span class="kpi-trend" style="background:var(--success-muted);color:var(--success)">↑ ₹12K</span><span style="font-size:11px;color:var(--text-tertiary)">vs last mo</span></div>
+      </div>
+      <div class="kpi-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><div class="kpi-label">Expenses</div><div class="kpi-icon" style="background:var(--gradient-danger);color:#fff;box-shadow:0 4px 16px var(--danger-muted)"><i data-lucide="arrow-up-circle" style="width:18px;height:18px"></i></div></div>
+        <div class="kpi-value">₹89K</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:12px"><span class="kpi-trend" style="background:var(--success-muted);color:var(--success)">↓ ₹5K</span><span style="font-size:11px;color:var(--text-tertiary)">vs last mo</span></div>
+      </div>
+    </div>
+
+    <!-- KPI ROW 2 -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:16px" class="stagger fade-in-up">
+      <div class="kpi-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><div class="kpi-label">Savings %</div><div class="kpi-icon" style="background:var(--gradient-success);color:#fff;box-shadow:0 4px 16px var(--success-muted)"><i data-lucide="piggy-bank" style="width:18px;height:18px"></i></div></div>
+        <div class="kpi-value">38%</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:12px"><span class="kpi-trend" style="background:var(--success-muted);color:var(--success)">↑ 38%</span><span style="font-size:11px;color:var(--text-tertiary)">of income</span></div>
+      </div>
+      <div class="kpi-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><div class="kpi-label">Inv. Growth</div><div class="kpi-icon" style="background:var(--gradient-accent);color:#fff;box-shadow:0 4px 16px var(--primary-muted)"><i data-lucide="trending-up" style="width:18px;height:18px"></i></div></div>
+        <div class="kpi-value" style="color:var(--success)">+₹2.1L</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:12px"><span class="kpi-trend" style="background:var(--success-muted);color:var(--success)">↑ +₹2.1L</span><span style="font-size:11px;color:var(--text-tertiary)">unrealised</span></div>
+      </div>
+      <div class="kpi-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><div class="kpi-label">Emergency</div><div class="kpi-icon" style="background:var(--gradient-success);color:#fff;box-shadow:0 4px 16px var(--success-muted)"><i data-lucide="shield-check" style="width:18px;height:18px"></i></div></div>
+        <div class="kpi-value">8.2 <span style="font-size:16px;font-weight:400;color:var(--text-tertiary)">mo</span></div>
+        <div style="margin-top:12px"><span style="font-size:11px;color:var(--text-tertiary)">₹7.3L saved</span></div>
+      </div>
+      <div class="kpi-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><div class="kpi-label">Health Score</div><div class="kpi-icon" style="background:var(--gradient-success);color:#fff;box-shadow:0 4px 16px var(--success-muted)"><i data-lucide="activity" style="width:18px;height:18px"></i></div></div>
+        <div class="kpi-value">82<span style="font-size:16px;font-weight:400;color:var(--text-tertiary)">/100</span></div>
+        <div style="margin-top:12px"><span style="font-size:11px;color:var(--text-tertiary)">Click for details</span></div>
+      </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:20px" class="stagger fade-in-up">
+      <div class="card">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;position:relative;z-index:1">
+          <div><div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.02em">Income vs Expenses</div><div style="font-size:12px;color:var(--text-tertiary);margin-top:4px">Last 6 months</div></div>
+          <div style="display:flex;gap:16px;font-size:11px">
+            <span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary)"><span style="width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success-muted)"></span>Income</span>
+            <span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary)"><span style="width:8px;height:8px;border-radius:50%;background:var(--danger);box-shadow:0 0 8px var(--danger-muted)"></span>Expenses</span>
+            <span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary)"><span style="width:8px;height:8px;border-radius:50%;background:var(--primary);box-shadow:0 0 8px var(--primary-subtle)"></span>Savings</span>
+          </div>
+        </div>
+        <svg viewBox="0 0 600 200" style="width:100%;height:200px;position:relative;z-index:1">
+          <line x1="0" y1="50" x2="600" y2="50" stroke="var(--border-subtle)" stroke-dasharray="4 4"/>
+          <line x1="0" y1="100" x2="600" y2="100" stroke="var(--border-subtle)" stroke-dasharray="4 4"/>
+          <line x1="0" y1="150" x2="600" y2="150" stroke="var(--border-subtle)" stroke-dasharray="4 4"/>
+          <defs>
+            <linearGradient id="ig" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--success)" stop-opacity="0.2"/><stop offset="100%" stop-color="var(--success)" stop-opacity="0"/></linearGradient>
+          </defs>
+          <polygon points="0,120 120,100 240,90 360,80 480,75 600,60 600,200 0,200" fill="url(#ig)"/>
+          <polyline points="0,120 120,100 240,90 360,80 480,75 600,60" fill="none" stroke="var(--success)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 6px var(--success-muted))"/>
+          <polyline points="0,150 120,140 240,155 360,135 480,145 600,130" fill="none" stroke="var(--danger)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 6px var(--danger-muted))"/>
+          <polyline points="0,170 120,160 240,145 360,145 480,130 600,130" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="6 4" style="filter:drop-shadow(0 0 4px var(--primary-subtle))"/>
+          <circle cx="600" cy="60" r="4" fill="var(--success)" style="filter:drop-shadow(0 0 4px var(--success-muted))"/><circle cx="600" cy="130" r="4" fill="var(--danger)" style="filter-shadow(0 0 4px var(--danger-muted))"/>
+          <text x="0" y="195" fill="var(--text-faint)" font-size="10">Feb</text><text x="120" y="195" fill="var(--text-faint)" font-size="10">Mar</text><text x="240" y="195" fill="var(--text-faint)" font-size="10">Apr</text><text x="360" y="195" fill="var(--text-faint)" font-size="10">May</text><text x="480" y="195" fill="var(--text-faint)" font-size="10">Jun</text><text x="600" y="195" fill="var(--text-faint)" font-size="10">Jul</text>
+        </svg>
+      </div>
+      <!-- Health Score -->
+      <div class="card">
+        <div style="margin-bottom:16px;position:relative;z-index:1"><div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.02em">Health Score</div><div style="font-size:12px;color:var(--text-tertiary);margin-top:4px">Overall</div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;position:relative;z-index:1">
+          <div style="position:relative;width:140px;height:140px">
+            <svg viewBox="0 0 120 120" style="width:100%;height:100%;transform:rotate(-90deg)">
+              <defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="var(--success)"/><stop offset="100%" stop-color="var(--accent)"/></linearGradient></defs>
+              <circle cx="60" cy="60" r="52" fill="none" stroke="var(--surface-active)" stroke-width="8"/>
+              <circle cx="60" cy="60" r="52" fill="none" stroke="url(#hg)" stroke-width="8" stroke-linecap="round" stroke-dasharray="267 327" style="filter:drop-shadow(0 0 8px var(--success-muted))"/>
+            </svg>
+            <div style="position:absolute;inset:0;display:grid;place-items:center"><div style="text-align:center"><div style="font-size:32px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums">82</div><div style="font-size:10px;color:var(--text-faint)">out of 100</div></div></div>
+          </div>
+          <div style="width:100%;margin-top:20px;display:flex;flex-direction:column;gap:6px">
+            <div class="score-row" style="background:var(--success-muted)"><span style="font-size:12px;color:var(--text-secondary)">Savings rate</span><span style="font-size:12px;font-weight:700;color:var(--success);display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 6px var(--success-muted)"></span>38%</span></div>
+            <div class="score-row" style="background:var(--success-muted)"><span style="font-size:12px;color:var(--text-secondary)">Emergency</span><span style="font-size:12px;font-weight:700;color:var(--success);display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 6px var(--success-muted)"></span>8.2 mo</span></div>
+            <div class="score-row" style="background:var(--success-muted)"><span style="font-size:12px;color:var(--text-secondary)">Debt-to-income</span><span style="font-size:12px;font-weight:700;color:var(--success);display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 6px var(--success-muted)"></span>22%</span></div>
+            <div class="score-row" style="background:var(--warning-muted)"><span style="font-size:12px;color:var(--text-secondary)">Invested assets</span><span style="font-size:12px;font-weight:700;color:var(--warning);display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:var(--warning);box-shadow:0 0 6px var(--warning-muted)"></span>28%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INSIGHTS -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px" class="stagger fade-in-up">
+      <div class="insight-card" style="border-left:3px solid var(--warning)">
+        <div class="insight-icon" style="background:var(--gradient-danger);color:#fff;box-shadow:0 4px 16px var(--warning-muted)"><i data-lucide="alert-triangle" style="width:18px;height:18px"></i></div>
+        <div><div style="font-size:14px;font-weight:700;color:var(--text)">Spending Leak</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Shopping up ₹8,500 vs last month</div></div>
+      </div>
+      <div class="insight-card" style="border-left:3px solid var(--primary)">
+        <div class="insight-icon" style="background:var(--gradient-accent);color:#fff;box-shadow:0 4px 16px var(--primary-muted)"><i data-lucide="lightbulb" style="width:18px;height:18px"></i></div>
+        <div><div style="font-size:14px;font-weight:700;color:var(--text)">Savings Opportunity</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Lifestyle: ₹15K. Cut 20% → ₹3K to goals</div></div>
+      </div>
+      <div class="insight-card" style="border-left:3px solid var(--success)">
+        <div class="insight-icon" style="background:var(--gradient-success);color:#fff;box-shadow:0 4px 16px var(--success-muted)"><i data-lucide="check-circle" style="width:18px;height:18px"></i></div>
+        <div><div style="font-size:14px;font-weight:700;color:var(--text)">All Clear</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px">No unpaid bills. Great job!</div></div>
+      </div>
+    </div>
+
+    <!-- SPENDING + GOALS -->
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:20px" class="stagger fade-in-up">
+      <div class="card">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;position:relative;z-index:1"><div><div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.02em">Spending</div><div style="font-size:12px;color:var(--text-tertiary);margin-top:4px">This Month</div></div></div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;position:relative;z-index:1">Total: <strong style="color:var(--text)">₹89K</strong></div>
+        <svg viewBox="0 0 160 160" style="width:140px;height:140px;margin:0 auto;display:block;position:relative;z-index:1">
+          <circle cx="80" cy="80" r="60" fill="none" stroke="var(--surface-active)" stroke-width="22"/>
+          <circle cx="80" cy="80" r="60" fill="none" stroke="#818cf8" stroke-width="22" stroke-dasharray="113 377" stroke-dashoffset="0" transform="rotate(-90 80 80)" style="filter:drop-shadow(0 0 6px rgba(129,140,248,.2))"/>
+          <circle cx="80" cy="80" r="60" fill="none" stroke="#38bdf8" stroke-width="22" stroke-dasharray="75 377" stroke-dashoffset="-113" transform="rotate(-90 80 80)" style="filter:drop-shadow(0 0 6px rgba(56,189,248,.2))"/>
+          <circle cx="80" cy="80" r="60" fill="none" stroke="#34d399" stroke-width="22" stroke-dasharray="56 377" stroke-dashoffset="-188" transform="rotate(-90 80 80)"/>
+          <circle cx="80" cy="80" r="60" fill="none" stroke="#fbbf24" stroke-width="22" stroke-dasharray="38 377" stroke-dashoffset="-244" transform="rotate(-90 80 80)"/>
+          <text x="80" y="76" text-anchor="middle" font-size="11" fill="var(--text-secondary)">Total</text>
+          <text x="80" y="92" text-anchor="middle" font-size="16" font-weight="700" fill="var(--text)">₹89K</text>
+        </svg>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px;position:relative;z-index:1">
+          <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px"><span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary)"><span style="width:10px;height:10px;border-radius:3px;background:#818cf8;box-shadow:0 0 6px rgba(129,140,248,.2)"></span>Housing</span><span style="font-weight:600;color:var(--text)">₹28K</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px"><span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary)"><span style="width:10px;height:10px;border-radius:3px;background:#38bdf8;box-shadow:0 0 6px rgba(56,189,248,.2)"></span>Food</span><span style="font-weight:600;color:var(--text)">₹18K</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px"><span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary)"><span style="width:10px;height:10px;border-radius:3px;background:#34d399;box-shadow:0 0 6px rgba(52,211,153,.2)"></span>Shopping</span><span style="font-weight:600;color:var(--text)">₹14K</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px"><span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary)"><span style="width:10px;height:10px;border-radius:3px;background:#fbbf24"></span>Transport</span><span style="font-weight:600;color:var(--text)">₹9K</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="margin-bottom:20px;position:relative;z-index:1"><div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.02em">Goal Progress</div><div style="font-size:12px;color:var(--text-tertiary);margin-top:4px">Top savings goals</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;position:relative;z-index:1">
+          <div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-size:14px;font-weight:600;color:var(--text)">🛟 Emergency Fund</span><span class="badge badge-success">73%</span></div><div class="progress-bar"><div class="progress-fill" style="width:73%;background:var(--gradient-success);box-shadow:0 0 8px var(--success-muted)"></div></div><div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--text-faint)"><span>₹7.3L</span><span>₹10L</span></div></div>
+          <div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-size:14px;font-weight:600;color:var(--text)">🏠 Dream Home</span><span class="badge badge-primary">35%</span></div><div class="progress-bar"><div class="progress-fill" style="width:35%;background:var(--gradient-accent);box-shadow:0 0 8px var(--primary-subtle)"></div></div><div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--text-faint)"><span>₹17.5L</span><span>₹50L</span></div></div>
+          <div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-size:14px;font-weight:600;color:var(--text)">✈️ World Tour</span><span class="badge badge-primary">52%</span></div><div class="progress-bar"><div class="progress-fill" style="width:52%;background:var(--gradient-accent);box-shadow:0 0 8px var(--primary-subtle)"></div></div><div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--text-faint)"><span>₹2.6L</span><span>₹5L</span></div></div>
+          <div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-size:14px;font-weight:600;color:var(--text)">🎓 Education</span><span class="badge badge-primary">18%</span></div><div class="progress-bar"><div class="progress-fill" style="width:18%;background:var(--gradient-danger);box-shadow:0 0 8px var(--danger-muted)"></div></div><div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--text-faint)"><span>₹5.4L</span><span>₹30L</span></div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="theme-switcher">
+  <button class="active" style="background:#818cf8;color:#818cf8" onclick="setTheme('obsidian')" title="Obsidian 🌙"></button>
+  <button style="background:#6366f1;color:#6366f1" onclick="setTheme('aurora')" title="Aurora 🌅"></button>
+  <button style="background:#2dd4bf;color:#2dd4bf" onclick="setTheme('emerald')" title="Emerald 🌿"></button>
+  <button style="background:#fbbf24;color:#fbbf24" onclick="setTheme('royal')" title="Royal 👑"></button>
+</div>
+
+<script>
+function setTheme(t){document.documentElement.setAttribute('data-theme',t);document.querySelectorAll('.theme-switcher button').forEach(b=>b.classList.remove('active'));event.target.classList.add('active')}
+lucide.createIcons();
+</script>
+</body>
+</html>

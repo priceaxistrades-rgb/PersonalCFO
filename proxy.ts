@@ -1,7 +1,20 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { CONTENT_SECURITY_POLICY } from "@/lib/api-utils";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password", "/api/auth/login", "/api/auth/signup", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/demo"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+  "/privacy",
+  "/terms",
+  "/api/auth/login",
+  "/api/auth/signup",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/auth/demo",
+  "/api/health",
+];
 const SESSION_COOKIE = "pcfo_session";
 
 /**
@@ -33,6 +46,8 @@ function withSecurityHeaders(response: NextResponse, isHttps: boolean): NextResp
   response.headers.set("X-XSS-Protection", "1; mode=block");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  response.headers.set("Cross-Origin-Resource-Policy", "same-site");
   response.headers.set("Content-Security-Policy", CONTENT_SECURITY_POLICY);
   if (isHttps) {
     response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");

@@ -43,7 +43,7 @@ const nonNegMoneyStr = z
   .union([z.string(), z.number(), z.null(), z.undefined()])
   .transform((v) => {
     if (v === null || v === undefined || v === "") return "0";
-    let s = String(v).trim().replace(/,/g, "").replace(/^₹\s*/, "").replace(/[^0-9.]/g, "");
+    let s = String(v).trim().replace(/,/g, "").replace(/^₹\s*/, "").replace(/[^0-9.-]/g, "");
     if (s === "" || s === ".") return "0";
     if (s.startsWith(".")) s = "0" + s;
     return s;
@@ -161,8 +161,14 @@ export const forgotPasswordSchema = z.object({
 }).strict();
 
 export const resetPasswordSchema = z.object({
-  token: z.string().min(1, "Reset token is required"),
-  password: z.string().min(8, "Password must be at least 8 characters").max(128, "Password too long"),
+  token: z.string().min(1, "Reset token is required").max(256, "Reset token is invalid"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .max(128, "Password too long")
+    .regex(/[A-Z]/, "Must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Must contain at least one number")
+    .regex(/[^A-Za-z0-9]/, "Must contain at least one special character"),
   confirmPassword: z.string().min(1, "Please confirm your password"),
 }).strict().refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
@@ -326,6 +332,12 @@ export const billUpdateSchema = z.object({
   paid: z.boolean().optional(),
 }).strict();
 
+/** Narrow schema for the dashboard's paid/unpaid toggle endpoint. */
+export const billToggleSchema = z.object({
+  id: positiveInt,
+  paid: z.boolean(),
+}).strict();
+
 // ─── Insurance Schemas ──────────────────────────────────────────
 
 export const insuranceCreateSchema = z.object({
@@ -366,6 +378,12 @@ export const goalUpdateSchema = z.object({
   saved: moneyStr.optional(),
   deadline: dateStr.nullable().optional(),
   icon: z.string().max(10).optional(),
+}).strict();
+
+/** A contribution must be a finite, strictly positive monetary value. */
+export const goalContributeSchema = z.object({
+  id: positiveInt,
+  amount: nonNegMoneyStr.refine((value) => Number(value) > 0, "Contribution must be greater than zero"),
 }).strict();
 
 // ─── Member Schemas ─────────────────────────────────────────────
