@@ -39,7 +39,10 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
         const data = await res.json();
 
         if (!res.ok) {
-          setError(data.error || "Upload failed");
+          const detail = Array.isArray(data.details) && data.details.length > 0
+            ? ` ${data.details.slice(0, 3).join("; ")}`
+            : "";
+          setError(`${data.error || "Upload failed"}${detail}`);
         } else {
           setResult(data);
           onSuccess?.();
@@ -62,6 +65,8 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    // Clear the input so selecting the same file again still emits change.
+    e.target.value = "";
     await uploadFiles(files);
   };
 
@@ -72,6 +77,15 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        role="button"
+        tabIndex={0}
+        aria-label="Choose a spreadsheet to import"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            document.getElementById("file-input")?.click();
+          }
+        }}
         className={`border-2 border-dashed rounded-2xl p-6 sm:p-8 text-center transition-all cursor-pointer ${
           isDragging ? "border-primary bg-primary-soft scale-[1.02]" : "border-gray-300 hover:border-gray-400"
         }`}
@@ -84,9 +98,10 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
         <input
           id="file-input"
           type="file"
-          accept=".xlsx,.xls,.csv"
+          accept=".xlsx,.csv"
           multiple
           className="hidden"
+          onClick={(e) => e.stopPropagation()}
           onChange={handleFileSelect}
         />
         
@@ -95,11 +110,13 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
           {uploading ? "Uploading..." : "Drop Excel files here"}
         </p>
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-          or click to browse (.xlsx, .xls, .csv)
+          or click to browse (.xlsx, .csv)
         </p>
         <div className="mt-4">
-          <a 
-            href="/api/upload/template" 
+            <a
+            href="/api/upload/template"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
             className="text-xs font-medium underline hover:text-primary transition-colors"
             style={{ color: "var(--primary)" }}
           >
@@ -150,7 +167,7 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
           📋 Supported Formats
         </p>
         <ul className="space-y-1 list-disc list-inside">
-          <li>Excel files (.xlsx, .xls) with sheets for Transactions, Accounts, Investments, etc.</li>
+          <li>Excel workbooks (.xlsx) or CSV files with rows for Transactions, Accounts, Investments, etc.</li>
           <li>CSV files with headers like: Date, Amount, Category, Description</li>
           <li>Bank statement exports (automatically detected)</li>
         </ul>

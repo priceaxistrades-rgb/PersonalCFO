@@ -90,7 +90,7 @@ export function BillsManager({ bills }: { bills: { id: number; name: string; cat
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
           <button
-            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center"))}
+            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center", { detail: { type: "bill" } }))}
             className="btn btn-warning px-4 py-2.5 text-xs font-extrabold rounded-xl shadow-lg shadow-amber-500/20 flex items-center gap-2 cursor-pointer"
           >
             <span>+ Schedule Payable / Bill</span>
@@ -246,7 +246,7 @@ export function BillsManager({ bills }: { bills: { id: number; name: string; cat
             </Tr>
           ))}
           {!bills.length && (
-            <Tr><Td muted className="py-8 text-center" strong>No recurring bills or subscriptions scheduled yet. Click '+ Schedule New Bill' to begin.</Td><Td muted>—</Td><Td right muted>—</Td><Td muted>—</Td><Td muted>—</Td><Td muted>—</Td><Td right muted>—</Td></Tr>
+            <Tr><Td muted className="py-8 text-center" strong>No recurring bills or subscriptions scheduled yet. Click &apos;+ Schedule New Bill&apos; to begin.</Td><Td muted>—</Td><Td right muted>—</Td><Td muted>—</Td><Td muted>—</Td><Td muted>—</Td><Td right muted>—</Td></Tr>
           )}
         </Table>
       </Card>

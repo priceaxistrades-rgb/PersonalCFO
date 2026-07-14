@@ -37,11 +37,14 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
 
   const [showHealthPopup, setShowHealthPopup] = useState(false);
   useEffect(() => {
-    const shown = sessionStorage.getItem("healthPopupShown");
-    if (!shown) {
-      setShowHealthPopup(true);
-      sessionStorage.setItem("healthPopupShown", "1");
-    }
+    const timer = window.setTimeout(() => {
+      const shown = sessionStorage.getItem("healthPopupShown");
+      if (!shown) {
+        setShowHealthPopup(true);
+        sessionStorage.setItem("healthPopupShown", "1");
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const [spendingView, setSpendingView] = useState<SpendingView>("monthly");
@@ -85,8 +88,8 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
 
   const isOverspending = expense > income && income > 0;
 
-  const today = new Date();
   const getSpendingData = useCallback(() => {
+    const today = new Date();
     const expTxns = filteredTxns.filter(t => t.type === "expense");
     if (spendingView === "daily") {
       const todayStr = today.toISOString().split("T")[0];
@@ -261,12 +264,16 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
           <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 gap-3 shrink-0 w-full xl:w-80">
             <div
               onClick={() => go("/reports")}
-              className="p-4 rounded-2xl border transition-all cursor-pointer group hover:border-indigo-500/40"
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go("/reports"); } }}
+              role="button"
+              tabIndex={0}
+              data-tone="success"
+              className="dashboard-metric-card p-4 rounded-2xl border transition-all cursor-pointer group"
               style={{ background: "var(--surface-2)", borderColor: "var(--border)" }}
             >
               <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
                 <span>Monthly Capital Velocity</span>
-                <IconIncome size={15} className="text-emerald-500 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+                <IconIncome size={15} className="dashboard-metric-icon text-emerald-500 dark:text-emerald-400" />
               </div>
               <div className="flex items-baseline justify-between">
                 <span className={`text-xl font-mono font-black tabular-nums ${savings >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
@@ -275,18 +282,22 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
                 <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">{savingsRate.toFixed(0)}% saved</span>
               </div>
               <div className="w-full h-1.5 rounded-full mt-2.5 overflow-hidden" style={{ background: "var(--surface-3)" }}>
-                <div className="h-full bg-emerald-500 dark:bg-emerald-400 rounded-full transition-all duration-700" style={{ width: `${Math.min(100, Math.max(0, savingsRate))}%` }} />
+                <div className="dashboard-metric-progress h-full bg-emerald-500 dark:bg-emerald-400 rounded-full transition-all duration-700" style={{ width: `${Math.min(100, Math.max(0, savingsRate))}%` }} />
               </div>
             </div>
 
             <div
               onClick={() => go("/health")}
-              className="p-4 rounded-2xl border transition-all cursor-pointer group hover:border-indigo-500/40"
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go("/health"); } }}
+              role="button"
+              tabIndex={0}
+              data-tone="primary"
+              className="dashboard-metric-card p-4 rounded-2xl border transition-all cursor-pointer group"
               style={{ background: "var(--surface-2)", borderColor: "var(--border)" }}
             >
               <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
                 <span>AI Health & Runway</span>
-                <IconHealth size={15} className="text-indigo-500 dark:text-indigo-400 group-hover:scale-110 transition-transform" />
+                <IconHealth size={15} className="dashboard-metric-icon text-indigo-500 dark:text-indigo-400" />
               </div>
               <div className="flex items-baseline justify-between">
                 <span className="text-xl font-mono font-black tabular-nums" style={{ color: "var(--text-heading)" }}>
@@ -301,12 +312,16 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
 
             <div
               onClick={() => go("/investments")}
-              className="p-4 rounded-2xl border transition-all cursor-pointer group hover:border-indigo-500/40"
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go("/investments"); } }}
+              role="button"
+              tabIndex={0}
+              data-tone="accent"
+              className="dashboard-metric-card p-4 rounded-2xl border transition-all cursor-pointer group"
               style={{ background: "var(--surface-2)", borderColor: "var(--border)" }}
             >
               <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
                 <span>Portfolio Allocation</span>
-                <IconInvestments size={15} className="text-purple-500 dark:text-purple-400 group-hover:scale-110 transition-transform" />
+                <IconInvestments size={15} className="dashboard-metric-icon text-purple-500 dark:text-purple-400" />
               </div>
               <div className="flex items-baseline justify-between">
                 <span className="text-xl font-mono font-black tabular-nums text-purple-600 dark:text-purple-300">

@@ -368,7 +368,7 @@ export function LiveMarkets({
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
           <button
-            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center"))}
+            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center", { detail: { type: "investment" } }))}
             className="btn btn-primary px-4 py-2.5 text-xs font-extrabold rounded-xl shadow-lg shadow-indigo-500/20 flex items-center gap-2 cursor-pointer"
           >
             <span>+ Track Market Instrument</span>
