@@ -80,27 +80,38 @@ export function CommandSearchModal() {
   }, [open]);
 
   useEffect(() => {
-    if (open) {
+    if (!open) return;
+    let active = true;
+    const resetTimer = window.setTimeout(() => {
+      if (!active) return;
       setQuery("");
       setSelectedIndex(0);
       setLoading(true);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      inputRef.current?.focus();
+    }, 0);
+    const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 50);
 
-      Promise.all([
-        fetch("/api/transactions").then((r) => r.json()).catch(() => ({ rows: [] })),
-        fetch("/api/manage/investments").then((r) => r.json()).catch(() => ({ rows: [] })),
-        fetch("/api/manage/bills").then((r) => r.json()).catch(() => ({ rows: [] })),
-        fetch("/api/manage/goals").then((r) => r.json()).catch(() => ({ rows: [] })),
-        fetch("/api/manage/debts").then((r) => r.json()).catch(() => ({ rows: [] })),
-      ]).then(([txData, invData, billData, goalData, debtData]) => {
-        if (txData.rows) setTransactions(txData.rows);
-        if (invData.rows) setInvestments(invData.rows);
-        if (billData.rows) setBills(billData.rows);
-        if (goalData.rows) setGoals(goalData.rows);
-        if (debtData.rows) setDebts(debtData.rows);
-        setLoading(false);
-      });
-    }
+    Promise.all([
+      fetch("/api/transactions").then((r) => r.json()).catch(() => ({ rows: [] })),
+      fetch("/api/manage/investments").then((r) => r.json()).catch(() => ({ rows: [] })),
+      fetch("/api/manage/bills").then((r) => r.json()).catch(() => ({ rows: [] })),
+      fetch("/api/manage/goals").then((r) => r.json()).catch(() => ({ rows: [] })),
+      fetch("/api/manage/debts").then((r) => r.json()).catch(() => ({ rows: [] })),
+    ]).then(([txData, invData, billData, goalData, debtData]) => {
+      if (!active) return;
+      if (txData.rows) setTransactions(txData.rows);
+      if (invData.rows) setInvestments(invData.rows);
+      if (billData.rows) setBills(billData.rows);
+      if (goalData.rows) setGoals(goalData.rows);
+      if (debtData.rows) setDebts(debtData.rows);
+      setLoading(false);
+    });
+
+    return () => {
+      active = false;
+      window.clearTimeout(resetTimer);
+      window.clearTimeout(focusTimer);
+    };
   }, [open]);
 
   const results = useMemo(() => {
@@ -200,7 +211,8 @@ export function CommandSearchModal() {
   }, [query, transactions, investments, bills, goals, debts]);
 
   useEffect(() => {
-    setSelectedIndex(0);
+    const timer = window.setTimeout(() => setSelectedIndex(0), 0);
+    return () => window.clearTimeout(timer);
   }, [query]);
 
   const handleSelect = (item: SearchResultItem) => {
@@ -253,7 +265,7 @@ export function CommandSearchModal() {
         <div className="max-h-[60vh] overflow-y-auto p-2.5 space-y-1">
           {results.length === 0 ? (
             <div className="py-12 text-center text-slate-500 font-medium text-xs">
-              No matching modules or records found for "{query}". Try searching "Salary", "HDFC", or "Net Worth".
+              No matching modules or records found for &quot;{query}&quot;. Try searching &quot;Salary&quot;, &quot;HDFC&quot;, or &quot;Net Worth&quot;.
             </div>
           ) : (
             results.map((item, idx) => {

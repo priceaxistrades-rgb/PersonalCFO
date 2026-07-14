@@ -306,7 +306,7 @@ export function FilteredExpenses({ expenses, members, accounts = [] }: { expense
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
           <button
-            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center"))}
+            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center", { detail: { type: "expense" } }))}
             className="btn btn-danger px-4 py-2.5 text-xs font-extrabold rounded-xl shadow-lg shadow-red-500/20 flex items-center gap-2 cursor-pointer"
           >
             <span>+ Log Outflow / Expense</span>
@@ -372,7 +372,7 @@ export function FilteredExpenses({ expenses, members, accounts = [] }: { expense
                 <IconExpenses size={24} />
               </span>
               <p className="text-sm font-bold" style={{ color: "var(--text-heading)" }}>No expenses logged for this timeframe</p>
-              <p className="text-xs text-slate-400 mt-1">Use '+ Log Expense' above or Universal Quick Entry to log daily spending.</p>
+              <p className="text-xs text-slate-400 mt-1">Use &apos;+ Log Expense&apos; above or Universal Quick Entry to log daily spending.</p>
             </div>
           )}
         </div>

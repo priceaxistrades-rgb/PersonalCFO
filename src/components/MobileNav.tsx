@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "@/lib/session";
 import { useTheme, Theme } from "@/lib/theme";
 import {
@@ -12,7 +12,7 @@ import {
   IconCoach, IconSimulator, IconOpportunities, IconStress,
   IconDreams, IconTimeline, IconTax, IconInsurance, IconAnnual,
   IconEmergency, IconFamily, IconReports, IconOnboarding,
-  IconSettings, IconUser, IconLogout
+  IconSettings, IconUser, IconLogout, IconSuite
 } from "@/components/ui/Icons";
 
 const MOBILE_NAV = [
@@ -81,16 +81,30 @@ export function MobileNav() {
   const { session, logout } = useSession();
   const { theme, setTheme, hydrated } = useTheme();
 
+  useEffect(() => {
+    if (!showMore) return;
+    const previousOverflow = document.body.style.overflow;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowMore(false);
+    };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [showMore]);
+
   const isActive = (href: string) => pathname === href;
 
   return (
     <>
       {/* ─── Bottom Tab Bar (< 1024px) ─── */}
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t safe-area-bottom backdrop-blur-2xl shadow-2xl select-none"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t mobile-tab-bar backdrop-blur-2xl shadow-2xl select-none"
         style={{ background: "var(--header)", borderColor: "var(--border)" }}
       >
-        <div className="flex items-center justify-around h-16 px-1">
+        <div className="flex items-center justify-around min-h-16 px-1">
           {MOBILE_NAV.map((item) => {
             const active = isActive(item.href);
             const IconComp = item.icon;
@@ -110,10 +124,13 @@ export function MobileNav() {
           })}
           <button
             onClick={() => setShowMore(true)}
-            className={`mobile-nav-item flex flex-col items-center justify-center flex-1 py-1 mx-0.5 rounded-xl transition-all duration-200 border-none bg-transparent cursor-pointer ${showMore ? "bg-white/[0.04]" : ""}`}
+            aria-expanded={showMore}
+            className={`mobile-suite-button mobile-nav-item flex flex-col items-center justify-center flex-1 py-1 mx-0.5 rounded-xl transition-all duration-200 border-none bg-transparent cursor-pointer ${showMore ? "mobile-suite-active bg-white/[0.04]" : ""}`}
             style={{ color: showMore ? "var(--primary)" : "var(--text-faint)", minHeight: 48 }}
           >
-            <span className="mb-1 font-mono font-bold text-base flex items-center justify-center">☰</span>
+            <span className="mobile-suite-icon mb-1 w-7 h-7 rounded-xl flex items-center justify-center">
+              <IconSuite size={17} />
+            </span>
             <span className="text-[10px] font-bold tracking-tight">Suite</span>
           </button>
         </div>
@@ -121,16 +138,16 @@ export function MobileNav() {
 
       {/* ─── More Sheet Drawer ─── */}
       {showMore && (
-        <div className="lg:hidden fixed inset-0 z-[60] animate-fade-in select-none">
+        <div className="lg:hidden fixed inset-0 z-[90] animate-fade-in select-none">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setShowMore(false)} />
           <div
-            className="absolute bottom-16 left-2 right-2 rounded-3xl p-5 max-h-[82vh] overflow-y-auto border shadow-2xl transition-all duration-300"
+            className="mobile-more-sheet absolute left-2 right-2 rounded-3xl p-5 overflow-y-auto overscroll-contain border shadow-2xl transition-all duration-300"
             style={{ background: "var(--surface)", borderColor: "var(--border-strong)" }}
           >
             <div className="flex items-center justify-between pb-3 mb-4 border-b" style={{ borderColor: "var(--border)" }}>
               <div className="flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-xl flex items-center justify-center text-sm shadow-md bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
-                  <IconDashboard size={16} />
+                  <IconSuite size={16} />
                 </span>
                 <h3 className="font-black text-lg tracking-tight" style={{ color: "var(--text-heading)" }}>Sovereign Wealth Suite</h3>
               </div>

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemberFilter } from "@/lib/filters";
+import { usePrivacy } from "@/lib/privacy";
 import { Card, Badge } from "@/components/ui/Card";
 import { KpiCard, Progress } from "@/components/ui/Kpi";
 import { DonutChart, LineChart, BarChart } from "@/components/ui/Charts";
@@ -28,6 +29,8 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
   const router = useRouter();
   const go = (href: string) => router.push(href);
   const { isSelected, hasSelection, selectedIds } = useMemberFilter();
+  const { globalHidden } = usePrivacy();
+  const displayMoney = (value: number, compact = false) => globalHidden ? "••••••" : inr(value, compact ? { compact: true } : undefined);
 
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -37,11 +40,14 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
 
   const [showHealthPopup, setShowHealthPopup] = useState(false);
   useEffect(() => {
-    const shown = sessionStorage.getItem("healthPopupShown");
-    if (!shown) {
-      setShowHealthPopup(true);
-      sessionStorage.setItem("healthPopupShown", "1");
-    }
+    const timer = window.setTimeout(() => {
+      const shown = sessionStorage.getItem("healthPopupShown");
+      if (!shown) {
+        setShowHealthPopup(true);
+        sessionStorage.setItem("healthPopupShown", "1");
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const [spendingView, setSpendingView] = useState<SpendingView>("monthly");
@@ -85,8 +91,8 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
 
   const isOverspending = expense > income && income > 0;
 
-  const today = new Date();
   const getSpendingData = useCallback(() => {
+    const today = new Date();
     const expTxns = filteredTxns.filter(t => t.type === "expense");
     if (spendingView === "daily") {
       const todayStr = today.toISOString().split("T")[0];
@@ -203,7 +209,7 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
             <div>
               <p className="text-sm font-bold tracking-tight text-red-400">Monthly Overspending Alert</p>
               <p className="text-xs mt-0.5 text-slate-300">
-                Your expenditures (<strong className="font-mono" style={{ color: "var(--text-heading)" }}>{inr(expense, { compact: true })}</strong>) currently exceed your income (<strong className="font-mono" style={{ color: "var(--text-heading)" }}>{inr(income, { compact: true })}</strong>) by <strong className="text-red-600 dark:text-red-400 font-mono underline">{inr(expense - income, { compact: true })}</strong>.
+                Your expenditures (<strong className="font-mono" style={{ color: "var(--text-heading)" }}>{displayMoney(expense, true)}</strong>) currently exceed your income (<strong className="font-mono" style={{ color: "var(--text-heading)" }}>{displayMoney(income, true)}</strong>) by <strong className="text-red-600 dark:text-red-400 font-mono underline">{displayMoney(expense - income, true)}</strong>.
               </p>
             </div>
           </div>
@@ -233,11 +239,11 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
               <p className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">Total Household Net Worth</p>
               <div className="flex items-baseline gap-3 flex-wrap">
                 <h2 className="text-4xl sm:text-6xl font-black tracking-tighter tabular-nums font-mono leading-none" style={{ color: "var(--text-heading)" }}>
-                  {inr(netWorth)}
+                  {displayMoney(netWorth)}
                 </h2>
                 {invGrowth !== 0 && (
                   <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-mono font-bold ${invGrowth >= 0 ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30" : "bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30"}`}>
-                    {invGrowth >= 0 ? "+" : ""}{inr(invGrowth, { compact: true })} unrealized
+                    {invGrowth >= 0 ? "+" : ""}{displayMoney(invGrowth, true)} unrealized
                   </span>
                 )}
               </div>
@@ -246,13 +252,13 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
             <div className="grid grid-cols-2 gap-4 pt-2 border-t" style={{ borderColor: "var(--border)" }}>
               <div>
                 <span className="text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 block">Gross Assets</span>
-                <span className="text-lg sm:text-xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5 block">{inr(totalAssets)}</span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Bank: {inr(bankBalance, { compact: true })} · Liquid: {inr(cashInHand, { compact: true })}</span>
+                <span className="text-lg sm:text-xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5 block">{displayMoney(totalAssets)}</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Bank: {displayMoney(bankBalance, true)} · Liquid: {displayMoney(cashInHand, true)}</span>
               </div>
               <div>
                 <span className="text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 block">Total Liabilities</span>
-                <span className="text-lg sm:text-xl font-mono font-extrabold text-red-600 dark:text-red-400 mt-0.5 block">−{inr(liabilities)}</span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Monthly EMI: {inr(totalEmi, { compact: true })}/mo</span>
+                <span className="text-lg sm:text-xl font-mono font-extrabold text-red-600 dark:text-red-400 mt-0.5 block">−{displayMoney(liabilities)}</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Monthly EMI: {displayMoney(totalEmi, true)}/mo</span>
               </div>
             </div>
           </div>
@@ -261,32 +267,40 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
           <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 gap-3 shrink-0 w-full xl:w-80">
             <div
               onClick={() => go("/reports")}
-              className="p-4 rounded-2xl border transition-all cursor-pointer group hover:border-indigo-500/40"
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go("/reports"); } }}
+              role="button"
+              tabIndex={0}
+              data-tone="success"
+              className="dashboard-metric-card p-4 rounded-2xl border transition-all cursor-pointer group"
               style={{ background: "var(--surface-2)", borderColor: "var(--border)" }}
             >
               <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
                 <span>Monthly Capital Velocity</span>
-                <IconIncome size={15} className="text-emerald-500 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+                <IconIncome size={15} className="dashboard-metric-icon text-emerald-500 dark:text-emerald-400" />
               </div>
               <div className="flex items-baseline justify-between">
                 <span className={`text-xl font-mono font-black tabular-nums ${savings >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
-                  {savings >= 0 ? "+" : ""}{inr(savings, { compact: true })}
+                  {savings >= 0 ? "+" : ""}{displayMoney(savings, true)}
                 </span>
                 <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">{savingsRate.toFixed(0)}% saved</span>
               </div>
               <div className="w-full h-1.5 rounded-full mt-2.5 overflow-hidden" style={{ background: "var(--surface-3)" }}>
-                <div className="h-full bg-emerald-500 dark:bg-emerald-400 rounded-full transition-all duration-700" style={{ width: `${Math.min(100, Math.max(0, savingsRate))}%` }} />
+                <div className="dashboard-metric-progress h-full bg-emerald-500 dark:bg-emerald-400 rounded-full transition-all duration-700" style={{ width: `${Math.min(100, Math.max(0, savingsRate))}%` }} />
               </div>
             </div>
 
             <div
               onClick={() => go("/health")}
-              className="p-4 rounded-2xl border transition-all cursor-pointer group hover:border-indigo-500/40"
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go("/health"); } }}
+              role="button"
+              tabIndex={0}
+              data-tone="primary"
+              className="dashboard-metric-card p-4 rounded-2xl border transition-all cursor-pointer group"
               style={{ background: "var(--surface-2)", borderColor: "var(--border)" }}
             >
               <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
                 <span>AI Health & Runway</span>
-                <IconHealth size={15} className="text-indigo-500 dark:text-indigo-400 group-hover:scale-110 transition-transform" />
+                <IconHealth size={15} className="dashboard-metric-icon text-indigo-500 dark:text-indigo-400" />
               </div>
               <div className="flex items-baseline justify-between">
                 <span className="text-xl font-mono font-black tabular-nums" style={{ color: "var(--text-heading)" }}>
@@ -301,16 +315,20 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
 
             <div
               onClick={() => go("/investments")}
-              className="p-4 rounded-2xl border transition-all cursor-pointer group hover:border-indigo-500/40"
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go("/investments"); } }}
+              role="button"
+              tabIndex={0}
+              data-tone="accent"
+              className="dashboard-metric-card p-4 rounded-2xl border transition-all cursor-pointer group"
               style={{ background: "var(--surface-2)", borderColor: "var(--border)" }}
             >
               <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
                 <span>Portfolio Allocation</span>
-                <IconInvestments size={15} className="text-purple-500 dark:text-purple-400 group-hover:scale-110 transition-transform" />
+                <IconInvestments size={15} className="dashboard-metric-icon text-purple-500 dark:text-purple-400" />
               </div>
               <div className="flex items-baseline justify-between">
                 <span className="text-xl font-mono font-black tabular-nums text-purple-600 dark:text-purple-300">
-                  {inr(investmentValue, { compact: true })}
+                  {displayMoney(investmentValue, true)}
                 </span>
                 <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">{investmentRate.toFixed(0)}% invested</span>
               </div>
@@ -402,10 +420,10 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
             <div>
               <div className="mb-4 pb-3 border-b flex items-center justify-between" style={{ borderColor: "var(--border)" }}>
                 <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Period Total Outflow:</span>
-                <span className="text-base font-black font-mono tabular-nums" style={{ color: "var(--text-heading)" }}>{inr(spending.total)}</span>
+                <span className="text-base font-black font-mono tabular-nums" style={{ color: "var(--text-heading)" }}>{displayMoney(spending.total)}</span>
               </div>
               {catData.length ? (
-                <DonutChart data={catData} centerLabel="Total Spent" centerValue={inr(spending.total, { compact: true })} />
+                <DonutChart data={catData} centerLabel="Total Spent" centerValue={displayMoney(spending.total, true)} />
               ) : (
                 <div className="py-12 text-center text-sm font-medium" style={{ color: "var(--text-faint)" }}>No expense transactions logged for this timeframe</div>
               )}
@@ -432,8 +450,8 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
                       </div>
                       <Progress value={p} tone={tone} height={7} />
                       <div className="flex justify-between items-center mt-2.5 text-[11px] font-mono tabular-nums">
-                        <span className="font-semibold" style={{ color: "var(--text)" }}>{inr(num(g.saved), { compact: true })}</span>
-                        <span style={{ color: "var(--text-faint)" }}>Target: {inr(num(g.target), { compact: true })}</span>
+                        <span className="font-semibold" style={{ color: "var(--text)" }}>{displayMoney(num(g.saved), true)}</span>
+                        <span style={{ color: "var(--text-faint)" }}>Target: {displayMoney(num(g.target), true)}</span>
                       </div>
                     </div>
                   );
@@ -477,7 +495,7 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
                           ({isLate ? `${-dleft}d overdue` : `${dleft}d left`})
                         </span>
                       </Td>
-                      <Td right strong className="font-mono">{inr(num(b.amount))}</Td>
+                      <Td right strong className="font-mono">{displayMoney(num(b.amount))}</Td>
                       <Td right><BillToggle id={b.id} paid={b.paid} /></Td>
                     </Tr>
                   );
@@ -507,7 +525,7 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
                 </div>
                 <div className="mt-5 pt-4 border-t flex items-center justify-between text-sm" style={{ borderColor: "var(--border)" }}>
                   <span className="font-medium" style={{ color: "var(--text-muted)" }}>Total Monthly EMI</span>
-                  <span className="text-lg font-black font-mono tabular-nums text-red-600 dark:text-red-400">{inr(totalEmi)}</span>
+                  <span className="text-lg font-black font-mono tabular-nums text-red-600 dark:text-red-400">{displayMoney(totalEmi)}</span>
                 </div>
               </div>
             ) : (

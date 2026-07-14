@@ -1,19 +1,19 @@
 import { validateUser } from "@/lib/auth";
 import { createSessionToken, sessionCookieHeader, getSessionRefreshHeader } from "@/lib/server-auth";
-import { getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { getClientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { validate, loginSchema } from "@/lib/validation";
 import { apiHandler, apiSuccess, apiError } from "@/lib/api-utils";
 
 export const POST = apiHandler(async (req, { log }) => {
   const ip = getClientIp(req);
   // Account lockout: 5 attempts per 15 minutes
-  const lockout = rateLimit(`lockout:${ip}`, 5, 15 * 60_000);
+  const lockout = await rateLimitAsync(`lockout:${ip}`, 5, 15 * 60_000);
   if (!lockout.ok) {
     log.warn("Account lockout triggered — too many failed attempts", { ip });
     return apiError("Too many failed attempts. Please try again in 15 minutes.", 429);
   }
   // General rate limit: 8 per minute
-  const limited = rateLimit(`login:${ip}`, 8, 60_000);
+  const limited = await rateLimitAsync(`login:${ip}`, 8, 60_000);
   if (!limited.ok) return rateLimitResponse(limited.resetAt);
 
   try {

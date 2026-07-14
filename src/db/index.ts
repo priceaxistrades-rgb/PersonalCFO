@@ -3,6 +3,21 @@ import { Pool, type PoolConfig } from "pg";
 
 const databaseUrl = process.env.DATABASE_URL || "postgres://dummy:dummy@localhost:5432/dummy";
 
+/**
+ * pg v8 currently accepts `prefer`, `require`, and `verify-ca` as aliases for
+ * `verify-full`, but emits a warning because that behavior changes in a future
+ * major release. Normalize the aliases before pg parses the URL so the intent
+ * is explicit and the warning is eliminated without weakening TLS.
+ */
+function normalizeConnectionString(url: string): string {
+  return url.replace(
+    /([?&]sslmode=)(prefer|require|verify-ca)(?=(&|$))/i,
+    "$1verify-full",
+  );
+}
+
+const connectionString = normalizeConnectionString(databaseUrl);
+
 if (!process.env.DATABASE_URL && process.env.NODE_ENV !== "production") {
   console.warn("⚠️ DATABASE_URL is not set. Using dummy connection for static evaluation.");
 }
@@ -15,41 +30,29 @@ const globalForDb = globalThis as typeof globalThis & {
  * SSL configuration strategy:
  *
  * - If the connection string already has sslmode=, we respect it.
- * - For Neon and other cloud hosts, we use { rejectUnauthorized: false }
- *   which is equivalent to sslmode=no-verify — this silences the
- *   pg v8/v9 SSL mode deprecation warning.
+ * - For Neon and other cloud hosts, certificate validation is enabled by default.
  * - For local dev (localhost), SSL is disabled entirely.
+ * - An explicit `sslmode=no-verify` is supported only for controlled local or
+ *   migration scenarios; production should use `verify-full` or the provider's
+ *   normal `require` mode with the platform CA bundle.
  *
- * The pg library warns about sslmode=require/verify-ca being treated as
- * verify-full. Using rejectUnauthorized: false avoids this by using
- * the no-verify semantic explicitly.
+ * Do not disable certificate verification as a convenience: this connection
+ * carries passwords, financial records, and session-related data.
  */
 function resolveSslConfig(): PoolConfig["ssl"] {
-  // Local development — no SSL needed
-  if (databaseUrl!.includes("localhost") || databaseUrl!.includes("127.0.0.1")) {
-    return false;
-  }
+  const url = databaseUrl;
+  const isLocal = /(?:^|[@/])(?:localhost|127\.0\.0\.1)(?::|\/|$)/i.test(url);
+  if (isLocal) return false;
 
-  // If sslmode is already in the URL, parse and handle it
-  const sslModeMatch = databaseUrl!.match(/sslmode=([^&]+)/i);
-  if (sslModeMatch) {
-    const mode = sslModeMatch[1].toLowerCase();
-    // no-verify is safe and avoids the warning
-    if (mode === "no-verify") return { rejectUnauthorized: false };
-    // For require, prefer, verify-ca — use no-verify to avoid the warning
-    // These are all treated as verify-full currently which triggers the deprecation warning
-    if (mode === "require" || mode === "prefer" || mode === "verify-ca") {
-      return { rejectUnauthorized: false };
-    }
-    // verify-full — use proper validation
-    if (mode === "verify-full") return { rejectUnauthorized: true };
-    // Any other value — let pg handle it
-    return false;
-  }
+  const sslModeMatch = url.match(/(?:^|[?&])sslmode=([^&]+)/i);
+  const mode = sslModeMatch?.[1].toLowerCase();
 
-  // No sslmode in URL — for Neon/cloud, default to no-verify
-  // This silences the pg SSL warning
-  return { rejectUnauthorized: false };
+  if (mode === "disable") return false;
+  if (mode === "no-verify") return { rejectUnauthorized: false };
+
+  // `require`, `prefer`, `verify-ca`, `verify-full`, and an omitted sslmode
+  // all use the system CA store. This preserves server certificate validation.
+  return { rejectUnauthorized: true };
 }
 
 /**
@@ -64,7 +67,7 @@ function resolveSslConfig(): PoolConfig["ssl"] {
  * can handle burst traffic without exhausting PG connections.
  */
 const poolConfig: PoolConfig = {
-  connectionString: databaseUrl,
+  connectionString,
   max: 20,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 5_000,

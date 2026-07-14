@@ -27,15 +27,24 @@ export function PrivacyProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const stored = localStorage.getItem("pcfo-hide-values");
-      setGlobalHiddenState(stored === "1");
+      try {
+        const stored = window.localStorage.getItem("pcfo-hide-values");
+        setGlobalHiddenState(stored === "1");
+      } catch {
+        // Private browsing/storage-restricted environments still keep the
+        // shield functional for the current session.
+      }
     }, 0);
     return () => clearTimeout(timer);
   }, []);
 
   const setGlobalHidden = (next: boolean) => {
     setGlobalHiddenState(next);
-    localStorage.setItem("pcfo-hide-values", next ? "1" : "0");
+    try {
+      window.localStorage.setItem("pcfo-hide-values", next ? "1" : "0");
+    } catch {
+      // Persistence is optional; masking must remain available in-memory.
+    }
     // Parent control resets children so show-all really shows all, hide-all really hides all.
     setLocalHidden({});
     setRevealedWhileGlobalHidden({});

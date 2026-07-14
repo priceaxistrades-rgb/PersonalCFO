@@ -61,7 +61,7 @@ export function MemberSelector({
   return (
     <div className="space-y-3 no-print select-none">
       {/* Quick Filter Buttons - Sovereign Executive Dock */}
-      <div className="flex items-center flex-nowrap overflow-x-auto hide-scrollbar gap-2 p-1.5 rounded-2xl border bg-surface-2 shadow-sm w-fit" style={{ borderColor: "var(--border)" }}>
+      <div className="flex items-center flex-nowrap overflow-x-auto hide-scrollbar gap-2 p-1.5 rounded-2xl border bg-surface-2 shadow-sm w-full sm:w-fit max-w-full touch-pan-x" style={{ borderColor: "var(--border)" }}>
         <span className="text-[11px] font-extrabold uppercase tracking-wider pl-2 pr-1 shrink-0 flex items-center text-slate-400">
           Profile Scope:
         </span>
