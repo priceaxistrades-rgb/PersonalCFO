@@ -83,17 +83,27 @@ export function MobileNav() {
 
   useEffect(() => {
     if (!showMore) return;
-    const previousOverflow = document.body.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setShowMore(false);
     };
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     document.addEventListener("keydown", handleEscape);
     return () => {
-      document.body.style.overflow = previousOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
       document.removeEventListener("keydown", handleEscape);
     };
   }, [showMore]);
+
+  useEffect(() => {
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    const timer = window.setTimeout(() => setShowMore(false), 0);
+    return () => window.clearTimeout(timer);
+  }, [pathname]);
 
   const isActive = (href: string) => pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
   const openQuickEntry = () => window.dispatchEvent(new CustomEvent("open-quick-action-center"));

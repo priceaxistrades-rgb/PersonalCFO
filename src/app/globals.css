@@ -1700,3 +1700,39 @@ svg, canvas, img, video {
   from { opacity: 0; transform: translate3d(0, 10px, 0); }
   to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
+
+/* Mobile stability pass: prevent lock-ups, remove accidental invisible interaction blockers. */
+@media (max-width: 1023px) {
+  html, body {
+    overflow-x: hidden;
+    touch-action: manipulation;
+  }
+  body {
+    position: relative;
+  }
+  .app-shell,
+  .app-content,
+  .app-main {
+    pointer-events: auto;
+  }
+  .premium-bottom-nav {
+    pointer-events: auto;
+  }
+}
+
+@media (max-width: 639px) {
+  html, body {
+    overscroll-behavior-y: auto;
+  }
+  .app-content {
+    padding-top: calc(3.75rem + env(safe-area-inset-top)) !important;
+  }
+  .app-main.page-canvas {
+    min-height: calc(100dvh - 3.75rem - env(safe-area-inset-top));
+  }
+  .mobile-page-title {
+    background: linear-gradient(180deg, rgba(15,23,42,0.52), rgba(15,23,42,0));
+    border-radius: 1.35rem;
+    padding: 0.85rem 0 1rem;
+  }
+}

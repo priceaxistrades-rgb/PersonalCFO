@@ -22,7 +22,18 @@ export function ClientInit() {
   }, []);
 
   useEffect(() => {
-    requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: "instant" }));
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    document.body.classList.remove("no-scroll");
+
+    const reset = () => window.scrollTo(0, 0);
+    requestAnimationFrame(reset);
+    const early = window.setTimeout(reset, 60);
+    const late = window.setTimeout(reset, 280);
+    return () => {
+      window.clearTimeout(early);
+      window.clearTimeout(late);
+    };
   }, [pathname]);
 
   return (
