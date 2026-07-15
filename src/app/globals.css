@@ -1655,3 +1655,48 @@ svg, canvas, img, video {
     grid-auto-columns: minmax(8rem, 54%);
   }
 }
+
+/* Above-the-fold mobile fix: no blank first screen after login, header always visible. */
+@media (max-width: 1023px) {
+  html, body {
+    min-height: 100dvh;
+    overscroll-behavior-y: contain;
+  }
+  .mobile-top-bar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    min-height: calc(3.75rem + env(safe-area-inset-top));
+    box-shadow: 0 12px 30px -24px rgba(0,0,0,0.55), inset 0 -1px 0 rgba(255,255,255,0.05);
+  }
+  .app-content {
+    padding-top: calc(3.75rem + env(safe-area-inset-top));
+    min-height: 100dvh;
+  }
+  .app-main.page-canvas {
+    padding-top: 0.9rem !important;
+  }
+  .mobile-page-title {
+    transform: translateZ(0);
+  }
+}
+
+@media (max-width: 639px) {
+  .app-main.page-canvas > div > :where(.section-title, .mobile-page-title):first-child {
+    margin-top: 0 !important;
+  }
+  .app-main.page-canvas > div > * {
+    animation: mobileContentRise 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .app-main.page-canvas > div > *:nth-child(2) { animation-delay: 35ms; }
+  .app-main.page-canvas > div > *:nth-child(3) { animation-delay: 70ms; }
+  .app-main.page-canvas > div > *:nth-child(4) { animation-delay: 105ms; }
+  .app-main.page-canvas > div > *:nth-child(5) { animation-delay: 140ms; }
+}
+
+@keyframes mobileContentRise {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
