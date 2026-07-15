@@ -261,8 +261,8 @@ export function QuickActionCenter({ accounts = [], investments = [], defaultOpen
           </button>
         </div>
       ) : (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/65 backdrop-blur-md animate-fade-in" onClick={close}>
-          <Card variant="glass" className="p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto scale-in border border-indigo-500/30 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="quick-entry-overlay fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/65 backdrop-blur-md animate-fade-in" onClick={close}>
+          <Card variant="glass" className="quick-entry-modal !p-4 sm:!p-6 w-full sm:max-w-2xl max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto scale-in border border-indigo-500/30 shadow-2xl rounded-t-[2rem] sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center pb-4 mb-5 border-b border-white/[0.08]">
               <div className="flex items-center gap-3">
                 <span className="w-10 h-10 rounded-xl grid place-items-center text-lg shadow-lg" style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))", color: "#fff" }}>
@@ -284,7 +284,7 @@ export function QuickActionCenter({ accounts = [], investments = [], defaultOpen
             )}
 
             {/* Type tabs */}
-            <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1.5 hide-scrollbar">
+            <div className="quick-entry-tabs flex gap-1.5 mb-6 overflow-x-auto pb-1.5 hide-scrollbar">
               {TABS.map((t) => {
                 const IconComp = t.icon;
                 return (

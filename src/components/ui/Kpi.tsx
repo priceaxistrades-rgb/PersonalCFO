@@ -54,7 +54,7 @@ export function KpiCard({
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); }
       }}
       data-tone={tone}
-      className={`kpi-card p-4 sm:p-5.5 relative group overflow-hidden transition-all duration-300 rounded-2xl sm:rounded-3xl border shadow-lg ${
+      className={`kpi-card mobile-kpi-card p-4 sm:p-5 relative group overflow-hidden transition-all duration-300 rounded-[1.15rem] sm:rounded-3xl border shadow-lg ${
         clickable ? "cursor-pointer" : ""
       }`}
       style={{

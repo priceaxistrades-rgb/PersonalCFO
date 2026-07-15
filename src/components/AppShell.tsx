@@ -18,7 +18,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   if (publicShell) {
     return (
-      <main id="main-content" role="main" className="min-h-screen overflow-x-hidden">
+      <main id="main-content" role="main" className="min-h-screen overflow-x-hidden app-public-canvas">
         <ErrorBoundary name="Public Page">{children}</ErrorBoundary>
       </main>
     );
@@ -33,12 +33,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         Skip to main content
       </a>
-      <div className="flex min-h-screen flex-col lg:flex-row">
+      <div className="app-shell flex min-h-screen flex-col lg:flex-row">
         <nav aria-label="Main navigation" className="w-full lg:w-auto">
           <Sidebar />
         </nav>
-        <div className="flex-1 min-w-0 min-h-screen overflow-x-hidden" id="main-content" role="main">
-          <main className="px-4 sm:px-6 lg:px-10 pt-6 sm:pt-8 lg:pt-8 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-10 max-w-[1500px] mx-auto w-full">
+        <div className="app-content flex-1 min-w-0 min-h-screen overflow-x-hidden" id="main-content" role="main">
+          <main className="app-main page-canvas px-4 sm:px-6 md:px-7 lg:px-10 pt-5 sm:pt-7 lg:pt-8 pb-[calc(7.75rem+env(safe-area-inset-bottom))] lg:pb-10 max-w-[1500px] mx-auto w-full">
             <ErrorBoundary name="Main Content">{children}</ErrorBoundary>
           </main>
         </div>

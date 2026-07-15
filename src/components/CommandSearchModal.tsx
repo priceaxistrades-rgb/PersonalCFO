@@ -238,10 +238,10 @@ export function CommandSearchModal() {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-start justify-center p-4 pt-16 sm:pt-24 bg-black/70 backdrop-blur-md animate-fade-in select-none" onClick={() => setOpen(false)}>
+    <div className="command-search-overlay fixed inset-0 z-[300] flex items-end sm:items-start justify-center p-0 sm:p-4 sm:pt-24 bg-black/70 backdrop-blur-md animate-fade-in select-none" onClick={() => setOpen(false)}>
       <Card
         variant="glass"
-        className="w-full max-w-2xl overflow-hidden rounded-3xl border shadow-2xl transition-all scale-in !p-0"
+        className="command-search-modal w-full sm:max-w-2xl overflow-hidden rounded-t-[2rem] sm:rounded-3xl border shadow-2xl transition-all scale-in !p-0"
         style={{ borderColor: "var(--border-strong)", background: "var(--surface)" }}
         onClick={(e) => e.stopPropagation()}
       >

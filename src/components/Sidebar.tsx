@@ -13,7 +13,7 @@ import {
   IconMarkets, IconSavings, IconDebt, IconAI, IconCoach, IconSimulator,
   IconOpportunities, IconStress, IconDreams, IconTimeline, IconTax,
   IconInsurance, IconAnnual, IconEmergency, IconFamily, IconReports,
-  IconOnboarding, IconUser, IconSettings, IconLogout, IconSearch
+  IconOnboarding, IconUser, IconSettings, IconLogout, IconSearch, IconLightning
 } from "@/components/ui/Icons";
 
 const NAV_GROUPS = [
@@ -138,31 +138,42 @@ export function Sidebar() {
     <>
       {/* ─── Mobile / Tablet Header (< 1024px) ─── */}
       <header
-        className="mobile-top-bar lg:hidden sticky top-0 z-50 flex items-center justify-between px-4 h-14 backdrop-blur-2xl border-b select-none"
+        className="mobile-top-bar lg:hidden sticky top-0 z-50 flex items-center justify-between gap-3 px-3 sm:px-5 h-14 backdrop-blur-2xl border-b select-none premium-mobile-header"
         style={{ background: "var(--header)", borderColor: "var(--border)" }}
       >
-        <Link href="/" className="font-extrabold tracking-tight flex items-center gap-2.5 text-base no-underline" style={{ color: "var(--text-heading)" }}>
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-md bg-gradient-to-br from-indigo-500 to-purple-600 shrink-0">
-            <IconDashboard size={16} />
+        <Link href="/" className="font-extrabold tracking-tight flex items-center gap-2.5 text-base no-underline min-w-0" style={{ color: "var(--text-heading)" }}>
+          <div className="w-9 h-9 rounded-2xl flex items-center justify-center text-white shadow-md bg-gradient-to-br from-indigo-500 to-purple-600 shrink-0">
+            <IconDashboard size={17} />
           </div>
-          <span>Personal CFO</span>
+          <span className="truncate">Personal CFO</span>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("open-quick-action-center"))}
+            className="hidden sm:inline-flex h-10 items-center justify-center gap-2 rounded-2xl border px-3 text-xs font-black shadow-sm active:scale-95 transition-all text-white bg-gradient-to-br from-indigo-500 to-sky-500"
+            style={{ borderColor: "rgba(255,255,255,0.18)" }}
+            aria-label="Open quick entry hub"
+          >
+            <IconLightning size={15} />
+            <span>Quick Add</span>
+          </button>
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("open-global-search"))}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-mono font-bold border cursor-pointer hover:bg-surface-3 transition-colors text-indigo-400 shrink-0"
+            className="w-10 h-10 rounded-2xl flex items-center justify-center text-xs font-mono font-bold border cursor-pointer hover:bg-surface-3 transition-colors text-indigo-400 shrink-0"
             style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}
-              aria-label="Search"
+            aria-label="Search"
             title="Search workspace (⌘F)"
           >
-            <IconSearch size={16} />
+            <IconSearch size={17} />
           </button>
           {session && !authLoading && (
             <button
               onClick={() => { setUserDropdownOpen(!userDropdownOpen); setOpen(false); }}
               aria-expanded={userDropdownOpen}
-              className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center text-xs font-mono font-bold ring-1 ring-white/10 shadow-sm bg-indigo-500/20 text-indigo-400 shrink-0 cursor-pointer"
+              aria-label="Open user menu"
+              className="w-9 h-9 rounded-2xl overflow-hidden flex items-center justify-center text-xs font-mono font-bold ring-1 ring-white/10 shadow-sm bg-indigo-500/20 text-indigo-400 shrink-0 cursor-pointer"
             >
               {session.profileImage ? (
                 <img src={session.profileImage} alt="" className="w-full h-full object-cover" />
@@ -171,7 +182,7 @@ export function Sidebar() {
               )}
             </button>
           )}
-          <button onClick={() => { setOpen(!open); setUserDropdownOpen(false); }} aria-expanded={open} className="btn btn-ghost w-10 h-10 text-base rounded-xl font-mono font-bold border border-white/[0.08] cursor-pointer" aria-label="Menu">
+          <button onClick={() => { setOpen(!open); setUserDropdownOpen(false); }} aria-expanded={open} className="btn btn-ghost w-10 h-10 text-base rounded-2xl font-mono font-bold border border-white/[0.08] cursor-pointer" aria-label="Menu">
             {open ? "✕" : "☰"}
           </button>
         </div>
@@ -436,7 +447,7 @@ export function Sidebar() {
           MOBILE & TABLET: Slide-over Drawer (< 1024px)
           ═══════════════════════════════════════════════════════════ */}
       <aside
-        className={`app-sidebar lg:hidden fixed top-0 left-0 z-[80] h-[100dvh] w-[min(280px,88vw)] flex flex-col safe-area-top transition-transform duration-300 cubic-bezier(.16, 1, .3, 1) border-r shadow-2xl ${
+        className={`app-sidebar mobile-suite-drawer lg:hidden fixed top-0 left-0 z-[80] h-[100dvh] w-[min(420px,92vw)] flex flex-col safe-area-top transition-transform duration-300 cubic-bezier(.16, 1, .3, 1) border-r shadow-2xl ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ background: "var(--sidebar)", borderColor: "var(--border)" }}
@@ -460,15 +471,33 @@ export function Sidebar() {
           <button onClick={closeSidebar} className="btn btn-ghost w-9 h-9 rounded-xl shrink-0 font-mono font-bold border" style={{ borderColor: "var(--border)" }}>✕</button>
         </div>
 
-        <div className="p-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <div className="grid grid-cols-2 gap-2 p-1 rounded-xl border bg-surface-2" style={{ borderColor: "var(--border)" }}>
+        <div className="p-3 border-b space-y-3" style={{ borderColor: "var(--border)" }}>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => { window.dispatchEvent(new CustomEvent("open-global-search")); closeSidebar(); }}
+              className="flex items-center justify-center gap-2 rounded-2xl border px-3 py-2.5 text-xs font-black transition-colors text-indigo-400 bg-surface-2"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <IconSearch size={15} /> Search
+            </button>
+            <button
+              type="button"
+              onClick={() => { window.dispatchEvent(new CustomEvent("open-quick-action-center")); closeSidebar(); }}
+              className="flex items-center justify-center gap-2 rounded-2xl border px-3 py-2.5 text-xs font-black text-white bg-gradient-to-br from-indigo-500 to-sky-500"
+              style={{ borderColor: "rgba(255,255,255,0.18)" }}
+            >
+              <IconLightning size={15} /> Quick Add
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl border bg-surface-2" style={{ borderColor: "var(--border)" }}>
             {THEMES.map((t) => {
               const selected = hydrated && theme === t.id;
               return (
                 <button
                   key={t.id}
                   onClick={() => setTheme(t.id)}
-                  className={`flex items-center justify-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`flex items-center justify-center gap-2 py-2 px-2.5 rounded-xl text-xs font-bold transition-all ${
                     selected ? "bg-indigo-600 text-white shadow-md" : "text-slate-400 hover:text-white"
                   }`}
                 >
