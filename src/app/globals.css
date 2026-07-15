@@ -1736,3 +1736,19 @@ svg, canvas, img, video {
     padding: 0.85rem 0 1rem;
   }
 }
+
+/* Critical mobile layout fix: .app-sidebar sets position: relative for desktop styling,
+   which was overriding Tailwind's fixed utility on the off-canvas mobile drawer.
+   That made the hidden 100dvh drawer occupy document flow and pushed Cockpit down
+   by one full screen. Keep the drawer fixed and out of layout flow. */
+@media (max-width: 1023px) {
+  .app-sidebar.mobile-suite-drawer {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    height: 100dvh !important;
+  }
+  nav[aria-label="Main navigation"] {
+    min-height: 0 !important;
+  }
+}
