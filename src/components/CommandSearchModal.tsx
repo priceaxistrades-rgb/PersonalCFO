@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Card, Badge } from "@/components/ui/Card";
-import { inr } from "@/lib/format";
 import {
   IconSearch, IconDashboard, IconIncome, IconExpenses, IconInvestments,
   IconMarkets, IconSavings, IconDebt, IconAI, IconBrief, IconMission,
@@ -253,83 +251,75 @@ export function CommandSearchModal() {
   if (!open) return null;
 
   return (
-    <div className="command-search-overlay fixed inset-0 z-[300] flex items-start justify-center p-0 sm:p-4 sm:pt-24 bg-black/70 backdrop-blur-md animate-fade-in select-none" onClick={() => setOpen(false)}>
-      <Card
-        variant="glass"
-        className="command-search-modal w-full sm:max-w-2xl overflow-hidden rounded-b-[2rem] sm:rounded-3xl border shadow-2xl transition-all scale-in !p-0"
-        style={{ borderColor: "var(--border-strong)", background: "var(--surface)" }}
-        onClick={(e) => e.stopPropagation()}
+    <div
+      className="command-search-overlay"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) setOpen(false);
+      }}
+    >
+      <section
+        className="command-search-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search PersonalCFO"
       >
-        {/* Search Input Bar */}
-        <div className="flex items-center gap-3.5 px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
-          <span className="text-indigo-400 shrink-0"><IconSearch size={20} /></span>
+        <div className="command-search-bar">
+          <IconSearch size={20} aria-hidden="true" />
           <input
             ref={inputRef}
-            type="text"
+            type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(event) => setQuery(event.target.value)}
             onKeyDown={handleKeyDownInput}
-            placeholder="Search financial modules, transactions, assets, loans or enter command..."
-            className="command-search-input w-full bg-transparent border-none outline-none text-sm sm:text-base font-bold tracking-tight placeholder:text-slate-500"
+            placeholder="Search modules, transactions, assets or loans…"
+            className="command-search-input"
+            aria-label="Search modules and financial records"
+            autoComplete="off"
           />
-          {loading && <span className="inline-block w-4 h-4 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin shrink-0" />}
-          <button onClick={() => setOpen(false)} className="btn btn-ghost px-2.5 py-1 text-xs font-mono font-bold rounded-xl border border-white/[0.08]">ESC</button>
+          {loading && <span className="command-search-spinner" aria-label="Loading financial records" />}
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="command-search-close"
+            aria-label="Close search"
+          >
+            ✕
+          </button>
         </div>
 
-        {/* Results List */}
-        <div className="max-h-[60vh] overflow-y-auto p-2.5 space-y-1">
+        <div className="command-search-results" role="listbox" aria-label="Search results">
           {results.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 font-medium text-xs">
-              No matching modules or records found for &quot;{query}&quot;. Try searching &quot;Salary&quot;, &quot;HDFC&quot;, or &quot;Net Worth&quot;.
+            <div className="command-search-empty" role="status">
+              No matches for &quot;{query}&quot;. Try “Salary”, “HDFC”, or “Net Worth”.
             </div>
           ) : (
-            results.map((item, idx) => {
+            results.map((item, index) => {
               const IconComp = item.icon;
-              const active = idx === selectedIndex;
+              const active = index === selectedIndex;
               return (
-                <div
+                <button
+                  type="button"
                   key={item.id}
+                  role="option"
+                  aria-selected={active}
                   onClick={() => handleSelect(item)}
-                  onMouseEnter={() => setSelectedIndex(idx)}
-                  className={`flex items-center justify-between gap-3 p-3 rounded-2xl cursor-pointer transition-all border ${
-                    active ? "bg-indigo-600 text-white shadow-md border-indigo-500/40" : "bg-transparent border-transparent hover:bg-surface-2 text-slate-300"
-                  }`}
+                  onPointerEnter={() => setSelectedIndex(index)}
+                  className={`command-search-result ${active ? "command-search-result-active" : ""}`}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${active ? "bg-white/20 text-white" : "bg-surface-2 text-indigo-400"}`}>
-                      <IconComp size={16} />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className={`text-xs font-extrabold truncate tracking-tight ${active ? "text-white" : "text-text-heading"}`}>{item.title}</p>
-                        {item.badge && (
-                          <span className={`px-1.5 py-0.5 rounded font-mono text-[9px] font-bold ${active ? "bg-black/20 text-white" : "bg-surface-3 text-slate-400"}`}>
-                            {item.badge}
-                          </span>
-                        )}
-                      </div>
-                      <p className={`text-[11px] truncate mt-0.5 ${active ? "text-indigo-100" : "text-slate-400 font-medium"}`}>{item.subtitle}</p>
-                    </div>
-                  </div>
-                  <span className={`shrink-0 text-xs font-mono ${active ? "text-white opacity-100" : "opacity-0"}`}>
-                    Jump →
+                  <span className="command-search-result-icon"><IconComp size={16} /></span>
+                  <span className="command-search-result-copy">
+                    <span className="command-search-result-title">{item.title}</span>
+                    <span className="command-search-result-subtitle">{item.subtitle}</span>
                   </span>
-                </div>
+                  {item.badge && <span className="command-search-result-badge">{item.badge}</span>}
+                  <IconArrowRight size={15} aria-hidden="true" />
+                </button>
               );
             })
           )}
         </div>
-
-        {/* Footer shortcuts */}
-        <div className="px-5 py-3 border-t bg-surface-2/40 flex items-center justify-between text-[10px] font-mono text-slate-500" style={{ borderColor: "var(--border)" }}>
-          <div className="flex items-center gap-3">
-            <span>↑↓ Navigate</span>
-            <span>↵ Select</span>
-            <span>ESC Close</span>
-          </div>
-          <span>Sovereign OS Command Search v5.6</span>
-        </div>
-      </Card>
+      </section>
     </div>
   );
 }
