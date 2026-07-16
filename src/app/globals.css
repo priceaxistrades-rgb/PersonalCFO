@@ -3031,3 +3031,64 @@ svg, canvas, img, video {
     min-height: 5.4rem !important;
   }
 }
+
+/* Search visibility emergency fix: ensure command palette content is never
+   white-on-white or transparent in either theme. */
+.command-search-overlay {
+  background: rgba(2, 6, 23, 0.62) !important;
+}
+.command-search-modal {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border-strong) !important;
+}
+.command-search-modal > div:first-child {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+.command-search-input {
+  color: var(--text-heading) !important;
+  caret-color: var(--primary) !important;
+}
+.command-search-input::placeholder {
+  color: var(--text-faint) !important;
+}
+.command-search-modal .cursor-pointer {
+  color: var(--text) !important;
+  background: transparent !important;
+}
+.command-search-modal .cursor-pointer:hover {
+  background: var(--surface-2) !important;
+}
+.command-search-modal .cursor-pointer.bg-indigo-600,
+.command-search-modal .cursor-pointer.bg-indigo-600 * {
+  background: var(--primary) !important;
+  color: #fff !important;
+}
+.command-search-modal p {
+  color: inherit;
+}
+[data-theme="aurora"] .command-search-overlay {
+  background: rgba(32, 30, 26, 0.32) !important;
+}
+[data-theme="aurora"] .command-search-modal,
+[data-theme="aurora"] .command-search-modal > div:first-child {
+  background: #fffdfa !important;
+  color: #171612 !important;
+}
+[data-theme="aurora"] .command-search-input {
+  color: #171612 !important;
+}
+[data-theme="aurora"] .command-search-modal .cursor-pointer:not(.bg-indigo-600) {
+  color: #2f2d28 !important;
+}
+[data-theme="aurora"] .command-search-modal .cursor-pointer:not(.bg-indigo-600):hover {
+  background: #efede6 !important;
+}
+[data-theme="aurora"] .command-search-modal .cursor-pointer:not(.bg-indigo-600) p {
+  color: #171612 !important;
+}
+[data-theme="aurora"] .command-search-modal .cursor-pointer:not(.bg-indigo-600) p + p,
+[data-theme="aurora"] .command-search-modal .cursor-pointer:not(.bg-indigo-600) .text-slate-400 {
+  color: #5f5b52 !important;
+}
