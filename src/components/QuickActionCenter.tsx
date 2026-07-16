@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { CATEGORY_GROUPS, BILL_CATEGORIES, INCOME_CATEGORIES } from "@/lib/categories";
@@ -37,7 +37,21 @@ function defaultCategoryFor(type: QuickAddType) {
   return "";
 }
 
-export function QuickActionCenter({ accounts = [], investments = [], defaultOpen = false, initialType = "expense", onClose }: { accounts?: any[]; investments?: any[]; defaultOpen?: boolean; initialType?: QuickAddType; onClose?: () => void; }) {
+export function QuickActionCenter({
+  accounts = [],
+  investments = [],
+  defaultOpen = false,
+  initialType = "expense",
+  onClose,
+  listenForGlobalEvents = true,
+}: {
+  accounts?: any[];
+  investments?: any[];
+  defaultOpen?: boolean;
+  initialType?: QuickAddType;
+  onClose?: () => void;
+  listenForGlobalEvents?: boolean;
+}) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [loading, setLoading] = useState(false);
@@ -71,6 +85,7 @@ export function QuickActionCenter({ accounts = [], investments = [], defaultOpen
   const [investmentFormKey, setInvestmentFormKey] = useState(0);
 
   useEffect(() => {
+    if (!listenForGlobalEvents) return;
     const handleOpen = (event: Event) => {
       const requestedType = (event as CustomEvent<{ type?: unknown }>).detail?.type;
       if (isQuickAddType(requestedType)) {
@@ -91,7 +106,7 @@ export function QuickActionCenter({ accounts = [], investments = [], defaultOpen
       window.removeEventListener("open-quick-action-center", handleOpen);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [listenForGlobalEvents]);
 
   useEffect(() => {
     if (isOpen && accounts.length === 0 && fetchedAccounts.length === 0) {
@@ -494,12 +509,10 @@ export function QuickActionCenter({ accounts = [], investments = [], defaultOpen
 }
 
 export function GlobalQuickActionModal() {
-  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [requestedType, setRequestedType] = useState<QuickAddType>("expense");
   useEffect(() => {
     const handleOpen = (event: Event) => {
-      if (window.location.pathname === "/") return;
       const type = (event as CustomEvent<{ type?: unknown }>).detail?.type;
       if (isQuickAddType(type)) setRequestedType(type);
       setOpen(true);
@@ -508,7 +521,7 @@ export function GlobalQuickActionModal() {
     return () => window.removeEventListener("open-quick-action-center", handleOpen);
   }, []);
 
-  if (!open || pathname === "/") return null;
+  if (!open) return null;
   return (
     <div className="fixed inset-0 z-[250]">
       <QuickActionCenter accounts={[]} investments={[]} defaultOpen={true} initialType={requestedType} onClose={() => setOpen(false)} />
