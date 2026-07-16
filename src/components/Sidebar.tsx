@@ -169,7 +169,7 @@ export function Sidebar() {
           </button>
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent("open-global-search"))}
+            onClick={() => ((window as typeof window & { __openPersonalCfoSearch?: () => void }).__openPersonalCfoSearch?.() ?? window.dispatchEvent(new CustomEvent("open-global-search")))}
             className="w-10 h-10 rounded-2xl flex items-center justify-center text-xs font-mono font-bold border cursor-pointer hover:bg-surface-3 transition-colors text-indigo-400 shrink-0"
             style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}
             aria-label="Search"
@@ -280,7 +280,7 @@ export function Sidebar() {
           {/* Universal Search Box Trigger */}
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent("open-global-search"))}
+            onClick={() => ((window as typeof window & { __openPersonalCfoSearch?: () => void }).__openPersonalCfoSearch?.() ?? window.dispatchEvent(new CustomEvent("open-global-search")))}
             className="sidebar-search-trigger w-full flex items-center justify-between px-3 py-2 rounded-xl border transition-all duration-200 text-xs font-bold cursor-pointer"
             style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-muted)" }}
           >
@@ -482,7 +482,7 @@ export function Sidebar() {
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => { window.dispatchEvent(new CustomEvent("open-global-search")); closeSidebar(); }}
+              onClick={() => { ((window as typeof window & { __openPersonalCfoSearch?: () => void }).__openPersonalCfoSearch?.() ?? window.dispatchEvent(new CustomEvent("open-global-search"))); closeSidebar(); }}
               className="flex items-center justify-center gap-2 rounded-2xl border px-3 py-2.5 text-xs font-black transition-colors text-indigo-400 bg-surface-2"
               style={{ borderColor: "var(--border)" }}
             >

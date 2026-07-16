@@ -3092,3 +3092,22 @@ svg, canvas, img, video {
 [data-theme="aurora"] .command-search-modal .cursor-pointer:not(.bg-indigo-600) .text-slate-400 {
   color: #5f5b52 !important;
 }
+
+/* Search hard display fallback: if React opens the modal, these rules guarantee
+   it is visible above every shell element. */
+.command-search-overlay {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 9999 !important;
+}
+.command-search-modal {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  min-height: 18rem !important;
+}
+.command-search-modal > * {
+  visibility: visible !important;
+  opacity: 1 !important;
+}

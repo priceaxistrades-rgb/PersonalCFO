@@ -72,10 +72,16 @@ export function CommandSearchModal() {
         setOpen(false);
       }
     };
+    (window as typeof window & { __openPersonalCfoSearch?: () => void }).__openPersonalCfoSearch = handleOpen;
     window.addEventListener("open-global-search", handleOpen);
+    document.addEventListener("open-global-search", handleOpen);
     window.addEventListener("keydown", handleKeyDown);
     return () => {
+      if ((window as typeof window & { __openPersonalCfoSearch?: () => void }).__openPersonalCfoSearch === handleOpen) {
+        delete (window as typeof window & { __openPersonalCfoSearch?: () => void }).__openPersonalCfoSearch;
+      }
       window.removeEventListener("open-global-search", handleOpen);
+      document.removeEventListener("open-global-search", handleOpen);
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);

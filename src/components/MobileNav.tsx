@@ -108,7 +108,7 @@ export function MobileNav() {
 
   const isActive = (href: string) => pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
   const openQuickEntry = () => window.dispatchEvent(new CustomEvent("open-quick-action-center"));
-  const openSearch = () => window.dispatchEvent(new CustomEvent("open-global-search"));
+  const openSearch = () => ((window as typeof window & { __openPersonalCfoSearch?: () => void }).__openPersonalCfoSearch?.() ?? window.dispatchEvent(new CustomEvent("open-global-search")));
 
   const primaryItems = MOBILE_NAV;
 
