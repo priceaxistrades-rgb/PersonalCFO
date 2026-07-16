@@ -2817,8 +2817,6 @@ svg, canvas, img, video {
   .bg-indigo-600,
   .bg-red-500,
   .bg-emerald-500,
-  .bg-gradient-to-br,
-  .bg-gradient-to-r,
   .mobile-fab-action,
   .suite-action-icon,
   .sidebar-mobile-link-active,
@@ -2832,8 +2830,6 @@ svg, canvas, img, video {
   .bg-indigo-600,
   .bg-red-500,
   .bg-emerald-500,
-  .bg-gradient-to-br,
-  .bg-gradient-to-r,
   .mobile-fab-action,
   .suite-action-icon,
   .sidebar-mobile-link-active,
@@ -2865,4 +2861,58 @@ svg, canvas, img, video {
     radial-gradient(circle at 18% -12%, rgba(124, 124, 255, 0.13), transparent 30rem),
     radial-gradient(circle at 100% 0%, rgba(92, 200, 255, 0.08), transparent 26rem),
     var(--bg) !important;
+}
+
+/* AURORA STABILITY PATCH
+   Keep Aurora as a true Claude-like light theme. Do not globally force white
+   text on gradient containers, because many dashboard cards use subtle gradient
+   backgrounds on light surfaces. Only actual controls/icons should stay white. */
+[data-theme="aurora"] .app-content {
+  color: var(--text) !important;
+}
+[data-theme="aurora"] .app-content :is(h1, h2, h3, h4, h5, h6, .font-black, .font-extrabold) {
+  color: var(--text-heading);
+}
+[data-theme="aurora"] .app-content :is(p, span, td, th, li, label, small, div) {
+  border-color: var(--border);
+}
+[data-theme="aurora"] .app-content :is(.card, .card-glass, .mobile-card, .kpi-card, .dashboard-metric-card, .quick-entry-modal, .command-search-modal, .table-scroll) {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="aurora"] .app-content :is(.card, .card-glass, .mobile-card, .kpi-card, .dashboard-metric-card, .quick-entry-modal, .command-search-modal, .table-scroll) :is(.text-white, .text-slate-50, .text-slate-100, .text-slate-200, .text-slate-300) {
+  color: var(--text-heading) !important;
+}
+[data-theme="aurora"] .app-content :is(.card, .card-glass, .mobile-card, .kpi-card, .dashboard-metric-card, .quick-entry-modal, .command-search-modal, .table-scroll) :is(.text-slate-400, .text-slate-500, .text-slate-600, .text-gray-400, .text-gray-500) {
+  color: var(--text-muted) !important;
+}
+[data-theme="aurora"] .app-content :is(.bg-surface-2, .bg-surface-2\/40, .bg-surface-2\/50, .bg-surface-2\/60, .bg-surface-3, .bg-white\/\[0\.03\], .bg-white\/\[0\.04\], .bg-white\/\[0\.05\]) {
+  background-color: var(--surface-2) !important;
+  color: var(--text) !important;
+}
+[data-theme="aurora"] .app-content :is(.border-white\/\[0\.04\], .border-white\/\[0\.06\], .border-white\/\[0\.08\], .border-white\/10) {
+  border-color: var(--border) !important;
+}
+
+/* Explicit allowlist for surfaces that really are dark/colored. */
+[data-theme="aurora"] .app-content :is(.btn-primary, .btn-danger, .btn-success, .mobile-fab-action, .suite-action-icon, .sidebar-mobile-link-active, .sidebar-nav-link-active, .quick-entry-tab-active, .bg-indigo-600, .bg-red-500, .bg-emerald-500),
+[data-theme="aurora"] .app-content :is(.btn-primary, .btn-danger, .btn-success, .mobile-fab-action, .suite-action-icon, .sidebar-mobile-link-active, .sidebar-nav-link-active, .quick-entry-tab-active, .bg-indigo-600, .bg-red-500, .bg-emerald-500) * {
+  color: #fff !important;
+}
+
+/* Icon/logo gradient squares keep white icons, while text next to them stays light-theme readable. */
+[data-theme="aurora"] .app-content :is(.w-7, .w-8, .w-9, .w-10, .w-11, .w-12, .h-7, .h-8, .h-9, .h-10, .h-11, .h-12).bg-gradient-to-br,
+[data-theme="aurora"] .app-content :is(.w-7, .w-8, .w-9, .w-10, .w-11, .w-12, .h-7, .h-8, .h-9, .h-10, .h-11, .h-12).bg-gradient-to-r,
+[data-theme="aurora"] .app-content :is(.w-7, .w-8, .w-9, .w-10, .w-11, .w-12, .h-7, .h-8, .h-9, .h-10, .h-11, .h-12).bg-gradient-to-br *,
+[data-theme="aurora"] .app-content :is(.w-7, .w-8, .w-9, .w-10, .w-11, .w-12, .h-7, .h-8, .h-9, .h-10, .h-11, .h-12).bg-gradient-to-r * {
+  color: #fff !important;
+}
+
+[data-theme="aurora"] .dashboard-metric-card,
+[data-theme="aurora"] .investment-glance-item,
+[data-theme="aurora"] .suite-module-card,
+[data-theme="aurora"] .guide-shortcut,
+[data-theme="aurora"] .guide-step-card {
+  box-shadow: 0 1px 2px rgba(32, 30, 26, 0.04), 0 8px 24px rgba(32, 30, 26, 0.055) !important;
 }
