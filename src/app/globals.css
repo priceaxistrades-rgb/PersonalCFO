@@ -2119,18 +2119,17 @@ svg, canvas, img, video {
 }
 [data-theme="aurora"] .member-scope-control > div:first-child button {
   color: var(--text-heading) !important;
-  background: color-mix(in srgb, var(--surface) 88%, transparent) !important;
-  border-color: rgba(26, 25, 21, 0.16) !important;
+  border-color: rgba(26, 25, 21, 0.18) !important;
+  text-shadow: none !important;
 }
 [data-theme="aurora"] .member-scope-control > div:first-child button[style*="#fff"],
 [data-theme="aurora"] .member-scope-control > div:first-child button[style*="rgb(255"] {
   color: #fff !important;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.35) !important;
 }
 [data-theme="aurora"] .member-scope-control > div:first-child button:hover,
 [data-theme="aurora"] .member-scope-control > div:first-child button:focus-visible {
-  background: var(--surface-3) !important;
-  color: var(--text-heading) !important;
+  filter: saturate(1.08) contrast(1.05);
 }
 [data-theme="aurora"] .member-scope-control .text-slate-400,
 [data-theme="aurora"] .member-scope-control .text-slate-500 {
@@ -2236,5 +2235,240 @@ svg, canvas, img, video {
   }
   .command-search-modal > div:last-child {
     display: none !important;
+  }
+}
+
+/* Follow-up refinements for tester feedback. */
+@media (max-width: 639px) {
+  .investment-glance-grid {
+    grid-auto-flow: row !important;
+    grid-auto-columns: auto !important;
+    grid-template-columns: 1fr !important;
+    overflow-x: visible !important;
+    scroll-snap-type: none !important;
+  }
+  .investment-glance-item {
+    min-height: 4.4rem;
+    scroll-snap-align: none !important;
+  }
+  .command-search-modal {
+    position: fixed !important;
+    top: max(0.35rem, env(safe-area-inset-top)) !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    max-height: calc(100dvh - max(0.35rem, env(safe-area-inset-top))) !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DESIGN QA STABILIZATION PASS
+   Broad visual/readability fixes after full mobile/tablet/desktop review.
+   Frontend-only: no API, auth, database, or business logic changes.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Aurora contrast normalization for legacy hard-coded Tailwind colors inside
+   content cards. Keeps primary/danger/success buttons white where needed. */
+[data-theme="aurora"] .page-canvas :where(.card, .mobile-card, .table-scroll, .guide-page, .member-scope-control, .investment-glance-card) :is(.text-white, .text-slate-100, .text-slate-200) {
+  color: var(--text-heading) !important;
+}
+[data-theme="aurora"] .page-canvas :where(.card, .mobile-card, .table-scroll, .guide-page, .member-scope-control, .investment-glance-card) :is(.text-slate-300, .text-slate-400, .text-slate-500) {
+  color: var(--text-muted) !important;
+}
+[data-theme="aurora"] .page-canvas :is(.btn-primary, .btn-danger, .btn-success, .bg-indigo-600, .bg-red-500, .bg-emerald-500, .suite-action-icon, .mobile-fab-action, .sidebar-mobile-link-active, .sidebar-nav-link-active),
+[data-theme="aurora"] .page-canvas :is(.btn-primary, .btn-danger, .btn-success, .bg-indigo-600, .bg-red-500, .bg-emerald-500, .suite-action-icon, .mobile-fab-action, .sidebar-mobile-link-active, .sidebar-nav-link-active) * {
+  color: #fff !important;
+}
+[data-theme="aurora"] .badge-primary { color: #3730a3 !important; }
+[data-theme="aurora"] .badge-success { color: #047857 !important; }
+[data-theme="aurora"] .badge-warning { color: #b45309 !important; }
+[data-theme="aurora"] .badge-danger { color: #be123c !important; }
+[data-theme="aurora"] .badge-neutral { color: var(--text) !important; }
+[data-theme="aurora"] .input,
+[data-theme="aurora"] select,
+[data-theme="aurora"] textarea {
+  background: #ffffff !important;
+  color: var(--text-heading) !important;
+  border-color: rgba(26, 25, 21, 0.16) !important;
+}
+[data-theme="aurora"] .input::placeholder,
+[data-theme="aurora"] input::placeholder,
+[data-theme="aurora"] textarea::placeholder {
+  color: #8a8882 !important;
+}
+
+/* Softer, consistent desktop/tablet page rhythm. */
+.page-canvas > div:first-child {
+  animation: pageEnterSoft 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes pageEnterSoft {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.card,
+.card-glass,
+.mobile-card,
+.table-scroll {
+  overflow-wrap: anywhere;
+}
+.card h1,
+.card h2,
+.card h3,
+.card h4,
+.mobile-card h1,
+.mobile-card h2,
+.mobile-card h3,
+.mobile-card h4 {
+  line-height: 1.12;
+}
+
+/* Command Search: production mobile behavior. It should feel like Spotlight,
+   not a keyboard-pushed sheet. */
+.command-search-overlay {
+  touch-action: none;
+}
+.command-search-modal {
+  max-height: min(44rem, calc(100dvh - 2rem));
+}
+.command-search-modal [role="option"],
+.command-search-modal .cursor-pointer {
+  min-height: 3rem;
+}
+@media (max-width: 639px) {
+  .command-search-overlay {
+    touch-action: none;
+    overflow: hidden;
+  }
+  .command-search-modal {
+    width: calc(100vw - 0.75rem) !important;
+    left: 0.375rem !important;
+    right: 0.375rem !important;
+    border-radius: 1.35rem !important;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.55) !important;
+  }
+  .command-search-modal > div:first-child {
+    padding: 0.8rem 0.9rem !important;
+  }
+  .command-search-input {
+    font-size: 16px !important;
+  }
+}
+
+/* Quick Entry: ensure the sheet is usable with keyboard and small devices. */
+@media (max-width: 639px) {
+  .quick-entry-overlay {
+    overflow: hidden;
+  }
+  .quick-entry-modal {
+    box-shadow: 0 -24px 70px rgba(0,0,0,0.55) !important;
+  }
+  .quick-entry-modal label {
+    letter-spacing: 0.08em !important;
+  }
+  .quick-entry-modal .grid {
+    gap: 0.8rem !important;
+  }
+  .quick-entry-modal .btn-primary,
+  .quick-entry-modal .btn-success {
+    min-height: 3.1rem !important;
+    border-radius: 1rem !important;
+  }
+  .quick-entry-modal details {
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 0.85rem;
+    background: var(--surface-2);
+  }
+}
+
+/* Mobile table action fixes. */
+@media (max-width: 639px) {
+  .mobile-card-table td[data-label="Actions"] {
+    display: block !important;
+    text-align: left !important;
+  }
+  .mobile-card-table td[data-label="Actions"]::before {
+    display: block !important;
+    margin-bottom: 0.55rem;
+    width: 100%;
+  }
+  .mobile-card-table td[data-label="Actions"] > div {
+    justify-content: flex-start !important;
+    flex-wrap: wrap;
+    gap: 0.45rem !important;
+  }
+  .mobile-card-table td[data-label="Actions"] .btn,
+  .mobile-card-table td[data-label="Actions"] button,
+  .mobile-card-table td[data-label="Actions"] a {
+    flex: 1 1 auto;
+    min-width: 5.25rem;
+    min-height: 2.4rem !important;
+    border-radius: 0.85rem !important;
+  }
+}
+
+/* Dashboard cockpit declutter on phones. */
+@media (max-width: 639px) {
+  .dashboard-metric-card {
+    border-radius: 1rem !important;
+    padding: 0.85rem !important;
+  }
+  .dashboard-metric-card:hover,
+  .dashboard-metric-card:focus-within {
+    transform: none !important;
+  }
+  .kpi-card::after,
+  .dashboard-metric-card::after,
+  .quick-entry-shell::before,
+  .app-sidebar::before {
+    display: none !important;
+  }
+}
+
+/* Investment and Markets readability. */
+.investment-glance-card,
+.market-instrument-name {
+  text-wrap: pretty;
+}
+@media (max-width: 639px) {
+  .investment-glance-values {
+    min-width: 5.8rem;
+  }
+  .market-instrument-name,
+  .investment-glance-name {
+    hyphens: auto;
+  }
+  .market-instrument-name + .badge {
+    margin-top: 0.35rem;
+  }
+}
+
+/* Suite launchpad polish and accessibility. */
+.suite-module-card,
+.suite-action-card,
+.guide-shortcut,
+.guide-step-card {
+  will-change: transform;
+}
+.suite-module-card:focus-visible,
+.suite-action-card:focus-visible,
+.guide-shortcut:focus-visible {
+  outline: 3px solid var(--border-focus);
+  outline-offset: 3px;
+}
+@media (max-width: 639px) {
+  .suite-module-rail {
+    grid-auto-columns: minmax(9.5rem, 48%) !important;
+  }
+}
+
+/* Reduce motion pressure globally on touch devices while preserving useful cues. */
+@media (hover: none) and (pointer: coarse) {
+  .card:hover,
+  .card-interactive:hover,
+  .kpi-card:hover,
+  .dashboard-metric-card:hover,
+  .quick-entry-shell:hover {
+    transform: none !important;
   }
 }
