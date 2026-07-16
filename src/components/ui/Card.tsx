@@ -85,14 +85,14 @@ export function SectionTitle({
   return (
     <div className="section-title mobile-page-title flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 sm:mb-8 fade-in-up pb-4 border-b" style={{ borderColor: "var(--border)" }}>
       <div className="min-w-0 flex-1">
-        <p className="hidden sm:block text-[10px] font-mono font-black uppercase tracking-[0.18em] mb-1" style={{ color: "var(--primary)" }}>
+        <p className="section-eyebrow hidden sm:block text-[10px] font-mono font-black uppercase tracking-[0.18em] mb-1">
           Personal CFO Workspace
         </p>
         <h1 className="text-[clamp(1.55rem,7vw,2.15rem)] sm:text-3xl font-black tracking-tight leading-[1.05] text-balance" style={{ color: "var(--text-heading)" }}>
           {title}
         </h1>
         {subtitle && (
-          <p className="text-sm mt-2 font-medium leading-relaxed max-w-3xl" style={{ color: "var(--text-muted)" }}>
+          <p className="section-subtitle text-sm mt-2 font-semibold leading-relaxed max-w-3xl">
             {subtitle}
           </p>
         )}

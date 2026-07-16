@@ -2916,3 +2916,118 @@ svg, canvas, img, video {
 [data-theme="aurora"] .guide-step-card {
   box-shadow: 0 1px 2px rgba(32, 30, 26, 0.04), 0 8px 24px rgba(32, 30, 26, 0.055) !important;
 }
+
+/* Section title readability fix: eyebrow + welcome/subtitle must be readable
+   in both Aurora and Obsidian. */
+.section-title .section-eyebrow {
+  color: var(--primary) !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+.section-title .section-subtitle {
+  color: var(--text-muted) !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+.section-title h1 {
+  color: var(--text-heading) !important;
+}
+[data-theme="aurora"] .section-title .section-eyebrow {
+  color: #4338ca !important;
+}
+[data-theme="aurora"] .section-title .section-subtitle {
+  color: #4f4a42 !important;
+}
+[data-theme="obsidian"] .section-title .section-eyebrow {
+  color: #a5b4fc !important;
+}
+[data-theme="obsidian"] .section-title .section-subtitle {
+  color: #cbd5e1 !important;
+}
+@media (max-width: 639px) {
+  .section-title .section-eyebrow {
+    display: block !important;
+    font-size: 0.62rem !important;
+    margin-bottom: 0.35rem !important;
+  }
+  .section-title .section-subtitle {
+    font-size: 0.78rem !important;
+    line-height: 1.35 !important;
+    -webkit-line-clamp: 2 !important;
+  }
+}
+
+/* Suite deck cleanup: no horizontal dragging. All Suite modules are visible in
+   a compact aligned grid, matching the cleaner Quick Entry deck behavior. */
+.suite-module-rail {
+  display: grid !important;
+  grid-auto-flow: row !important;
+  grid-auto-columns: unset !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.55rem !important;
+  overflow-x: visible !important;
+  scroll-snap-type: none !important;
+  padding: 0 !important;
+}
+.suite-module-card {
+  min-height: 5.15rem !important;
+  border-radius: 1rem !important;
+  padding: 0.7rem !important;
+  scroll-snap-align: none !important;
+}
+.suite-module-icon {
+  width: 1.85rem !important;
+  height: 1.85rem !important;
+  border-radius: 0.75rem !important;
+}
+.suite-module-icon svg {
+  width: 0.95rem !important;
+  height: 0.95rem !important;
+}
+.suite-module-title {
+  min-height: 1.8rem;
+  display: flex;
+  align-items: center;
+  color: var(--text-heading) !important;
+  font-size: 0.74rem !important;
+  line-height: 1.12 !important;
+  font-weight: 950 !important;
+  overflow-wrap: anywhere;
+}
+.suite-module-jump {
+  font-size: 0.56rem !important;
+  line-height: 1 !important;
+}
+.suite-rail-section {
+  overflow: visible !important;
+}
+.suite-rail-section h4 {
+  color: var(--text-heading) !important;
+}
+.suite-rail-section p,
+.suite-rail-section span {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 374px) {
+  .suite-module-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.45rem !important;
+  }
+  .suite-module-card {
+    min-height: 4.9rem !important;
+    padding: 0.6rem !important;
+  }
+  .suite-module-title {
+    font-size: 0.68rem !important;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .suite-module-rail {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+  .suite-module-card {
+    min-height: 5.4rem !important;
+  }
+}
