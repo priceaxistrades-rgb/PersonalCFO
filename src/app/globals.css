@@ -3487,3 +3487,187 @@ svg, canvas, img, video {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   OBSIDIAN SIDEBAR REFINEMENT v7.1
+   Visual-only layer: clearer hierarchy, quieter motion, stronger readability.
+   ═══════════════════════════════════════════════════════════════════════ */
+[data-theme="obsidian"] .app-sidebar {
+  background:
+    radial-gradient(circle at 18% 2%, rgba(217, 119, 87, 0.075), transparent 18rem),
+    linear-gradient(180deg, #1a1a17 0%, #171715 52%, #151513 100%) !important;
+  border-color: rgba(255, 255, 245, 0.1) !important;
+  box-shadow: 18px 0 48px rgba(0, 0, 0, 0.18);
+}
+[data-theme="obsidian"] .app-sidebar::before {
+  opacity: 0.18;
+  background: radial-gradient(ellipse, rgba(217, 119, 87, 0.16), transparent 70%);
+  filter: blur(34px);
+}
+[data-theme="obsidian"] .app-sidebar::after {
+  background: linear-gradient(180deg, transparent 2%, rgba(217, 119, 87, 0.34) 30%, rgba(111, 169, 160, 0.2) 68%, transparent 98%);
+  opacity: 0.65;
+  animation-duration: 10s;
+}
+
+/* Brand and primary controls */
+[data-theme="obsidian"] .app-sidebar .sidebar-brand-mark,
+[data-theme="obsidian"] .mobile-brand-menu {
+  background: linear-gradient(145deg, #e08a6d, #bd5f42) !important;
+  color: #fffaf5 !important;
+  border-color: rgba(255, 255, 245, 0.18) !important;
+  box-shadow: 0 9px 22px rgba(118, 48, 29, 0.27), inset 0 1px 0 rgba(255,255,255,0.24);
+}
+[data-theme="obsidian"] .app-sidebar .sidebar-brand-mark::after {
+  border-color: rgba(217, 119, 87, 0.38);
+}
+[data-theme="obsidian"] .app-sidebar .group:hover .sidebar-brand-mark,
+[data-theme="obsidian"] .app-sidebar .group:focus-visible .sidebar-brand-mark {
+  box-shadow: 0 10px 28px rgba(118, 48, 29, 0.34);
+}
+
+/* Search and scope cards read as deliberate controls, not dim panels. */
+[data-theme="obsidian"] .app-sidebar :is(.sidebar-search-trigger, .sidebar-scope-link) {
+  background: rgba(255, 255, 245, 0.035) !important;
+  border-color: rgba(255, 255, 245, 0.105) !important;
+  color: #d9d6ce !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,245,0.025);
+}
+[data-theme="obsidian"] .app-sidebar :is(.sidebar-search-trigger, .sidebar-scope-link):hover,
+[data-theme="obsidian"] .app-sidebar :is(.sidebar-search-trigger, .sidebar-scope-link):focus-visible {
+  background: rgba(217, 119, 87, 0.09) !important;
+  border-color: rgba(217, 119, 87, 0.34) !important;
+  color: #fff8f3 !important;
+}
+[data-theme="obsidian"] .app-sidebar :is(.sidebar-search-trigger, .sidebar-scope-link) :is(.text-slate-400, .text-slate-500) {
+  color: #aaa69c !important;
+}
+
+/* Group labels: enough contrast to scan, restrained enough to stay secondary. */
+[data-theme="obsidian"] .app-sidebar .sidebar-group-toggle {
+  color: #a8a49a !important;
+  border: 1px solid transparent !important;
+  letter-spacing: 0.12em !important;
+}
+[data-theme="obsidian"] .app-sidebar .sidebar-group-toggle svg {
+  color: #8f8b82 !important;
+}
+[data-theme="obsidian"] .app-sidebar .sidebar-group-toggle:hover,
+[data-theme="obsidian"] .app-sidebar .sidebar-group-toggle:focus-visible,
+[data-theme="obsidian"] .app-sidebar .sidebar-group-toggle[aria-expanded="true"] {
+  color: #eeeae2 !important;
+  background: rgba(255, 255, 245, 0.035) !important;
+  border-color: rgba(255, 255, 245, 0.07) !important;
+}
+[data-theme="obsidian"] .app-sidebar .sidebar-group-toggle[aria-expanded="true"] svg {
+  color: var(--primary) !important;
+}
+[data-theme="obsidian"] .app-sidebar .sidebar-group-toggle > span:last-child {
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 0.45rem;
+  background: rgba(255, 255, 245, 0.035);
+  color: #aaa69c;
+}
+
+/* Navigation links */
+[data-theme="obsidian"] .app-sidebar :is(.sidebar-nav-link, .sidebar-mobile-link) {
+  color: #c4c0b6 !important;
+  border: 1px solid transparent;
+  border-radius: 0.78rem !important;
+}
+[data-theme="obsidian"] .app-sidebar :is(.sidebar-nav-link, .sidebar-mobile-link) .sidebar-nav-icon,
+[data-theme="obsidian"] .app-sidebar :is(.sidebar-nav-link, .sidebar-mobile-link) > span:first-child {
+  color: #9d998f !important;
+}
+[data-theme="obsidian"] .app-sidebar :is(.sidebar-nav-link, .sidebar-mobile-link):hover,
+[data-theme="obsidian"] .app-sidebar :is(.sidebar-nav-link, .sidebar-mobile-link):focus-visible {
+  color: #f5f2ea !important;
+  background: rgba(255, 255, 245, 0.045) !important;
+  border-color: rgba(255, 255, 245, 0.075);
+}
+[data-theme="obsidian"] .app-sidebar :is(.sidebar-nav-link, .sidebar-mobile-link):hover .sidebar-nav-icon,
+[data-theme="obsidian"] .app-sidebar :is(.sidebar-nav-link, .sidebar-mobile-link):hover > span:first-child {
+  color: #e2a087 !important;
+}
+[data-theme="obsidian"] .app-sidebar :is(.sidebar-nav-link-active, .sidebar-mobile-link-active) {
+  color: #fffaf5 !important;
+  background:
+    linear-gradient(90deg, rgba(217, 119, 87, 0.2), rgba(217, 119, 87, 0.075)) !important;
+  border-color: rgba(217, 119, 87, 0.25) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,245,0.045), 0 7px 18px rgba(0,0,0,0.12) !important;
+}
+[data-theme="obsidian"] .app-sidebar :is(.sidebar-nav-link-active, .sidebar-mobile-link-active)::before {
+  width: 3px;
+  background: #e18b6e;
+  box-shadow: 0 0 12px rgba(217, 119, 87, 0.34);
+}
+[data-theme="obsidian"] .app-sidebar :is(.sidebar-nav-link-active, .sidebar-mobile-link-active) :is(.sidebar-nav-icon, span, svg) {
+  color: #fffaf5 !important;
+}
+
+/* Nested rail and scrollbar */
+[data-theme="obsidian"] .app-sidebar .sidebar-nav-list,
+[data-theme="obsidian"] .app-sidebar nav > div > div[class*="border-l"] {
+  border-color: rgba(217, 119, 87, 0.2) !important;
+}
+[data-theme="obsidian"] .app-sidebar nav {
+  scrollbar-color: #454039 transparent;
+  scrollbar-width: thin;
+}
+[data-theme="obsidian"] .app-sidebar nav::-webkit-scrollbar { width: 5px; }
+[data-theme="obsidian"] .app-sidebar nav::-webkit-scrollbar-thumb {
+  background: #454039;
+  border-radius: 999px;
+}
+
+/* Footer, theme selector and account area */
+[data-theme="obsidian"] .app-sidebar .bg-surface-2 {
+  background-color: #22221f !important;
+  border-color: rgba(255, 255, 245, 0.085) !important;
+}
+[data-theme="obsidian"] .app-sidebar .bg-indigo-600 {
+  background: #c9694b !important;
+  color: #fff !important;
+  border-color: rgba(255,255,245,0.12) !important;
+}
+[data-theme="obsidian"] .app-sidebar .text-indigo-400,
+[data-theme="obsidian"] .app-sidebar .dark\:text-indigo-300 {
+  color: #e39a80 !important;
+}
+[data-theme="obsidian"] .app-sidebar .btn-secondary {
+  background: #242420 !important;
+  color: #e8e5dd !important;
+  border-color: rgba(255,255,245,0.09) !important;
+}
+[data-theme="obsidian"] .app-sidebar .btn-secondary:hover {
+  background: #2b2b26 !important;
+  border-color: rgba(217, 119, 87, 0.28) !important;
+}
+[data-theme="obsidian"] .app-sidebar .sidebar-quick-add {
+  background: linear-gradient(135deg, #d97757, #b95a3e) !important;
+  box-shadow: 0 10px 24px rgba(118, 48, 29, 0.23);
+}
+[data-theme="obsidian"] .app-sidebar .sidebar-quick-add:hover,
+[data-theme="obsidian"] .app-sidebar .sidebar-quick-add:focus-visible {
+  box-shadow: 0 14px 30px rgba(118, 48, 29, 0.32);
+}
+
+/* Mobile drawer receives the same hierarchy without changing its behavior. */
+[data-theme="obsidian"] .mobile-suite-drawer > div:first-child {
+  background: rgba(29, 29, 26, 0.96) !important;
+  border-color: rgba(255,255,245,0.09) !important;
+}
+[data-theme="obsidian"] .mobile-suite-drawer nav {
+  background: transparent !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="obsidian"] .app-sidebar::before,
+  [data-theme="obsidian"] .app-sidebar::after,
+  [data-theme="obsidian"] .sidebar-nav-list .sidebar-nav-link {
+    animation: none !important;
+  }
+}
