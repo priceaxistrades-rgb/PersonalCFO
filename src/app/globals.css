@@ -3671,3 +3671,400 @@ svg, canvas, img, video {
     animation: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ONBOARDING + MOTION POLISH v7.2
+   Purposeful motion only: establishes hierarchy and confirms interaction.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Mobile top summary grid: remove filled panels while retaining readable
+   grouping, spacing and touch targets. Desktop/tablet surfaces are unchanged. */
+@media (max-width: 639px) {
+  .page-canvas > div > .grid:first-of-type :is(.mobile-kpi-card, .kpi-card, .dashboard-metric-card) {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border-color: var(--border) !important;
+  }
+  .page-canvas > div > .grid:first-of-type :is(.mobile-kpi-card, .kpi-card, .dashboard-metric-card)::before,
+  .page-canvas > div > .grid:first-of-type :is(.mobile-kpi-card, .kpi-card, .dashboard-metric-card)::after {
+    opacity: 0.42;
+  }
+}
+
+/* Page entrance: short stagger that never delays interaction. */
+@keyframes pcfoContentReveal {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes pcfoGuideHeroReveal {
+  from { opacity: 0; transform: translate3d(0, 14px, 0) scale(0.992); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+@keyframes pcfoAccentBreathe {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 0%, transparent); }
+  50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--primary) 7%, transparent); }
+}
+
+.page-canvas > div > :is(.section-title, .mobile-page-title):first-child {
+  animation: pcfoContentReveal 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.page-canvas > div > :nth-child(2) {
+  animation: pcfoContentReveal 420ms 45ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.page-canvas > div > :nth-child(3) {
+  animation: pcfoContentReveal 440ms 85ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.page-canvas > div > :nth-child(4) {
+  animation: pcfoContentReveal 460ms 120ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Manual gets a welcoming, guided progression without altering its content. */
+.guide-page .guide-hero {
+  animation: pcfoGuideHeroReveal 520ms 60ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.guide-page .guide-step-card {
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), border-color 220ms ease, box-shadow 220ms ease;
+}
+.guide-page .guide-step-card:hover,
+.guide-page .guide-step-card:focus-within {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--primary) 34%, var(--border)) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+.guide-page .guide-step-card:nth-child(1) { animation: pcfoContentReveal 420ms 120ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.guide-page .guide-step-card:nth-child(2) { animation: pcfoContentReveal 420ms 170ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.guide-page .guide-step-card:nth-child(3) { animation: pcfoContentReveal 420ms 220ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.guide-page .guide-step-card:nth-child(4) { animation: pcfoContentReveal 420ms 270ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.guide-page .guide-row-index {
+  animation: pcfoAccentBreathe 2.8s ease-in-out infinite;
+}
+.guide-shortcut {
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), border-color 220ms ease, background-color 220ms ease !important;
+}
+.guide-shortcut:hover,
+.guide-shortcut:focus-visible {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border)) !important;
+  background: color-mix(in srgb, var(--primary-soft) 42%, var(--surface-2)) !important;
+}
+.guide-shortcut:hover > span,
+.guide-shortcut:focus-visible > span {
+  transform: rotate(-4deg) scale(1.06);
+}
+.guide-shortcut > span {
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Buttons and nav acknowledge taps without exaggerated movement. */
+:is(.btn, .sidebar-nav-link, .sidebar-mobile-link, .premium-tab-item, .suite-module-card):active {
+  transform: scale(0.975);
+  transition-duration: 80ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-canvas > div > *,
+  .guide-page .guide-hero,
+  .guide-page .guide-step-card,
+  .guide-page .guide-row-index {
+    animation: none !important;
+  }
+  .guide-page .guide-step-card,
+  .guide-shortcut,
+  .guide-shortcut > span {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE THEME AUTHORITY PATCH v7.3
+   Explicit high-specificity mobile surfaces prevent older responsive rules
+   from pinning the UI to Obsidian after the theme attribute changes.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1023px) {
+  html[data-theme="aurora"] {
+    color-scheme: light;
+    --bg: #f7f6f2;
+    --bg-subtle: #f0eee8;
+    --surface: #fffefa;
+    --surface-2: #f1efe9;
+    --surface-3: #e7e4dc;
+    --surface-4: #d8d4ca;
+    --surface-hover: #ece9e1;
+    --sidebar: #efede7;
+    --header: rgba(247, 246, 242, 0.94);
+    --border: rgba(36, 35, 31, 0.13);
+    --border-strong: rgba(36, 35, 31, 0.24);
+    --text: #35332d;
+    --text-heading: #1f1e1a;
+    --text-muted: #625f57;
+    --text-faint: #77736a;
+    --primary: #ad5337;
+    --primary-dark: #91442d;
+    --primary-soft: rgba(173, 83, 55, 0.1);
+    --primary-glow: rgba(173, 83, 55, 0.14);
+  }
+  html[data-theme="obsidian"] {
+    color-scheme: dark;
+    --bg: #141412;
+    --bg-subtle: #181816;
+    --surface: #1d1d1a;
+    --surface-2: #242420;
+    --surface-3: #2c2c27;
+    --surface-4: #373730;
+    --surface-hover: #292925;
+    --sidebar: #181816;
+    --header: rgba(20, 20, 18, 0.94);
+    --border: rgba(255, 255, 245, 0.09);
+    --border-strong: rgba(255, 255, 245, 0.17);
+    --text: #e8e6df;
+    --text-heading: #f8f7f2;
+    --text-muted: #b8b4aa;
+    --text-faint: #8d897f;
+    --primary: #d97757;
+    --primary-dark: #c56547;
+    --primary-soft: rgba(217, 119, 87, 0.14);
+    --primary-glow: rgba(217, 119, 87, 0.18);
+  }
+
+  html[data-theme] body,
+  html[data-theme] .app-shell,
+  html[data-theme] .app-content,
+  html[data-theme] .page-canvas {
+    color: var(--text) !important;
+  }
+  html[data-theme="aurora"] body,
+  html[data-theme="aurora"] .app-shell,
+  html[data-theme="aurora"] .app-content,
+  html[data-theme="aurora"] .page-canvas {
+    background: var(--bg) !important;
+  }
+  html[data-theme="obsidian"] body,
+  html[data-theme="obsidian"] .app-shell,
+  html[data-theme="obsidian"] .app-content,
+  html[data-theme="obsidian"] .page-canvas {
+    background: var(--bg) !important;
+  }
+
+  html[data-theme] :is(.mobile-top-bar, .premium-bottom-nav) {
+    background: var(--header) !important;
+    border-color: var(--border) !important;
+    color: var(--text) !important;
+  }
+  html[data-theme] :is(.mobile-more-sheet, .mobile-suite-drawer) {
+    background: var(--surface) !important;
+    border-color: var(--border-strong) !important;
+    color: var(--text) !important;
+  }
+  html[data-theme] :is(.mobile-more-sheet, .mobile-suite-drawer)
+  :is(h1, h2, h3, h4, strong, .suite-module-title) {
+    color: var(--text-heading) !important;
+  }
+  html[data-theme] :is(.mobile-more-sheet, .mobile-suite-drawer)
+  :is(p, small, .text-slate-400, .text-slate-500) {
+    color: var(--text-muted) !important;
+  }
+  html[data-theme] :is(.suite-module-card, .suite-appearance-row, .suite-account-card) {
+    background: var(--surface-2) !important;
+    border-color: var(--border) !important;
+  }
+
+  html[data-theme="aurora"] :is(.mobile-kpi-card, .kpi-card, .dashboard-metric-card, .card, .mobile-card, .table-scroll) {
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+  }
+  html[data-theme="aurora"] :is(.card, .mobile-card, .table-scroll) {
+    background-color: var(--surface) !important;
+  }
+  html[data-theme="aurora"] :is(.mobile-top-bar, .premium-bottom-nav, .mobile-more-sheet, .mobile-suite-drawer)
+  :is(.text-white, .text-slate-50, .text-slate-100, .text-slate-200, .text-slate-300) {
+    color: var(--text-heading) !important;
+  }
+  html[data-theme="aurora"] :is(.mobile-top-bar, .premium-bottom-nav, .mobile-more-sheet, .mobile-suite-drawer)
+  :is(.text-slate-400, .text-slate-500, .text-slate-600) {
+    color: var(--text-muted) !important;
+  }
+
+  /* Controls with intentionally saturated backgrounds keep white foregrounds. */
+  html[data-theme="aurora"] :is(.mobile-fab-action, .sidebar-mobile-link-active, .btn-primary),
+  html[data-theme="aurora"] :is(.mobile-fab-action, .sidebar-mobile-link-active, .btn-primary) * {
+    color: #fff !important;
+  }
+
+  html.theme-transition body,
+  html.theme-transition .app-shell,
+  html.theme-transition .app-content,
+  html.theme-transition .mobile-top-bar,
+  html.theme-transition .premium-bottom-nav,
+  html.theme-transition .mobile-more-sheet,
+  html.theme-transition .mobile-suite-drawer,
+  html.theme-transition .card,
+  html.theme-transition .mobile-card {
+    transition: background-color 260ms ease, color 220ms ease, border-color 260ms ease !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE PALETTE COMPLETION v7.4
+   Replaces legacy indigo/blue mobile chrome with the canonical warm palette.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1023px) {
+  /* Header, brand and primary mobile actions */
+  html[data-theme="obsidian"] :is(.mobile-brand-menu, .mobile-fab-action, .sidebar-quick-add),
+  html[data-theme="obsidian"] .mobile-suite-drawer :is(.from-indigo-500, .bg-indigo-600) {
+    background: linear-gradient(145deg, #df8769, #b9573c) !important;
+    border-color: rgba(255, 244, 237, 0.2) !important;
+    color: #fffaf5 !important;
+    box-shadow: 0 10px 26px rgba(104, 42, 25, 0.3) !important;
+  }
+  html[data-theme="aurora"] :is(.mobile-brand-menu, .mobile-fab-action, .sidebar-quick-add),
+  html[data-theme="aurora"] .mobile-suite-drawer :is(.from-indigo-500, .bg-indigo-600) {
+    background: linear-gradient(145deg, #bd674a, #98452f) !important;
+    border-color: rgba(255,255,255,0.3) !important;
+    color: #fff !important;
+    box-shadow: 0 9px 22px rgba(112, 50, 31, 0.2) !important;
+  }
+
+  /* Search/profile controls and selected Suite tab */
+  html[data-theme] :is(.mobile-top-bar, .premium-bottom-nav, .mobile-more-sheet, .mobile-suite-drawer)
+  :is(.text-indigo-300, .text-indigo-400, .text-indigo-500) {
+    color: var(--primary) !important;
+  }
+  html[data-theme] :is(.mobile-top-bar, .premium-bottom-nav, .mobile-more-sheet, .mobile-suite-drawer)
+  :is(.bg-indigo-500\/10, .bg-indigo-500\/20, .bg-indigo-500\/30) {
+    background-color: var(--primary-soft) !important;
+  }
+  html[data-theme] :is(.mobile-top-bar, .premium-bottom-nav, .mobile-more-sheet, .mobile-suite-drawer)
+  :is(.border-indigo-500\/20, .border-indigo-500\/30, .border-indigo-500\/40) {
+    border-color: color-mix(in srgb, var(--primary) 30%, transparent) !important;
+  }
+  html[data-theme] .premium-tab-active,
+  html[data-theme] .mobile-suite-active {
+    color: var(--primary) !important;
+    background: var(--primary-soft) !important;
+  }
+  html[data-theme] .suite-hub-icon {
+    color: var(--primary) !important;
+    background: var(--primary-soft) !important;
+    border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent);
+  }
+
+  /* Suite overlay: warm premium panel instead of the legacy blue deck. */
+  html[data-theme="obsidian"] .premium-suite-sheet {
+    background:
+      radial-gradient(circle at 12% 0%, rgba(217,119,87,0.08), transparent 19rem),
+      #1d1d1a !important;
+    border-color: rgba(255,255,245,0.13) !important;
+  }
+  html[data-theme="aurora"] .premium-suite-sheet {
+    background:
+      radial-gradient(circle at 12% 0%, rgba(173,83,55,0.055), transparent 19rem),
+      #fffefa !important;
+    border-color: rgba(36,35,31,0.16) !important;
+  }
+  html[data-theme="obsidian"] .suite-hero {
+    background:
+      radial-gradient(circle at 90% 0%, rgba(111,169,160,0.13), transparent 13rem),
+      linear-gradient(145deg, #29241f, #211e1b) !important;
+    border-color: rgba(217,119,87,0.22) !important;
+  }
+  html[data-theme="aurora"] .suite-hero {
+    background:
+      radial-gradient(circle at 90% 0%, rgba(47,118,110,0.1), transparent 13rem),
+      linear-gradient(145deg, #f4e9df, #ece8df) !important;
+    border-color: rgba(173,83,55,0.2) !important;
+  }
+  html[data-theme="aurora"] .suite-hero :is(h3, p, small, span) {
+    color: var(--text-heading) !important;
+  }
+  html[data-theme="aurora"] .suite-hero p:not(.text-sky-200\/85) {
+    color: var(--text-muted) !important;
+  }
+  html[data-theme] .suite-hero .text-sky-200\/85 {
+    color: var(--primary) !important;
+  }
+  html[data-theme="aurora"] .suite-hero button {
+    background: rgba(255,255,255,0.62) !important;
+    border-color: var(--border) !important;
+    color: var(--text-heading) !important;
+  }
+
+  /* Suite action/module cards */
+  html[data-theme] .suite-action-card {
+    background: var(--surface-2) !important;
+    border-color: var(--border) !important;
+    color: var(--text) !important;
+  }
+  html[data-theme] .suite-action-card:hover,
+  html[data-theme] .suite-action-card:focus-visible {
+    background: color-mix(in srgb, var(--primary-soft) 55%, var(--surface-2)) !important;
+    border-color: color-mix(in srgb, var(--primary) 32%, var(--border)) !important;
+  }
+  html[data-theme] .suite-action-card strong,
+  html[data-theme] .suite-module-card .suite-module-title {
+    color: var(--text-heading) !important;
+  }
+  html[data-theme] .suite-action-card small,
+  html[data-theme] .suite-module-jump {
+    color: var(--text-muted) !important;
+  }
+  html[data-theme] .suite-action-icon,
+  html[data-theme] .suite-module-icon {
+    background: var(--primary-soft) !important;
+    color: var(--primary) !important;
+    border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent) !important;
+    box-shadow: none !important;
+  }
+  html[data-theme] .suite-action-primary {
+    background: color-mix(in srgb, var(--primary-soft) 68%, var(--surface-2)) !important;
+    border-color: color-mix(in srgb, var(--primary) 30%, var(--border)) !important;
+  }
+  html[data-theme] .suite-action-primary :is(strong, small) {
+    color: var(--text-heading) !important;
+  }
+  html[data-theme] .suite-module-card-active {
+    background: color-mix(in srgb, var(--primary-soft) 72%, var(--surface-2)) !important;
+    border-color: color-mix(in srgb, var(--primary) 36%, var(--border)) !important;
+  }
+
+  /* Theme chips display the actual product palettes. */
+  html[data-theme] .suite-theme-chip {
+    background: var(--surface-2) !important;
+    color: var(--text-muted) !important;
+    border-color: var(--border) !important;
+  }
+  html[data-theme] .suite-theme-chip-active {
+    background: var(--primary-soft) !important;
+    color: var(--text-heading) !important;
+    border-color: color-mix(in srgb, var(--primary) 38%, var(--border)) !important;
+  }
+  html[data-theme] .suite-theme-chip:first-child > span {
+    background: #d97757 !important;
+  }
+  html[data-theme] .suite-theme-chip:nth-child(2) > span {
+    background: #ad5337 !important;
+  }
+
+  /* Mobile drawer's old blue rail and active links become theme-aware. */
+  html[data-theme] .mobile-suite-drawer nav > div > div[class*="border-l"] {
+    border-color: color-mix(in srgb, var(--primary) 24%, transparent) !important;
+  }
+  html[data-theme] .mobile-suite-drawer .sidebar-mobile-link-active {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 23%, var(--surface-2)), color-mix(in srgb, var(--primary) 9%, var(--surface-2))) !important;
+    border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border)) !important;
+    color: var(--text-heading) !important;
+    box-shadow: inset 3px 0 0 var(--primary) !important;
+  }
+  html[data-theme] .mobile-suite-drawer .sidebar-mobile-link-active * {
+    color: var(--text-heading) !important;
+  }
+
+  /* Bottom-nav central action and active items share one palette. */
+  html[data-theme] .premium-bottom-nav {
+    box-shadow: 0 -12px 32px rgba(0,0,0,0.13), inset 0 1px 0 color-mix(in srgb, var(--border) 80%, transparent) !important;
+  }
+  html[data-theme="aurora"] .premium-bottom-nav {
+    box-shadow: 0 -10px 28px rgba(36,35,31,0.08), inset 0 1px 0 var(--border) !important;
+  }
+}

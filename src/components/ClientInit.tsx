@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { installGlobalErrorHandlers } from "@/lib/client-logger";
 import { GlobalQuickActionModal } from "@/components/QuickActionCenter";
 import { CommandSearchModal } from "@/components/CommandSearchModal";
+import { FirstLoginGuide } from "@/components/FirstLoginGuide";
 
 /**
  * One-time client-side initializer.
@@ -38,6 +39,7 @@ export function ClientInit() {
 
   return (
     <>
+      <FirstLoginGuide />
       <GlobalQuickActionModal />
       <CommandSearchModal />
     </>

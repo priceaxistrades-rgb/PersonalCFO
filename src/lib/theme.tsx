@@ -40,12 +40,26 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("obsidian");
   const [hydrated, setHydrated] = useState(false);
 
+  const applyTheme = (next: Theme) => {
+    document.documentElement.setAttribute("data-theme", next);
+    document.body.setAttribute("data-theme", next);
+    document.documentElement.style.colorScheme = next === "aurora" ? "light" : "dark";
+    const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    themeColor?.setAttribute("content", next === "aurora" ? "#f7f6f2" : "#141412");
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      const stored = localStorage.getItem("cfo-theme");
+      let stored: string | null = null;
+      try {
+        stored = localStorage.getItem("cfo-theme");
+      } catch {
+        // Storage can be unavailable in strict mobile privacy modes. The theme
+        // still works for the current session through React and DOM state.
+      }
       const next = migrateTheme(stored);
       setThemeState(next);
-      document.documentElement.setAttribute("data-theme", next);
+      applyTheme(next);
       setHydrated(true);
     }, 0);
     return () => clearTimeout(timer);
@@ -54,8 +68,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const setTheme = (t: Theme) => {
     setThemeState(t);
     document.documentElement.classList.add("theme-transition");
-    document.documentElement.setAttribute("data-theme", t);
-    localStorage.setItem("cfo-theme", t);
+    applyTheme(t);
+    try {
+      localStorage.setItem("cfo-theme", t);
+    } catch {
+      // Keep the selected theme active for this session even if persistence is
+      // blocked by the browser.
+    }
     setTimeout(() => {
       document.documentElement.classList.remove("theme-transition");
     }, 350);
