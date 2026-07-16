@@ -72,6 +72,7 @@ const NAV_GROUPS = [
       { href: "/emergency", label: "Emergency Vault", icon: IconEmergency, desc: "Crisis checklist, contacts & secure notes" },
       { href: "/family", label: "Household Profiles", icon: IconFamily, desc: "Manage multi-member isolation scope" },
       { href: "/reports", label: "Analytics Reports", icon: IconReports, desc: "Historical inflow vs outflow breakdowns" },
+      { href: "/guide", label: "User Manual", icon: IconOnboarding, desc: "How to use the complete Personal CFO website" },
       { href: "/onboarding", label: "Setup Checklist", icon: IconOnboarding, desc: "Complete guide to initializing workspace" },
     ],
   },

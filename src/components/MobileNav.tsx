@@ -64,6 +64,7 @@ const MORE_LINKS_GROUPS = [
       { href: "/emergency", label: "Emergency Vault", icon: IconEmergency },
       { href: "/family", label: "Household Profiles", icon: IconFamily },
       { href: "/reports", label: "Analytics Reports", icon: IconReports },
+      { href: "/guide", label: "User Manual", icon: IconOnboarding },
       { href: "/onboarding", label: "Setup Checklist", icon: IconOnboarding },
       { href: "/settings", label: "Settings & Accounts", icon: IconSettings },
     ],
@@ -244,6 +245,10 @@ export function MobileNav() {
                 <Link href="/health" onClick={() => setShowMore(false)} className="suite-action-card no-underline">
                   <span className="suite-action-icon"><IconHealth size={18} /></span>
                   <span className="suite-action-copy"><strong>Health Check</strong><small>Score & actions</small></span>
+                </Link>
+                <Link href="/guide" onClick={() => setShowMore(false)} className="suite-action-card no-underline">
+                  <span className="suite-action-icon"><IconOnboarding size={18} /></span>
+                  <span className="suite-action-copy"><strong>User Manual</strong><small>Learn the whole app</small></span>
                 </Link>
                 <Link href="/settings" onClick={() => setShowMore(false)} className="suite-action-card no-underline">
                   <span className="suite-action-icon"><IconSettings size={18} /></span>

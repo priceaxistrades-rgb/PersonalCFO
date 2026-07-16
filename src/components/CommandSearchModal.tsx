@@ -8,7 +8,7 @@ import {
   IconSearch, IconDashboard, IconIncome, IconExpenses, IconInvestments,
   IconMarkets, IconSavings, IconDebt, IconAI, IconBrief, IconMission,
   IconHealth, IconTimeline, IconSimulator, IconOpportunities, IconStress,
-  IconDreams, IconTax, IconInsurance, IconBills, IconArrowRight
+  IconDreams, IconTax, IconInsurance, IconBills, IconOnboarding, IconArrowRight
 } from "@/components/ui/Icons";
 
 type SearchResultItem = {
@@ -44,6 +44,7 @@ const STATIC_MODULES: SearchResultItem[] = [
   { id: "mod-19", category: "Module", title: "Wealth Roadmap & Timeline", subtitle: "Compounding timeline & financial freedom path", badge: "/wealth", href: "/wealth", icon: IconTimeline },
   { id: "mod-20", category: "Module", title: "Tax Shield & Marginal Rate Engine", subtitle: "Old vs New regime comparative marginal engine", badge: "/tax", href: "/tax", icon: IconTax },
   { id: "mod-21", category: "Module", title: "Insurance Shield & Risk Coverage", subtitle: "Monitored sum assured & renewal alerts", badge: "/insurance", href: "/insurance", icon: IconInsurance },
+  { id: "mod-22", category: "Module", title: "Personal CFO User Manual", subtitle: "Guide for using the complete website across desktop, tablet and mobile", badge: "/guide", href: "/guide", icon: IconOnboarding },
 ];
 
 export function CommandSearchModal() {
