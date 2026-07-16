@@ -13,7 +13,7 @@ import {
 
 export type WatchItem = {
   id: number;
-  symbol: string;
+  symbol?: string;
   schemeCode?: string | null;
   name: string;
   kind: string;
@@ -256,13 +256,15 @@ export function LiveMarkets({
 
   const renderRows = (list: WatchItem[]) =>
     list.map((it) => {
+      const instrumentId = it.kind === "mf" ? (it.schemeCode || it.symbol || "") : (it.symbol || it.schemeCode || "");
+      const displayName = it.name || instrumentId || "Unnamed instrument";
       const key = it.kind === "stock" || it.kind === "commodity" || it.kind === "crypto" || it.kind === "index" || it.kind === "reit" || it.kind === "bond"
-        ? `stock:${it.symbol}`
-        : `mf:${it.symbol}`;
+        ? `stock:${instrumentId}`
+        : `mf:${instrumentId}`;
       const q = quotes[key];
-      const target: ChartTarget | null = it.kind === "stock" || it.kind === "commodity" || it.kind === "crypto" || it.kind === "index" || it.kind === "reit" || it.kind === "bond"
-        ? { id: it.symbol, label: it.symbol, kind: "stock" }
-        : { id: it.symbol, label: it.name, kind: "mf" };
+      const target: ChartTarget | null = instrumentId ? (it.kind === "stock" || it.kind === "commodity" || it.kind === "crypto" || it.kind === "index" || it.kind === "reit" || it.kind === "bond"
+        ? { id: instrumentId, label: displayName, kind: "stock" }
+        : { id: instrumentId, label: displayName, kind: "mf" }) : null;
 
       const isHeld = it.source === "investment";
       const livePrice = q?.ok ? q.price : null;
@@ -276,7 +278,7 @@ export function LiveMarkets({
                 onClick={() => target && openChart(target)}
               >
                 <div className="flex items-center gap-2">
-                  <span className="group-hover:text-indigo-400 transition-colors text-white font-bold">{it.name}</span>
+                  <span className="market-instrument-name group-hover:text-indigo-400 transition-colors text-white font-bold">{displayName}</span>
                   {isHeld && <Badge tone="primary" className="font-mono text-[9px]">HELD IN PORTFOLIO</Badge>}
                 </div>
                 <span className="block text-[10px] font-mono text-slate-400 mt-0.5">
@@ -342,7 +344,8 @@ export function LiveMarkets({
   const investedItems = items.filter((i) => i.source === "investment");
   const totalInvested = sumBy(investedItems, (i) => Number(i.invested || 0));
   const totalCurrent = sumBy(investedItems, (i) => {
-    const key = i.kind === "stock" ? `stock:${i.symbol}` : `mf:${i.symbol}`;
+    const instrumentId = i.kind === "mf" ? (i.schemeCode || i.symbol || "") : (i.symbol || i.schemeCode || "");
+    const key = i.kind === "stock" ? `stock:${instrumentId}` : `mf:${instrumentId}`;
     const q = quotes[key];
     const units = Number(i.units || 0);
     const manualVal = Number(i.currentValue || 0);

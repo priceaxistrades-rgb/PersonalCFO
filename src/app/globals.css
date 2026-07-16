@@ -1985,3 +1985,129 @@ svg, canvas, img, video {
   transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--primary) 45%, var(--border)) !important;
 }
+
+/* Header refinement: brand mark doubles as the navigation trigger, removing
+   the separate top-right hamburger while keeping the Personal CFO text clean. */
+.mobile-brand-menu {
+  position: relative;
+  overflow: hidden;
+}
+.mobile-brand-menu-lines {
+  position: absolute;
+  right: -0.28rem;
+  bottom: -0.2rem;
+  width: 1rem;
+  height: 0.72rem;
+  border-radius: 0.45rem;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(255,255,255,0.24);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.16);
+}
+.mobile-brand-menu-lines::before,
+.mobile-brand-menu-lines::after {
+  content: "";
+  position: absolute;
+  left: 0.22rem;
+  right: 0.22rem;
+  height: 1px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.9);
+}
+.mobile-brand-menu-lines::before { top: 0.24rem; }
+.mobile-brand-menu-lines::after { bottom: 0.22rem; }
+.mobile-brand-menu:hover,
+.mobile-brand-menu:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px -16px color-mix(in srgb, var(--primary) 90%, transparent);
+}
+
+/* Quick Entry fix: mobile uses a true full-height bottom sheet with a sticky
+   close/header area so fields never render half off-screen. */
+@media (max-width: 639px) {
+  .quick-entry-overlay {
+    align-items: stretch !important;
+    justify-content: flex-end !important;
+    padding-top: calc(0.5rem + env(safe-area-inset-top)) !important;
+    background: rgba(2, 6, 23, 0.72) !important;
+  }
+  .quick-entry-modal {
+    width: 100% !important;
+    height: calc(100dvh - 0.5rem - env(safe-area-inset-top)) !important;
+    max-height: none !important;
+    margin-top: auto !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    border-radius: 1.6rem 1.6rem 0 0 !important;
+    padding: 0 !important;
+  }
+  .quick-entry-modal > div:first-child {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    margin: 0 !important;
+    padding: 0.9rem 1rem !important;
+    border-radius: 1.6rem 1.6rem 0 0;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  .quick-entry-modal > div:not(:first-child),
+  .quick-entry-modal > .quick-entry-tabs,
+  .quick-entry-modal > div + div {
+    margin-left: 1rem;
+    margin-right: 1rem;
+  }
+  .quick-entry-modal > div:first-child button:last-child {
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+    min-height: 2.75rem !important;
+    border-radius: 1rem !important;
+    background: var(--surface-2) !important;
+    border: 1px solid var(--border-strong) !important;
+    color: var(--text-heading) !important;
+    opacity: 1 !important;
+  }
+  .quick-entry-tabs {
+    position: sticky;
+    top: 4.75rem;
+    z-index: 4;
+    padding: 0.65rem 1rem !important;
+    margin: 0 !important;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .quick-entry-modal input,
+  .quick-entry-modal select,
+  .quick-entry-modal textarea {
+    min-height: 3rem !important;
+  }
+  .quick-entry-modal button:last-child {
+    margin-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Live Markets: keep stock/MF/instrument names readable on narrow screens. */
+.market-instrument-name {
+  display: inline-block;
+  max-width: min(32rem, 72vw);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+@media (max-width: 639px) {
+  .market-instrument-name {
+    max-width: 100%;
+    font-size: 0.9rem;
+  }
+  .mobile-card-table td[data-label^="Instrument"] > div,
+  .mobile-card-table td[data-label^="Fund"] > div,
+  .mobile-card-table td[data-label^="Commodity"] > div,
+  .mobile-card-table td[data-label^="Crypto"] > div,
+  .mobile-card-table td[data-label^="Index"] > div,
+  .mobile-card-table td[data-label^="REIT"] > div,
+  .mobile-card-table td[data-label^="Bond"] > div {
+    width: 100%;
+    text-align: left;
+  }
+}

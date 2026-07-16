@@ -142,12 +142,23 @@ export function Sidebar() {
         className="mobile-top-bar lg:hidden sticky top-0 z-50 flex items-center justify-between gap-3 px-3 sm:px-5 h-14 backdrop-blur-2xl border-b select-none premium-mobile-header"
         style={{ background: "var(--header)", borderColor: "var(--border)" }}
       >
-        <Link href="/" className="font-extrabold tracking-tight flex items-center gap-2.5 text-base no-underline min-w-0" style={{ color: "var(--text-heading)" }}>
-          <div className="w-9 h-9 rounded-2xl flex items-center justify-center text-white shadow-md bg-gradient-to-br from-indigo-500 to-purple-600 shrink-0">
-            <IconDashboard size={17} />
-          </div>
-          <span className="truncate">Personal CFO</span>
-        </Link>
+        <div className="mobile-brand-cluster flex items-center gap-2.5 min-w-0">
+          <button
+            type="button"
+            onClick={() => { setOpen(true); setUserDropdownOpen(false); }}
+            aria-label="Open navigation menu"
+            aria-expanded={open}
+            className="mobile-brand-menu w-9 h-9 rounded-2xl flex items-center justify-center text-white shadow-md bg-gradient-to-br from-indigo-500 to-purple-600 shrink-0 cursor-pointer border border-white/10 active:scale-95 transition-all"
+          >
+            <span className="relative grid place-items-center">
+              <IconDashboard size={17} />
+              <span className="mobile-brand-menu-lines" aria-hidden="true" />
+            </span>
+          </button>
+          <Link href="/" className="font-extrabold tracking-tight text-base no-underline truncate" style={{ color: "var(--text-heading)" }}>
+            Personal CFO
+          </Link>
+        </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
@@ -183,9 +194,7 @@ export function Sidebar() {
               )}
             </button>
           )}
-          <button onClick={() => { setOpen(!open); setUserDropdownOpen(false); }} aria-expanded={open} className="btn btn-ghost hidden sm:inline-flex w-10 h-10 text-base rounded-2xl font-mono font-bold border border-white/[0.08] cursor-pointer" aria-label="Menu">
-            {open ? "✕" : "☰"}
-          </button>
+
         </div>
       </header>
 

@@ -68,8 +68,9 @@ export function MarketsClient({
       return {
         id: -investment.id,
         kind,
-        symbol: investment.symbol,
+        symbol: investment.symbol || investment.schemeCode || investment.name,
         schemeCode: investment.schemeCode,
+        name: investment.name,
         label: investment.name,
         source: "investment" as const,
         units: investment.units,
