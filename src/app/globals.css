@@ -3289,3 +3289,201 @@ svg, canvas, img, video {
     display: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CANONICAL THEME SYSTEM v7
+   CSS-only visual layer. No component behavior, layout contracts, APIs,
+   routing, forms, or financial modules are changed.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root,
+[data-theme="obsidian"] {
+  color-scheme: dark;
+  --bg: #141412;
+  --bg-subtle: #181816;
+  --surface: #1d1d1a;
+  --surface-2: #242420;
+  --surface-3: #2c2c27;
+  --surface-4: #373730;
+  --surface-hover: #292925;
+  --row-hover-bg: #292925;
+  --row-hover-text: #f7f7f3;
+  --link-hover-bg: #252521;
+  --link-hover-text: #f7f7f3;
+  --border: rgba(255, 255, 245, 0.09);
+  --border-strong: rgba(255, 255, 245, 0.17);
+  --border-focus: rgba(217, 119, 87, 0.72);
+  --text: #e8e6df;
+  --text-heading: #f8f7f2;
+  --text-muted: #b8b4aa;
+  --text-faint: #8d897f;
+  --primary: #d97757;
+  --primary-dark: #c56547;
+  --primary-soft: rgba(217, 119, 87, 0.14);
+  --primary-glow: rgba(217, 119, 87, 0.18);
+  --accent: #6fa9a0;
+  --accent-soft: rgba(111, 169, 160, 0.14);
+  --success: #69b99b;
+  --success-soft: rgba(105, 185, 155, 0.14);
+  --warning: #dfa95f;
+  --warning-soft: rgba(223, 169, 95, 0.14);
+  --danger: #e77b79;
+  --danger-soft: rgba(231, 123, 121, 0.14);
+  --sidebar: #181816;
+  --header: rgba(20, 20, 18, 0.9);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.34);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 8px 24px rgba(0, 0, 0, 0.16);
+  --shadow-lg: 0 16px 42px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 28px 72px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(255, 255, 245, 0.06);
+}
+
+[data-theme="aurora"] {
+  color-scheme: light;
+  --bg: #f7f6f2;
+  --bg-subtle: #f0eee8;
+  --surface: #fffefa;
+  --surface-2: #f1efe9;
+  --surface-3: #e7e4dc;
+  --surface-4: #d8d4ca;
+  --surface-hover: #ece9e1;
+  --row-hover-bg: #ece9e1;
+  --row-hover-text: #24231f;
+  --link-hover-bg: #ece9e1;
+  --link-hover-text: #24231f;
+  --border: rgba(36, 35, 31, 0.13);
+  --border-strong: rgba(36, 35, 31, 0.24);
+  --border-focus: rgba(173, 83, 55, 0.68);
+  --text: #35332d;
+  --text-heading: #1f1e1a;
+  --text-muted: #625f57;
+  --text-faint: #77736a;
+  --primary: #ad5337;
+  --primary-dark: #91442d;
+  --primary-soft: rgba(173, 83, 55, 0.1);
+  --primary-glow: rgba(173, 83, 55, 0.14);
+  --accent: #2f766e;
+  --accent-soft: rgba(47, 118, 110, 0.1);
+  --success: #24745a;
+  --success-soft: rgba(36, 116, 90, 0.1);
+  --warning: #995f0b;
+  --warning-soft: rgba(153, 95, 11, 0.1);
+  --danger: #b43f4d;
+  --danger-soft: rgba(180, 63, 77, 0.1);
+  --sidebar: #efede7;
+  --header: rgba(247, 246, 242, 0.92);
+  --shadow-sm: 0 1px 2px rgba(36, 35, 31, 0.06);
+  --shadow: 0 1px 2px rgba(36, 35, 31, 0.06), 0 8px 24px rgba(36, 35, 31, 0.045);
+  --shadow-lg: 0 18px 44px rgba(36, 35, 31, 0.09);
+  --shadow-xl: 0 28px 72px rgba(36, 35, 31, 0.13), 0 0 0 1px rgba(36, 35, 31, 0.08);
+}
+
+[data-theme="obsidian"] body,
+[data-theme="obsidian"] .app-content {
+  background:
+    radial-gradient(circle at 14% -8%, rgba(217, 119, 87, 0.065), transparent 28rem),
+    radial-gradient(circle at 96% 4%, rgba(111, 169, 160, 0.045), transparent 24rem),
+    var(--bg) !important;
+}
+
+[data-theme="aurora"] body,
+[data-theme="aurora"] .app-content {
+  background:
+    radial-gradient(circle at 12% -8%, rgba(173, 83, 55, 0.045), transparent 30rem),
+    var(--bg) !important;
+}
+
+/* Normalize legacy utility colors across content, desktop navigation, mobile
+   navigation, overlays, and dialogs. These rules fix low-contrast Aurora text. */
+[data-theme="aurora"] :is(.app-content, .app-sidebar, .mobile-more-sheet, .command-search-panel, .quick-entry-modal)
+:is(.text-white, .text-slate-50, .text-slate-100, .text-slate-200, .text-slate-300) {
+  color: var(--text-heading) !important;
+}
+[data-theme="aurora"] :is(.app-content, .app-sidebar, .mobile-more-sheet, .command-search-panel, .quick-entry-modal)
+:is(.text-slate-400, .text-slate-500, .text-slate-600, .text-gray-400, .text-gray-500, .text-zinc-400, .text-zinc-500) {
+  color: var(--text-muted) !important;
+}
+[data-theme="aurora"] :is(.app-content, .app-sidebar, .mobile-more-sheet, .command-search-panel, .quick-entry-modal)
+:is(.text-slate-700, .text-slate-800, .text-slate-900) {
+  color: var(--text-heading) !important;
+}
+
+/* Semantic utility colors are darkened enough to meet contrast on warm light
+   surfaces, while their dark-theme equivalents remain controlled by tokens. */
+[data-theme="aurora"] :is(.text-indigo-300, .text-indigo-400, .text-indigo-500) { color: var(--primary) !important; }
+[data-theme="aurora"] :is(.text-sky-300, .text-sky-400, .text-cyan-300, .text-cyan-400) { color: var(--accent) !important; }
+[data-theme="aurora"] :is(.text-emerald-300, .text-emerald-400, .text-green-300, .text-green-400) { color: var(--success) !important; }
+[data-theme="aurora"] :is(.text-amber-300, .text-amber-400, .text-yellow-300, .text-yellow-400) { color: var(--warning) !important; }
+[data-theme="aurora"] :is(.text-red-300, .text-red-400, .text-rose-300, .text-rose-400) { color: var(--danger) !important; }
+
+/* Keep foregrounds white only where the background is intentionally strong. */
+[data-theme="aurora"] :is(
+  .btn-primary, .btn-danger, .btn-success, .mobile-fab-action,
+  .sidebar-nav-link-active, .sidebar-mobile-link-active, .quick-entry-tab-active,
+  .bg-indigo-600, .bg-indigo-700, .bg-red-500, .bg-red-600,
+  .bg-emerald-500, .bg-emerald-600
+),
+[data-theme="aurora"] :is(
+  .btn-primary, .btn-danger, .btn-success, .mobile-fab-action,
+  .sidebar-nav-link-active, .sidebar-mobile-link-active, .quick-entry-tab-active,
+  .bg-indigo-600, .bg-indigo-700, .bg-red-500, .bg-red-600,
+  .bg-emerald-500, .bg-emerald-600
+) * {
+  color: #fff !important;
+}
+
+/* Inputs, native controls, tables, cards, menus, and overlays use one coherent
+   surface/foreground contract in both themes. */
+:is(input, select, textarea) {
+  color: var(--text-heading);
+  caret-color: var(--primary);
+}
+:is(input, textarea)::placeholder { color: var(--text-faint) !important; opacity: 1; }
+[data-theme="aurora"] :is(input, select, textarea, .input) {
+  background-color: var(--surface-2);
+  color: var(--text-heading) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="aurora"] :is(.card, .card-glass, .mobile-card, .table-scroll, .command-search-panel, .quick-entry-modal) {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+/* Selected search/navigation states must remain readable after normalization. */
+.command-search-result-active,
+.command-search-result-active * {
+  color: var(--text-heading) !important;
+}
+[data-theme="aurora"] .command-search-result-active {
+  background: var(--primary-soft) !important;
+  border-color: color-mix(in srgb, var(--primary) 38%, var(--border)) !important;
+}
+
+/* Calm premium surfaces: definition comes from borders and spacing rather than
+   glossy glow. Interactive affordances remain visible. */
+.card,
+.card-glass,
+.mobile-card,
+.table-scroll,
+.command-search-panel,
+.quick-entry-modal {
+  box-shadow: var(--shadow);
+}
+.card:hover,
+.mobile-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-lg);
+}
+
+:focus-visible {
+  outline-color: var(--border-focus);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-transition,
+  .theme-transition *,
+  .card,
+  .mobile-card {
+    transition-duration: 0.01ms !important;
+  }
+}
