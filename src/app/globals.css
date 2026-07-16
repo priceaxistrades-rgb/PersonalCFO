@@ -1752,3 +1752,164 @@ svg, canvas, img, video {
     min-height: 0 !important;
   }
 }
+
+/* Mobile declutter pass — calm cockpit, less chrome, clearer thumb controls. */
+@media (max-width: 639px) {
+  .mobile-top-bar {
+    min-height: calc(3.35rem + env(safe-area-inset-top)) !important;
+    height: calc(3.35rem + env(safe-area-inset-top)) !important;
+    padding-inline: 0.85rem !important;
+  }
+  .mobile-top-bar a {
+    gap: 0.55rem !important;
+  }
+  .mobile-top-bar a > div {
+    width: 2rem !important;
+    height: 2rem !important;
+    border-radius: 0.85rem !important;
+  }
+  .mobile-top-bar a span {
+    font-size: 0.92rem;
+    letter-spacing: -0.04em;
+  }
+  .mobile-top-bar button {
+    min-height: 2.35rem !important;
+  }
+  .mobile-top-bar button:not([aria-label="Search"]):not([aria-label="Menu"]):not([aria-expanded]) {
+    display: none !important;
+  }
+
+  /* The bottom FAB already owns quick add on phones; hide duplicate inline banner. */
+  .quick-entry-shell {
+    display: none !important;
+  }
+
+  .app-content {
+    padding-top: calc(3.35rem + env(safe-area-inset-top)) !important;
+  }
+  .app-main.page-canvas {
+    padding-top: 0.65rem !important;
+    padding-bottom: calc(6.85rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  .mobile-page-title {
+    margin-bottom: 0.75rem !important;
+    padding: 0.85rem 0.9rem 0.95rem !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 1.25rem !important;
+    background:
+      radial-gradient(circle at 92% 0%, color-mix(in srgb, var(--primary) 13%, transparent), transparent 8rem),
+      color-mix(in srgb, var(--surface) 78%, transparent) !important;
+    box-shadow: var(--shadow-sm);
+  }
+  .mobile-page-title h1 {
+    font-size: clamp(1.28rem, 6vw, 1.72rem) !important;
+    line-height: 1.05 !important;
+  }
+  .mobile-page-title p {
+    margin-top: 0.4rem !important;
+    font-size: 0.72rem !important;
+    line-height: 1.3 !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .mobile-page-title .section-title-actions {
+    margin-top: 0.15rem;
+  }
+  .mobile-page-title .section-title-actions .btn,
+  .mobile-page-title .section-title-actions button {
+    min-height: 2.25rem !important;
+    border-radius: 0.9rem !important;
+  }
+
+  .member-scope-control {
+    margin-top: -0.15rem !important;
+    margin-bottom: 0.55rem !important;
+  }
+  .member-scope-control > div:first-child {
+    padding: 0 !important;
+    gap: 0.45rem !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  .member-scope-control > div:first-child > span:first-child {
+    display: none !important;
+  }
+  .member-scope-control > div:first-child button {
+    min-height: 2.25rem !important;
+    padding: 0.45rem 0.7rem !important;
+    border-radius: 999px !important;
+    font-size: 0.7rem !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+  .member-scope-control > div:first-child button:first-of-type span:last-child {
+    max-width: 5.4rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-card {
+    border-radius: 1.15rem !important;
+    box-shadow: var(--shadow-sm) !important;
+  }
+  .mobile-card:hover,
+  .mobile-kpi-card:hover {
+    transform: none !important;
+  }
+  .mobile-card-header {
+    border-bottom-color: color-mix(in srgb, var(--border) 70%, transparent) !important;
+  }
+
+  .premium-bottom-nav {
+    left: 0.6rem !important;
+    right: 0.6rem !important;
+    bottom: max(0.45rem, env(safe-area-inset-bottom)) !important;
+    border: 1px solid var(--border-strong) !important;
+    border-radius: 1.55rem !important;
+    overflow: visible !important;
+    background: color-mix(in srgb, var(--header) 92%, transparent) !important;
+  }
+  .premium-bottom-nav-inner {
+    min-height: 4.05rem !important;
+    padding-bottom: 0.45rem !important;
+    padding-top: 0.45rem !important;
+  }
+  .premium-tab-item {
+    min-height: 3.05rem !important;
+  }
+  .premium-tab-item span:last-child {
+    font-size: 0.58rem !important;
+    opacity: 0.9;
+  }
+  .mobile-fab-action {
+    margin-top: -1.25rem !important;
+    margin-bottom: 0 !important;
+    height: 3.35rem !important;
+    width: 3.35rem !important;
+    border-radius: 1.1rem !important;
+  }
+
+  .suite-launchpad {
+    border-radius: 1.75rem 1.75rem 0 0 !important;
+  }
+  .suite-hero {
+    margin: 0.7rem 0.7rem 0.9rem !important;
+    padding: 1rem !important;
+  }
+  .suite-hero h3 {
+    font-size: 1.45rem !important;
+  }
+  .suite-hero p {
+    font-size: 0.72rem !important;
+  }
+  .suite-stat-pill {
+    padding: 0.45rem 0.3rem !important;
+  }
+  .suite-module-card {
+    min-height: 6.8rem !important;
+  }
+}

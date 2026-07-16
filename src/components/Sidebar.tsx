@@ -182,7 +182,7 @@ export function Sidebar() {
               )}
             </button>
           )}
-          <button onClick={() => { setOpen(!open); setUserDropdownOpen(false); }} aria-expanded={open} className="btn btn-ghost w-10 h-10 text-base rounded-2xl font-mono font-bold border border-white/[0.08] cursor-pointer" aria-label="Menu">
+          <button onClick={() => { setOpen(!open); setUserDropdownOpen(false); }} aria-expanded={open} className="btn btn-ghost hidden sm:inline-flex w-10 h-10 text-base rounded-2xl font-mono font-bold border border-white/[0.08] cursor-pointer" aria-label="Menu">
             {open ? "✕" : "☰"}
           </button>
         </div>
