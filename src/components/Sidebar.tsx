@@ -142,7 +142,7 @@ export function Sidebar() {
         className="mobile-top-bar lg:hidden sticky top-0 z-50 flex items-center justify-between gap-3 px-3 sm:px-5 h-14 backdrop-blur-2xl border-b select-none premium-mobile-header"
         style={{ background: "var(--header)", borderColor: "var(--border)" }}
       >
-        <div className="mobile-brand-cluster flex items-center gap-2.5 min-w-0">
+        <div className="mobile-brand-cluster flex items-center gap-2.5 min-w-0 leading-none">
           <button
             type="button"
             onClick={() => { setOpen(true); setUserDropdownOpen(false); }}
@@ -150,12 +150,9 @@ export function Sidebar() {
             aria-expanded={open}
             className="mobile-brand-menu w-9 h-9 rounded-2xl flex items-center justify-center text-white shadow-md bg-gradient-to-br from-indigo-500 to-purple-600 shrink-0 cursor-pointer border border-white/10 active:scale-95 transition-all"
           >
-            <span className="relative grid place-items-center">
-              <IconDashboard size={17} />
-              <span className="mobile-brand-menu-lines" aria-hidden="true" />
-            </span>
+            <IconDashboard size={18} />
           </button>
-          <Link href="/" className="font-extrabold tracking-tight text-base no-underline truncate" style={{ color: "var(--text-heading)" }}>
+          <Link href="/" className="mobile-brand-text font-extrabold tracking-tight text-base no-underline truncate leading-none" style={{ color: "var(--text-heading)" }}>
             Personal CFO
           </Link>
         </div>

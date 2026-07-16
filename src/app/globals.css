@@ -2515,3 +2515,126 @@ svg, canvas, img, video {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+/* Final alignment + Quick Entry module selector redesign.
+   Keep the exact 2-line alignment (4 x 2) without making it look like a table. */
+.mobile-brand-cluster {
+  align-items: center !important;
+}
+.mobile-brand-menu {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.mobile-brand-menu-lines {
+  display: none !important;
+}
+.mobile-brand-text {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  line-height: 1 !important;
+}
+
+.quick-entry-tabs {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-auto-rows: minmax(2.75rem, auto);
+  gap: 0.5rem !important;
+  overflow: visible !important;
+  padding-bottom: 0 !important;
+  background: transparent !important;
+}
+.quick-entry-tab {
+  width: 100%;
+  min-width: 0 !important;
+  min-height: 2.75rem !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--border) !important;
+  background: color-mix(in srgb, var(--surface-2) 86%, transparent) !important;
+  color: var(--text-muted) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.35rem !important;
+  padding: 0.42rem 0.35rem !important;
+  text-align: center;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.quick-entry-tab-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--primary);
+}
+.quick-entry-tab-label {
+  display: block;
+  min-width: 0;
+  max-width: 4.75rem;
+  white-space: normal;
+  overflow-wrap: normal;
+  line-height: 1.02;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+.quick-entry-tab:hover,
+.quick-entry-tab:focus-visible {
+  color: var(--text-heading) !important;
+  background: var(--surface-3) !important;
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border)) !important;
+}
+.quick-entry-tab-active {
+  color: var(--text-heading) !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--primary) 12%, var(--surface-2)), var(--surface-2)) !important;
+  border-color: color-mix(in srgb, var(--primary) 62%, var(--border)) !important;
+  box-shadow: 0 8px 20px -18px color-mix(in srgb, var(--primary) 90%, transparent), inset 0 1px 0 rgba(255,255,255,0.07) !important;
+}
+.quick-entry-tab-active .quick-entry-tab-icon {
+  color: var(--primary);
+  animation: quickTabPop 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes quickTabPop {
+  from { transform: scale(0.88); }
+  to { transform: scale(1); }
+}
+
+@media (max-width: 420px) {
+  .quick-entry-tabs {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 0.38rem !important;
+  }
+  .quick-entry-tab {
+    min-height: 2.55rem !important;
+    padding: 0.34rem 0.18rem !important;
+    gap: 0.22rem !important;
+  }
+  .quick-entry-tab-label {
+    font-size: 0.59rem;
+    max-width: 3.5rem;
+  }
+  .quick-entry-tab-icon svg {
+    width: 0.86rem;
+    height: 0.86rem;
+  }
+}
+
+/* Remove the heavy background block from the top title grid on phones. */
+@media (max-width: 639px) {
+  .mobile-page-title {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}

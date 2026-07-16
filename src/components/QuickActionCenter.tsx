@@ -306,16 +306,11 @@ export function QuickActionCenter({
                   <button
                     key={t.id}
                     onClick={() => handleTypeChange(t.id)}
-                    className={`flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
-                      formType === t.id ? "shadow-md scale-[1.02]" : "opacity-60 hover:opacity-90 hover:bg-white/[0.03]"
-                    }`}
-                    style={{
-                      background: formType === t.id ? t.color : "var(--surface-2)",
-                      color: formType === t.id ? "#fff" : "var(--text)",
-                      border: formType === t.id ? "none" : "1px solid var(--border)",
-                    }}
+                    className={`quick-entry-tab ${formType === t.id ? "quick-entry-tab-active" : ""}`}
+                    type="button"
                   >
-                    <span><IconComp size={15} /></span>{t.label}
+                    <span className="quick-entry-tab-icon"><IconComp size={15} /></span>
+                    <span className="quick-entry-tab-label">{t.label}</span>
                   </button>
                 );
               })}
