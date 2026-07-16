@@ -2111,3 +2111,130 @@ svg, canvas, img, video {
     text-align: left;
   }
 }
+
+/* Readability fixes: Family Members scope, Aurora contrast, investment overview, stable search. */
+.member-scope-control [style*="--primary"],
+.member-scope-control button {
+  font-weight: 850;
+}
+[data-theme="aurora"] .member-scope-control > div:first-child button {
+  color: var(--text-heading) !important;
+  background: color-mix(in srgb, var(--surface) 88%, transparent) !important;
+  border-color: rgba(26, 25, 21, 0.16) !important;
+}
+[data-theme="aurora"] .member-scope-control > div:first-child button[style*="#fff"],
+[data-theme="aurora"] .member-scope-control > div:first-child button[style*="rgb(255"] {
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+}
+[data-theme="aurora"] .member-scope-control > div:first-child button:hover,
+[data-theme="aurora"] .member-scope-control > div:first-child button:focus-visible {
+  background: var(--surface-3) !important;
+  color: var(--text-heading) !important;
+}
+[data-theme="aurora"] .member-scope-control .text-slate-400,
+[data-theme="aurora"] .member-scope-control .text-slate-500 {
+  color: var(--text-muted) !important;
+}
+
+.investment-glance-grid {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+.investment-glance-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 1.1rem;
+  background: var(--surface-2);
+  padding: 0.85rem;
+}
+.investment-glance-name {
+  color: var(--text-heading);
+  font-size: 0.86rem;
+  font-weight: 950;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.investment-glance-meta {
+  margin-top: 0.28rem;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 750;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.investment-glance-values {
+  flex-shrink: 0;
+  text-align: right;
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+}
+.investment-glance-values span,
+.investment-glance-values small {
+  display: block;
+}
+.investment-glance-values span {
+  color: var(--text-heading);
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+.investment-glance-values small {
+  margin-top: 0.2rem;
+  font-size: 0.65rem;
+  font-weight: 900;
+}
+@media (max-width: 639px) {
+  .investment-glance-grid {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(16rem, 82%);
+    grid-template-columns: none;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 0.35rem;
+    scrollbar-width: none;
+  }
+  .investment-glance-grid::-webkit-scrollbar { display: none; }
+  .investment-glance-item {
+    scroll-snap-align: start;
+  }
+}
+
+.command-search-input {
+  color: var(--text-heading) !important;
+}
+.command-search-input::placeholder {
+  color: var(--text-faint) !important;
+}
+@media (max-width: 639px) {
+  .command-search-overlay {
+    align-items: flex-start !important;
+    padding-top: max(0.35rem, env(safe-area-inset-top)) !important;
+  }
+  .command-search-modal {
+    height: min(100dvh, calc(100dvh - env(safe-area-inset-top))) !important;
+    max-height: none !important;
+    border-radius: 0 0 1.6rem 1.6rem !important;
+    display: flex;
+    flex-direction: column;
+  }
+  .command-search-modal > div:first-child {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  .command-search-modal > div:nth-child(2) {
+    max-height: none !important;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .command-search-modal > div:last-child {
+    display: none !important;
+  }
+}

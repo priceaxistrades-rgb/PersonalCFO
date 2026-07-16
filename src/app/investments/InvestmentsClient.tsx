@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { SectionTitle } from "@/components/ui/Card";
+import { SectionTitle, Card, Badge } from "@/components/ui/Card";
+import { inr, num } from "@/lib/format";
 import {
   useLiveInvestments,
   InvestmentHoldings,
@@ -75,6 +76,8 @@ export function InvestmentsPageClient({
         subtitle="Live portfolio synced from stock prices and mutual fund NAVs"
       />
 
+      <InvestmentsAtAGlance investments={liveInvestments} />
+
       {/* ═══ FULL PORTFOLIO SYNC DASHBOARD ═══ */}
       <PortfolioSyncDashboard
         holdings={liveInvestments}
@@ -135,5 +138,46 @@ export function InvestmentsPageClient({
         />
       )}
     </div>
+  );
+}
+
+function InvestmentsAtAGlance({ investments }: { investments: LiveInvestment[] }) {
+  const active = investments.filter((investment) => {
+    const invested = num(investment.invested);
+    const current = investment.liveCurrentValue || num(investment.currentValue);
+    const units = num(investment.units);
+    return invested > 0 || current > 0 || units > 0;
+  });
+
+  if (!active.length) return null;
+
+  return (
+    <Card
+      title="Your Investment List"
+      subtitle="All user-invested instruments visible in one compact view"
+      className="investment-glance-card !p-4 sm:!p-5"
+      action={<Badge tone="primary">{active.length} holdings</Badge>}
+    >
+      <div className="investment-glance-grid">
+        {active.map((investment) => {
+          const invested = num(investment.invested);
+          const current = investment.liveCurrentValue || num(investment.currentValue);
+          const pnl = current - invested;
+          const code = investment.symbol || investment.schemeCode || investment.type;
+          return (
+            <div key={investment.id} className="investment-glance-item">
+              <div className="min-w-0">
+                <h3 className="investment-glance-name">{investment.name}</h3>
+                <p className="investment-glance-meta">{investment.type} · {code}</p>
+              </div>
+              <div className="investment-glance-values">
+                <span>{inr(current, { compact: true })}</span>
+                <small className={pnl >= 0 ? "text-emerald-400" : "text-red-400"}>{pnl >= 0 ? "+" : "−"}{inr(Math.abs(pnl), { compact: true })}</small>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
   );
 }

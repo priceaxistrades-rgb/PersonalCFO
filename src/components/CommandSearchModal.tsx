@@ -239,10 +239,10 @@ export function CommandSearchModal() {
   if (!open) return null;
 
   return (
-    <div className="command-search-overlay fixed inset-0 z-[300] flex items-end sm:items-start justify-center p-0 sm:p-4 sm:pt-24 bg-black/70 backdrop-blur-md animate-fade-in select-none" onClick={() => setOpen(false)}>
+    <div className="command-search-overlay fixed inset-0 z-[300] flex items-start justify-center p-0 sm:p-4 sm:pt-24 bg-black/70 backdrop-blur-md animate-fade-in select-none" onClick={() => setOpen(false)}>
       <Card
         variant="glass"
-        className="command-search-modal w-full sm:max-w-2xl overflow-hidden rounded-t-[2rem] sm:rounded-3xl border shadow-2xl transition-all scale-in !p-0"
+        className="command-search-modal w-full sm:max-w-2xl overflow-hidden rounded-b-[2rem] sm:rounded-3xl border shadow-2xl transition-all scale-in !p-0"
         style={{ borderColor: "var(--border-strong)", background: "var(--surface)" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -256,7 +256,7 @@ export function CommandSearchModal() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDownInput}
             placeholder="Search financial modules, transactions, assets, loans or enter command..."
-            className="w-full bg-transparent border-none outline-none text-sm sm:text-base font-bold tracking-tight text-white placeholder:text-slate-500"
+            className="command-search-input w-full bg-transparent border-none outline-none text-sm sm:text-base font-bold tracking-tight placeholder:text-slate-500"
           />
           {loading && <span className="inline-block w-4 h-4 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin shrink-0" />}
           <button onClick={() => setOpen(false)} className="btn btn-ghost px-2.5 py-1 text-xs font-mono font-bold rounded-xl border border-white/[0.08]">ESC</button>

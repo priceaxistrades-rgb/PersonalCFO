@@ -77,7 +77,7 @@ export function MemberSelector({
           }}
         >
           <IconFamily size={14} className="shrink-0" />
-          <span>Consolidated Household</span>
+          <span>Family Members</span>
         </button>
 
         {self && (

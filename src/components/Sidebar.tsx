@@ -271,7 +271,7 @@ export function Sidebar() {
           >
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-indigo-400 flex items-center justify-center shrink-0"><IconFamily size={15} /></span>
-              <span className="font-mono text-[11px] tracking-tight truncate">{activeProfile || "Consolidated Household"}</span>
+              <span className="font-mono text-[11px] tracking-tight truncate">{activeProfile || "Family Members"}</span>
             </div>
             {hasSelection ? (
               <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse shrink-0" title="Scope filtered" />
