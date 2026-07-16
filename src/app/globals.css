@@ -2638,3 +2638,231 @@ svg, canvas, img, video {
     padding-right: 0 !important;
   }
 }
+
+/* Quick Entry deck alignment refinement: every module tile uses the same
+   height, icon position, and label baseline so Income/Expense/Goal/etc.
+   read as one clean deck instead of uneven chips. */
+.quick-entry-tabs {
+  align-items: stretch !important;
+}
+.quick-entry-tab {
+  height: 3.25rem !important;
+  min-height: 3.25rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.22rem !important;
+  padding: 0.35rem 0.2rem !important;
+  line-height: 1 !important;
+}
+.quick-entry-tab-icon {
+  width: 1.1rem !important;
+  height: 1.1rem !important;
+  display: grid !important;
+  place-items: center !important;
+  margin: 0 auto !important;
+}
+.quick-entry-tab-icon svg {
+  width: 0.95rem !important;
+  height: 0.95rem !important;
+}
+.quick-entry-tab-label {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 0.78rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  line-height: 1 !important;
+  font-size: 0.62rem !important;
+  letter-spacing: -0.025em !important;
+}
+
+@media (max-width: 420px) {
+  .quick-entry-tab {
+    height: 3.05rem !important;
+    min-height: 3.05rem !important;
+    gap: 0.18rem !important;
+  }
+  .quick-entry-tab-label {
+    font-size: 0.56rem !important;
+  }
+  .quick-entry-tab-icon,
+  .quick-entry-tab-icon svg {
+    width: 0.88rem !important;
+    height: 0.88rem !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FINAL THEME + TOP GRID CLEANUP
+   Obsidian = premium dark, Aurora = Claude-like warm light.
+   Also removes unwanted title/grid background panels and improves contrast.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root,
+[data-theme="obsidian"] {
+  --bg: #0f1117;
+  --bg-subtle: #12141b;
+  --surface: #181a22;
+  --surface-2: #20232d;
+  --surface-3: #2a2e3a;
+  --surface-4: #363b49;
+  --surface-hover: #242834;
+  --sidebar: #101219;
+  --header: rgba(15, 17, 23, 0.88);
+  --border: rgba(255, 255, 255, 0.095);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #e6e7eb;
+  --text-heading: #ffffff;
+  --text-muted: #b2b6c2;
+  --text-faint: #7d8392;
+  --primary: #7c7cff;
+  --primary-dark: #6967e8;
+  --primary-soft: rgba(124, 124, 255, 0.14);
+  --accent: #5cc8ff;
+  --accent-soft: rgba(92, 200, 255, 0.13);
+  --success: #2dd4bf;
+  --success-soft: rgba(45, 212, 191, 0.13);
+  --warning: #f4bf50;
+  --warning-soft: rgba(244, 191, 80, 0.14);
+  --danger: #ff647c;
+  --danger-soft: rgba(255, 100, 124, 0.14);
+}
+
+[data-theme="aurora"] {
+  --bg: #f7f5ef;
+  --bg-subtle: #efede6;
+  --surface: #fffdfa;
+  --surface-2: #efede6;
+  --surface-3: #e6e2d8;
+  --surface-4: #d8d3c7;
+  --surface-hover: #ebe7de;
+  --sidebar: #f1eee7;
+  --header: rgba(247, 245, 239, 0.92);
+  --border: rgba(32, 30, 26, 0.12);
+  --border-strong: rgba(32, 30, 26, 0.22);
+  --text: #2f2d28;
+  --text-heading: #171612;
+  --text-muted: #5f5b52;
+  --text-faint: #89847a;
+  --primary: #574fd6;
+  --primary-dark: #4338ca;
+  --primary-soft: rgba(87, 79, 214, 0.1);
+  --accent: #047fb3;
+  --accent-soft: rgba(4, 127, 179, 0.1);
+  --success: #047857;
+  --success-soft: rgba(4, 120, 87, 0.11);
+  --warning: #b45309;
+  --warning-soft: rgba(180, 83, 9, 0.11);
+  --danger: #be123c;
+  --danger-soft: rgba(190, 18, 60, 0.11);
+}
+
+/* Remove unwanted background color from top title/grid bands everywhere. */
+.section-title,
+.mobile-page-title,
+.mobile-page-title.section-title,
+.page-canvas > div > .section-title:first-child,
+.page-canvas > div > .mobile-page-title:first-child {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+@media (max-width: 639px) {
+  .section-title,
+  .mobile-page-title,
+  .mobile-page-title.section-title {
+    border: 0 !important;
+    border-bottom: 1px solid var(--border) !important;
+    border-radius: 0 !important;
+    padding: 0 0 0.85rem !important;
+  }
+}
+
+/* Top KPI/grid cards should be clean surfaces, not heavy colored blocks. */
+.page-canvas > div > .grid:first-of-type .mobile-kpi-card,
+.page-canvas > div > .grid:first-of-type .kpi-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* Strong Aurora readability across all legacy hard-coded slate/white text. */
+[data-theme="aurora"] .app-content :is(.text-white, .text-slate-50, .text-slate-100, .text-slate-200, .text-slate-300) {
+  color: var(--text-heading) !important;
+}
+[data-theme="aurora"] .app-content :is(.text-slate-400, .text-slate-500, .text-gray-400, .text-gray-500) {
+  color: var(--text-muted) !important;
+}
+[data-theme="aurora"] .app-content :is(.text-indigo-300, .text-indigo-400) {
+  color: var(--primary) !important;
+}
+[data-theme="aurora"] .app-content :is(.text-emerald-300, .text-emerald-400, .text-green-400) {
+  color: var(--success) !important;
+}
+[data-theme="aurora"] .app-content :is(.text-amber-300, .text-amber-400, .text-yellow-400) {
+  color: var(--warning) !important;
+}
+[data-theme="aurora"] .app-content :is(.text-red-300, .text-red-400) {
+  color: var(--danger) !important;
+}
+
+/* Preserve white text on actual colored controls and active states. */
+[data-theme="aurora"] .app-content :is(
+  .btn-primary,
+  .btn-danger,
+  .btn-success,
+  .bg-indigo-600,
+  .bg-red-500,
+  .bg-emerald-500,
+  .bg-gradient-to-br,
+  .bg-gradient-to-r,
+  .mobile-fab-action,
+  .suite-action-icon,
+  .sidebar-mobile-link-active,
+  .sidebar-nav-link-active,
+  .quick-entry-tab-active
+),
+[data-theme="aurora"] .app-content :is(
+  .btn-primary,
+  .btn-danger,
+  .btn-success,
+  .bg-indigo-600,
+  .bg-red-500,
+  .bg-emerald-500,
+  .bg-gradient-to-br,
+  .bg-gradient-to-r,
+  .mobile-fab-action,
+  .suite-action-icon,
+  .sidebar-mobile-link-active,
+  .sidebar-nav-link-active,
+  .quick-entry-tab-active
+) * {
+  color: #fff !important;
+}
+
+[data-theme="aurora"] .card,
+[data-theme="aurora"] .mobile-card,
+[data-theme="aurora"] .table-scroll,
+[data-theme="aurora"] .investment-glance-item,
+[data-theme="aurora"] .suite-module-card,
+[data-theme="aurora"] .guide-row {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="aurora"] .bg-surface-2,
+[data-theme="aurora"] .bg-surface-2\/40,
+[data-theme="aurora"] .bg-surface-2\/60 {
+  background-color: var(--surface-2) !important;
+}
+
+/* Obsidian should feel like a proper dark mode, not pure black. */
+[data-theme="obsidian"] body,
+[data-theme="obsidian"] .app-content {
+  background:
+    radial-gradient(circle at 18% -12%, rgba(124, 124, 255, 0.13), transparent 30rem),
+    radial-gradient(circle at 100% 0%, rgba(92, 200, 255, 0.08), transparent 26rem),
+    var(--bg) !important;
+}
