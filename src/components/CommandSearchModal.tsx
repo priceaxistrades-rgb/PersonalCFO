@@ -106,11 +106,19 @@ export function CommandSearchModal() {
       fetch("/api/manage/debts").then((r) => r.json()).catch(() => ({ rows: [] })),
     ]).then(([txData, invData, billData, goalData, debtData]) => {
       if (!active) return;
-      if (txData.rows) setTransactions(txData.rows);
-      if (invData.rows) setInvestments(invData.rows);
-      if (billData.rows) setBills(billData.rows);
-      if (goalData.rows) setGoals(goalData.rows);
-      if (debtData.rows) setDebts(debtData.rows);
+
+      // API routes use the shared apiSuccess envelope: { ok, data: { rows } }.
+      // Keep a top-level fallback for compatibility with older deployments.
+      const rowsFrom = (payload: any): any[] => {
+        const rows = payload?.data?.rows ?? payload?.rows;
+        return Array.isArray(rows) ? rows : [];
+      };
+
+      setTransactions(rowsFrom(txData));
+      setInvestments(rowsFrom(invData));
+      setBills(rowsFrom(billData));
+      setGoals(rowsFrom(goalData));
+      setDebts(rowsFrom(debtData));
       setLoading(false);
     });
 
