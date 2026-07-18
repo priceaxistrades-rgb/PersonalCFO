@@ -35,6 +35,7 @@ const NAV_GROUPS = [
       { href: "/expenses", label: "Expenditures", icon: IconExpenses, desc: "Categorized outflows & spend leak telemetry" },
       { href: "/budget", label: "Budget Ceilings", icon: IconBudgets, desc: "Monitored category allocation limits" },
       { href: "/bills", label: "Scheduled Bills", icon: IconBills, desc: "Upcoming payables & subscription reminders" },
+      { href: "/recurring", label: "Recurring Transactions", icon: IconTimeline, desc: "Automate repeating income and expenses" },
     ],
   },
   {
@@ -52,7 +53,7 @@ const NAV_GROUPS = [
     ],
   },
   {
-    group: "Intelligence",
+    group: "Advanced Insights",
     icon: IconAI,
     items: [
       { href: "/ai", label: "AI Financial Twin", icon: IconAI, desc: "Autonomous wealth advisory & instant QA" },
@@ -102,7 +103,7 @@ export function Sidebar() {
       Cockpit: activeGroup === "Cockpit",
       "Capital Flow": activeGroup === "Capital Flow",
       "Asset Vault": activeGroup === "Asset Vault",
-      Intelligence: activeGroup === "Intelligence",
+      "Advanced Insights": activeGroup === "Advanced Insights",
       "Life Strategy": activeGroup === "Life Strategy",
     };
   });

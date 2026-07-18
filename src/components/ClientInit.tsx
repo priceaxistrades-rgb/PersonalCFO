@@ -7,6 +7,7 @@ import { GlobalQuickActionModal } from "@/components/QuickActionCenter";
 import { CommandSearchModal } from "@/components/CommandSearchModal";
 import { FirstLoginGuide } from "@/components/FirstLoginGuide";
 import { FeedbackWidget } from "@/components/FeedbackWidget";
+import { RecurringGenerator } from "@/components/RecurringGenerator";
 
 /**
  * One-time client-side initializer.
@@ -41,6 +42,7 @@ export function ClientInit() {
   return (
     <>
       <FirstLoginGuide />
+      <RecurringGenerator />
       <GlobalQuickActionModal />
       <CommandSearchModal />
       <FeedbackWidget />

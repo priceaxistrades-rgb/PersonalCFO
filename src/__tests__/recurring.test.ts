@@ -1,0 +1,2 @@
+import { nextRecurringDate } from "@/lib/recurring";
+describe("recurring dates",()=>{test.each([["2026-01-31","monthly",1,"2026-02-28"],["2026-02-28","monthly",1,"2026-03-28"],["2026-01-15","quarterly",1,"2026-04-15"],["2026-07-18","weekly",2,"2026-08-01"],["2024-02-29","yearly",1,"2025-02-28"]] as const)("advances %s",(start,freq,int,expected)=>expect(nextRecurringDate(start,freq,int)).toBe(expected));test("rejects bad interval",()=>expect(()=>nextRecurringDate("2026-01-01","monthly",0)).toThrow())});

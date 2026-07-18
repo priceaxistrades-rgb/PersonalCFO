@@ -29,6 +29,7 @@ const MORE_LINKS_GROUPS = [
       { href: "/brief", label: "Morning Brief", icon: IconBrief },
       { href: "/budget", label: "Budget Ceilings", icon: IconBudgets },
       { href: "/bills", label: "Scheduled Bills", icon: IconBills },
+      { href: "/recurring", label: "Recurring Transactions", icon: IconTimeline },
       { href: "/health", label: "Health Index", icon: IconHealth },
     ],
   },
@@ -46,7 +47,7 @@ const MORE_LINKS_GROUPS = [
     ],
   },
   {
-    title: "AI & Intelligence",
+    title: "Advanced Insights",
     items: [
       { href: "/ai", label: "AI Twin", icon: IconAI },
       { href: "/coach", label: "Strategic Coach", icon: IconCoach },
