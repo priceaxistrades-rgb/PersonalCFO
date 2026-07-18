@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Card } from "@/components/ui/Card";
 import { CATEGORY_GROUPS, BILL_CATEGORIES, INCOME_CATEGORIES } from "@/lib/categories";
 import { InvestmentForm } from "@/app/settings/InvestmentsManager";
 import type { InvestmentRow, AccountOption } from "@/lib/types";
@@ -291,7 +290,14 @@ export function QuickActionCenter({
         </div>
       ) : (
         <div className="quick-entry-overlay fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/65 backdrop-blur-md animate-fade-in" onClick={close}>
-          <Card variant="glass" className="quick-entry-modal !p-4 sm:!p-6 w-full sm:max-w-2xl max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto scale-in border border-indigo-500/30 shadow-2xl rounded-t-[2rem] sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label="Quick Entry Command"
+            className="quick-entry-modal !p-4 sm:!p-6 w-full sm:max-w-2xl max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto scale-in border border-indigo-500/30 shadow-2xl rounded-t-[2rem] sm:rounded-3xl"
+            style={{ background: "var(--surface)", borderColor: "var(--border-strong)", color: "var(--text)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center pb-4 mb-5 border-b border-white/[0.08]">
               <div className="flex items-center gap-3">
                 <span className="w-10 h-10 rounded-xl grid place-items-center text-lg shadow-lg" style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))", color: "#fff" }}>
@@ -510,7 +516,7 @@ export function QuickActionCenter({
                 </button>
               </>
             )}
-          </Card>
+          </section>
         </div>
       )}
     </div>
