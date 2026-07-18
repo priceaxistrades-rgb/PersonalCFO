@@ -109,14 +109,27 @@ export function QuickActionCenter({
   }, [listenForGlobalEvents]);
 
   useEffect(() => {
+    if (!isOpen) return;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     if (isOpen && accounts.length === 0 && fetchedAccounts.length === 0) {
       fetch("/api/manage/accounts")
         .then((r) => r.json())
         .then((d) => {
-          if (d && d.rows) {
-            setFetchedAccounts(d.rows);
-            if (!form.accountId && d.rows[0]) {
-              setForm((prev) => ({ ...prev, accountId: d.rows[0].id }));
+          const rows = d?.data?.rows ?? d?.rows;
+          if (Array.isArray(rows)) {
+            setFetchedAccounts(rows);
+            if (!form.accountId && rows[0]) {
+              setForm((prev) => ({ ...prev, accountId: rows[0].id }));
             }
           }
         })
@@ -124,7 +137,8 @@ export function QuickActionCenter({
       fetch("/api/manage/investments")
         .then((r) => r.json())
         .then((d) => {
-          if (d && d.rows) setFetchedInvestments(d.rows);
+          const rows = d?.data?.rows ?? d?.rows;
+          if (Array.isArray(rows)) setFetchedInvestments(rows);
         })
         .catch(() => {});
     }
@@ -165,7 +179,7 @@ export function QuickActionCenter({
           category: form.category || (formType === "income" ? "Salary" : "Food"),
           amount: form.amount || "0",
           txnDate: today,
-          accountId: form.accountId ? Number(form.accountId) : (activeAccounts[0]?.id || accounts[0]?.id || 1),
+          accountId: form.accountId ? Number(form.accountId) : (activeAccounts[0]?.id || accounts[0]?.id || null),
           note: form.note && form.note.trim() ? form.note.trim() : null,
         };
       } else if (formType === "goal") {
@@ -491,8 +505,8 @@ export function QuickActionCenter({
                   </div>
                 )}
 
-                <button onClick={submit} disabled={loading || !form.amount} className="btn btn-primary w-full py-3.5 rounded-xl text-sm font-extrabold shadow-lg disabled:opacity-40">
-                  {loading ? "Commiting to Database..." : `Confirm & Save ${formType.charAt(0).toUpperCase() + formType.slice(1)} Entry →`}
+                <button onClick={submit} disabled={loading || !form.amount} className="quick-entry-submit btn btn-primary w-full py-3.5 rounded-xl text-sm font-extrabold shadow-lg disabled:opacity-40">
+                  {loading ? "Committing to Database..." : `Confirm & Save ${formType.charAt(0).toUpperCase() + formType.slice(1)} Entry →`}
                 </button>
               </>
             )}
@@ -519,7 +533,7 @@ export function GlobalQuickActionModal() {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[250]">
-      <QuickActionCenter accounts={[]} investments={[]} defaultOpen={true} initialType={requestedType} onClose={() => setOpen(false)} />
+      <QuickActionCenter accounts={[]} investments={[]} defaultOpen={true} initialType={requestedType} onClose={() => setOpen(false)} listenForGlobalEvents={false} />
     </div>
   );
 }

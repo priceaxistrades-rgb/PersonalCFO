@@ -4068,3 +4068,71 @@ svg, canvas, img, video {
     box-shadow: 0 -10px 28px rgba(36,35,31,0.08), inset 0 1px 0 var(--border) !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   QUICK ENTRY DESKTOP STABILITY v7.5
+   One scroll owner, fixed visual hierarchy and reliable viewport fitting.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 640px) {
+  .quick-entry-overlay {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 1.5rem !important;
+    overflow: hidden !important;
+    background: rgba(10, 10, 9, 0.68) !important;
+    z-index: 10000 !important;
+  }
+  .quick-entry-modal {
+    width: min(48rem, calc(100vw - 3rem)) !important;
+    max-width: 48rem !important;
+    max-height: min(52rem, calc(100dvh - 3rem)) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain !important;
+    padding: 1.5rem !important;
+    border-radius: 1.5rem !important;
+    background: var(--surface) !important;
+    border: 1px solid var(--border-strong) !important;
+    color: var(--text) !important;
+    box-shadow: var(--shadow-xl) !important;
+    scrollbar-gutter: stable;
+  }
+  .quick-entry-modal > div:first-child {
+    position: sticky;
+    top: -1.5rem;
+    z-index: 8;
+    margin: -1.5rem -1.5rem 1.25rem !important;
+    padding: 1.25rem 1.5rem !important;
+    background: color-mix(in srgb, var(--surface) 96%, transparent) !important;
+    border-color: var(--border) !important;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  .quick-entry-tabs {
+    position: relative;
+    z-index: 2;
+    grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+    gap: 0.45rem !important;
+    margin-bottom: 1.35rem !important;
+  }
+  .quick-entry-tab {
+    height: 3.65rem !important;
+    min-height: 3.65rem !important;
+    border-radius: 0.9rem !important;
+  }
+  .quick-entry-tab-label {
+    font-size: 0.64rem !important;
+  }
+  .quick-entry-modal :is(input, select, textarea, .input) {
+    min-height: 2.75rem;
+  }
+  .quick-entry-modal .quick-entry-submit {
+    position: sticky;
+    bottom: -1.5rem;
+    z-index: 7;
+    margin-bottom: -1.5rem;
+    border-radius: 0.9rem !important;
+    box-shadow: 0 -12px 26px var(--surface), 0 10px 24px color-mix(in srgb, var(--primary) 18%, transparent) !important;
+  }
+}
