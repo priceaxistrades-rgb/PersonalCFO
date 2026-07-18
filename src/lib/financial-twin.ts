@@ -324,17 +324,40 @@ function matchQuestion(question: string): QuestionPattern | null {
 
 // ─── Query Handler ────────────────────────────────────────────
 
+export function extractAmountFromQuestion(question: string): number | undefined {
+  const normalized = question.replace(/,/g, "").toLowerCase();
+  const match = normalized.match(/(?:₹|rs\.?|inr)?\s*(\d+(?:\.\d+)?)\s*(crore|cr|lakh|lac|l|thousand|k)?\b/i);
+  if (!match) return undefined;
+
+  const base = Number(match[1]);
+  if (!Number.isFinite(base) || base <= 0) return undefined;
+  const unit = match[2]?.toLowerCase();
+  const multiplier = unit === "crore" || unit === "cr"
+    ? 10_000_000
+    : unit === "lakh" || unit === "lac" || unit === "l"
+      ? 100_000
+      : unit === "thousand" || unit === "k"
+        ? 1_000
+        : 1;
+  const amount = base * multiplier;
+  return Number.isSafeInteger(amount) && amount <= 1_000_000_000_000 ? amount : undefined;
+}
+
 export function answerTwinQuery(profile: TwinProfile, query: TwinQuery): TwinResponse {
   const q = query.question.toLowerCase().trim();
+  const normalizedQuery: TwinQuery = {
+    ...query,
+    amount: query.amount && query.amount > 0 ? query.amount : extractAmountFromQuestion(query.question),
+  };
 
   // Try to match a specific pattern
   const matched = matchQuestion(q);
   if (matched) {
-    return matched.handler(profile, query);
+    return matched.handler(profile, normalizedQuery);
   }
 
   // Default: provide general financial summary with insights
-  return handleGeneralQuery(profile, query);
+  return handleGeneralQuery(profile, normalizedQuery);
 }
 
 // ─── Individual Handlers ──────────────────────────────────────

@@ -4,7 +4,8 @@ import { eq, desc } from "drizzle-orm";
 import { isSession, requireApiSession } from "@/lib/server-auth";
 import { apiHandler, apiSuccess, apiError } from "@/lib/api-utils";
 import { buildTwinProfile, answerTwinQuery, simulateScenario } from "@/lib/financial-twin";
-import { sanitize, isSafeInput } from "@/lib/sanitize";
+import { isSafeInput } from "@/lib/sanitize";
+import { getClientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import {
   getAllTransactions,
   getAccounts,
@@ -57,16 +58,29 @@ export const POST = apiHandler(async (req, { log }) => {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
 
+  const limited = await rateLimitAsync(`ai-twin:${session.userId}:${getClientIp(req)}`, 30, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.resetAt);
+
   try {
     const raw = await req.json();
     const question = typeof raw.question === "string" ? raw.question.trim() : "";
-    const amount = typeof raw.amount === "number" ? raw.amount : undefined;
+    const amount = typeof raw.amount === "number" && Number.isFinite(raw.amount) && raw.amount > 0 && raw.amount <= 1_000_000_000_000
+      ? raw.amount
+      : undefined;
     const scenarioType = typeof raw.scenario === "string" ? raw.scenario : undefined;
-    const scenarioParams = typeof raw.params === "object" && raw.params !== null ? raw.params : {};
+    const rawParams = typeof raw.params === "object" && raw.params !== null ? raw.params as Record<string, unknown> : {};
+    const scenarioParams: { amount?: number; percent?: number } = {};
+    if (typeof rawParams.amount === "number" && Number.isFinite(rawParams.amount) && rawParams.amount > 0 && rawParams.amount <= 1_000_000_000_000) {
+      scenarioParams.amount = rawParams.amount;
+    }
+    if (typeof rawParams.percent === "number" && Number.isFinite(rawParams.percent) && rawParams.percent >= 0 && rawParams.percent <= 1000) {
+      scenarioParams.percent = rawParams.percent;
+    }
 
     if (!question && !scenarioType) {
       return apiError("Question or scenario is required", 400);
     }
+    if (question.length > 1000) return apiError("Question is too long", 400);
 
     // Sanitize question
     if (question && !isSafeInput(question)) {
@@ -93,6 +107,13 @@ export const POST = apiHandler(async (req, { log }) => {
       const validScenarios = ["salaryIncrease", "salaryDecrease", "housePurchase", "carPurchase", "jobLoss", "inflation", "childEducation", "medicalEmergency"] as const;
       if (!validScenarios.includes(scenarioType as any)) {
         return apiError("Invalid scenario type", 400);
+      }
+      const percentScenarios = new Set(["salaryIncrease", "salaryDecrease", "jobLoss", "inflation"]);
+      if (percentScenarios.has(scenarioType) && scenarioParams.percent === undefined) {
+        return apiError("A valid percentage is required for this scenario", 400);
+      }
+      if (!percentScenarios.has(scenarioType) && scenarioParams.amount === undefined) {
+        return apiError("A valid amount is required for this scenario", 400);
       }
       const scenario = simulateScenario(profile, scenarioType as typeof validScenarios[number], scenarioParams);
       scenario.category = "Life Simulator";
