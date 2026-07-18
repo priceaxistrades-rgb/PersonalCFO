@@ -90,6 +90,9 @@ export const transactions = pgTable("transactions", {
   memberId: integer("member_id"),
   accountId: integer("account_id"),
   note: text("note"),
+  transferGroupId: varchar("transfer_group_id", { length: 64 }),
+  reconciled: boolean("reconciled").notNull().default(false),
+  reconciledAt: timestamp("reconciled_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
@@ -97,6 +100,8 @@ export const transactions = pgTable("transactions", {
   index("transactions_txn_date_idx").on(table.txnDate),
   index("transactions_type_idx").on(table.type),
   index("transactions_account_id_idx").on(table.accountId),
+  index("transactions_transfer_group_idx").on(table.transferGroupId),
+  index("transactions_user_reconciled_idx").on(table.userId, table.reconciled),
   index("transactions_user_date_idx").on(table.userId, table.txnDate),
   index("transactions_user_type_date_idx").on(table.userId, table.type, table.txnDate),
 ]);
@@ -326,4 +331,42 @@ export const auditLog = pgTable("audit_log", {
   index("audit_log_action_idx").on(table.action),
   index("audit_log_table_record_idx").on(table.table, table.recordId),
   index("audit_log_created_at_idx").on(table.createdAt),
+]);
+
+// Account-to-account transfers are stored separately so they never inflate
+// household income or expenses. Balance changes are performed atomically.
+export const accountTransfers = pgTable("account_transfers", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  fromAccountId: integer("from_account_id").references(() => accounts.id, { onDelete: "restrict" }).notNull(),
+  toAccountId: integer("to_account_id").references(() => accounts.id, { onDelete: "restrict" }).notNull(),
+  amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+  transferDate: date("transfer_date").notNull(),
+  note: text("note"),
+  transferGroupId: varchar("transfer_group_id", { length: 64 }).notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("account_transfers_user_date_idx").on(table.userId, table.transferDate),
+]);
+
+export const recurringRules = pgTable("recurring_rules", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  accountId: integer("account_id").references(() => accounts.id, { onDelete: "set null" }),
+  transactionType: varchar("transaction_type", { length: 16 }).notNull(),
+  category: varchar("category", { length: 50 }).notNull(),
+  amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+  note: text("note"),
+  frequency: varchar("frequency", { length: 16 }).notNull(),
+  intervalCount: integer("interval_count").notNull().default(1),
+  nextRunDate: date("next_run_date").notNull(),
+  endDate: date("end_date"),
+  active: boolean("active").notNull().default(true),
+  lastGeneratedAt: timestamp("last_generated_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("recurring_rules_due_idx").on(table.active, table.nextRunDate),
+  index("recurring_rules_user_idx").on(table.userId),
 ]);
