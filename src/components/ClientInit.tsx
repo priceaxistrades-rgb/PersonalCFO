@@ -6,6 +6,7 @@ import { installGlobalErrorHandlers } from "@/lib/client-logger";
 import { GlobalQuickActionModal } from "@/components/QuickActionCenter";
 import { CommandSearchModal } from "@/components/CommandSearchModal";
 import { FirstLoginGuide } from "@/components/FirstLoginGuide";
+import { FeedbackWidget } from "@/components/FeedbackWidget";
 
 /**
  * One-time client-side initializer.
@@ -42,6 +43,7 @@ export function ClientInit() {
       <FirstLoginGuide />
       <GlobalQuickActionModal />
       <CommandSearchModal />
+      <FeedbackWidget />
     </>
   );
 }
