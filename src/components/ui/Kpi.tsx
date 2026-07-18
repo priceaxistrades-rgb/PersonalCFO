@@ -1,8 +1,34 @@
 "use client";
 
 import { ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { usePrivacy } from "@/lib/privacy";
 import { IconEye, IconEyeOff } from "@/components/ui/Icons";
+
+const KPI_DETAIL_ROUTES: Array<[RegExp, string]> = [
+  [/projected net worth|wealth velocity/i, "/wealth"],
+  [/net worth|gross assets|net growth/i, "/networth"],
+  [/income|revenue/i, "/income"],
+  [/expense|spend|outflow/i, "/expenses"],
+  [/budget|ceiling|allocation/i, "/budget"],
+  [/bill|overdue|due within|cleared this cycle|^outstanding$/i, "/bills"],
+  [/portfolio|investment|invested|holding|unrealized|valuation change|cagr|yield/i, "/investments"],
+  [/debt|liabilit|emi|capital repaid|weighted rate|total outstanding/i, "/debt"],
+  [/emergency/i, "/emergency"],
+  [/insurance|coverage|polic|premium|renewal/i, "/insurance"],
+  [/preparedness|key contacts/i, "/emergency"],
+  [/goal|vault|milestone|total saved reserves|overall progress/i, "/savings"],
+  [/family|member|top spender|per member/i, "/family"],
+  [/health/i, "/health"],
+  [/annual|total goals|completed|in progress|avg progress/i, "/annual"],
+  [/dream/i, "/dreams"],
+  [/tax/i, "/tax"],
+  [/savings rate|monthly savings|6-mo|six-month/i, "/reports"],
+];
+
+function inferKpiDetailsRoute(label: string): string | undefined {
+  return KPI_DETAIL_ROUTES.find(([pattern]) => pattern.test(label))?.[1];
+}
 
 export function KpiCard({
   label,
@@ -12,6 +38,7 @@ export function KpiCard({
   tone = "primary",
   trend,
   onClick,
+  detailsHref,
   active = false,
   privacyMode = "local",
   privacyKey,
@@ -23,16 +50,19 @@ export function KpiCard({
   tone?: "primary" | "success" | "warning" | "danger" | "accent";
   trend?: { dir: "up" | "down"; text: string; good?: boolean };
   onClick?: () => void;
+  detailsHref?: string | false;
   active?: boolean;
   privacyMode?: "local" | "global" | "none";
   privacyKey?: string;
 }) {
+  const router = useRouter();
   const key = privacyKey || label;
   const { isHidden, toggle } = usePrivacy();
   const hidden = isHidden(key, privacyMode);
   const canHide = privacyMode !== "none";
-
-  const clickable = Boolean(onClick);
+  const inferredHref = detailsHref === false ? undefined : (detailsHref || inferKpiDetailsRoute(label));
+  const activate = onClick || (inferredHref ? () => router.push(inferredHref) : undefined);
+  const clickable = Boolean(activate);
 
   // Semantic color accents for top border & trend badges
   const toneMap: Record<string, { border: string; badgeBg: string; badgeText: string }> = {
@@ -48,11 +78,12 @@ export function KpiCard({
     <div
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
-      onClick={onClick}
+      onClick={activate}
       onKeyDown={(e) => {
-        if (!onClick) return;
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); }
+        if (!activate) return;
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); }
       }}
+      aria-label={clickable ? `${label}: open detailed view` : undefined}
       data-tone={tone}
       className={`kpi-card mobile-kpi-card p-4 sm:p-5 relative group overflow-hidden transition-all duration-300 rounded-[1.15rem] sm:rounded-3xl border shadow-lg ${
         clickable ? "cursor-pointer" : ""

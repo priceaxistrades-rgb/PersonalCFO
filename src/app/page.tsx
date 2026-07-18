@@ -48,7 +48,7 @@ export default async function Dashboard() {
 
       <MemberSelectorClient members={members} />
 
-      <QuickActionCenter accounts={accs} investments={invs} listenForGlobalEvents={false} />
+      <QuickActionCenter accounts={accs} investments={invs} listenForGlobalEvents={false} openInGlobalModal />
 
       <FilteredDashboard 
         txns={txns}

@@ -43,6 +43,7 @@ export function QuickActionCenter({
   initialType = "expense",
   onClose,
   listenForGlobalEvents = true,
+  openInGlobalModal = false,
 }: {
   accounts?: any[];
   investments?: any[];
@@ -50,6 +51,7 @@ export function QuickActionCenter({
   initialType?: QuickAddType;
   onClose?: () => void;
   listenForGlobalEvents?: boolean;
+  openInGlobalModal?: boolean;
 }) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -269,7 +271,13 @@ export function QuickActionCenter({
       {!isOpen ? (
         <div className="quick-entry-shell p-1 rounded-2xl bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-amber-500/20 border border-white/10 shadow-lg">
           <button
-            onClick={() => setIsOpen(true)}
+            onClick={() => {
+              if (openInGlobalModal) {
+                window.dispatchEvent(new CustomEvent("open-quick-action-center", { detail: { type: formType } }));
+              } else {
+                setIsOpen(true);
+              }
+            }}
             className="quick-entry-button w-full py-3.5 px-6 rounded-xl text-sm font-bold flex items-center justify-between gap-4 transition-all duration-300 group"
             style={{ background: "var(--surface)", color: "var(--text-heading)" }}
           >
