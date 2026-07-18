@@ -100,6 +100,7 @@ src/
     ├── tax.ts            # Indian tax calculator
     └── excel.ts          # Excel workbook generator
 ```
+Staging environment initialized for financial-integrity testing.
 
 ## License
 

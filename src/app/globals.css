@@ -4308,3 +4308,11 @@ svg, canvas, img, video {
   .feedback-overlay,
   .feedback-dialog { animation: none !important; }
 }
+
+/* Account transfers */
+.transfer-label { display:block; margin-bottom:.4rem; color:var(--text-muted); font-size:.7rem; font-weight:850; text-transform:uppercase; letter-spacing:.08em; }
+.transfer-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.85rem; border:1px solid var(--border); border-radius:1rem; background:var(--surface-2); }
+.transfer-row p { color:var(--text-heading); font-size:.8rem; font-weight:850; }
+.transfer-row span { display:block; margin-top:.2rem; color:var(--text-muted); font-size:.68rem; overflow-wrap:anywhere; }
+.transfer-row strong { flex-shrink:0; color:var(--primary); font-family:monospace; font-size:.82rem; }
+@media(max-width:639px){.transfer-row{align-items:flex-start}.transfer-row strong{font-size:.75rem}}

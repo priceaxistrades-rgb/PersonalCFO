@@ -36,6 +36,7 @@ const MORE_LINKS_GROUPS = [
     title: "Asset Vault & Markets",
     items: [
       { href: "/settings#accounts", label: "Accounts & Wallets", icon: IconSavings },
+      { href: "/transfers", label: "Account Transfers", icon: IconTimeline },
       { href: "/networth", label: "Net Worth Deck", icon: IconNetWorth },
       { href: "/investments", label: "Portfolio Assets", icon: IconInvestments },
       { href: "/markets", label: "Live Market Tickers", icon: IconMarkets },
