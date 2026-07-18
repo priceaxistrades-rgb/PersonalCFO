@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, Badge } from "@/components/ui/Card";
 import { KpiCard } from "@/components/ui/Kpi";
 import { inr } from "@/lib/format";
@@ -28,6 +29,7 @@ type ControlProps = {
 };
 
 export function ControlClient(data: ControlProps) {
+  const router = useRouter();
   const [calculationTime] = useState(() => Date.now());
   const mc = generateMissionControl(data);
 
@@ -73,11 +75,11 @@ export function ControlClient(data: ControlProps) {
 
       {/* ═══ HERO KPI ROW ═══ */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-        <KpiCard label="Total Net Worth" value={inr(mc.netWorth, { compact: true })} icon={<IconNetWorth size={18} />} tone="primary" onClick={() => {}} />
-        <KpiCard label="Monthly Savings" value={inr(mc.monthlySavings, { compact: true })} icon={<IconSavings size={18} />} tone={mc.monthlySavings >= 0 ? "success" : "danger"} onClick={() => {}} />
-        <KpiCard label="Savings Rate" value={`${mc.savingsRate.toFixed(0)}%`} icon={<IconDashboard size={18} />} tone={mc.savingsRate >= 30 ? "success" : "warning"} onClick={() => {}} />
-        <KpiCard label="Emergency Cover" value={`${mc.emergencyMonths.toFixed(1)} mo`} icon={<IconEmergency size={18} />} tone={mc.emergencyMonths >= 6 ? "success" : "danger"} onClick={() => {}} />
-        <KpiCard label="Asset Portfolio" value={inr(mc.investmentValue, { compact: true })} icon={<IconInvestments size={18} />} tone={mc.investmentGrowth >= 0 ? "success" : "danger"} onClick={() => {}} />
+        <KpiCard label="Total Net Worth" value={inr(mc.netWorth, { compact: true })} icon={<IconNetWorth size={18} />} tone="primary" sub="View assets & liabilities →" onClick={() => router.push("/networth")} />
+        <KpiCard label="Monthly Savings" value={inr(mc.monthlySavings, { compact: true })} icon={<IconSavings size={18} />} tone={mc.monthlySavings >= 0 ? "success" : "danger"} sub="View cash-flow report →" onClick={() => router.push("/reports")} />
+        <KpiCard label="Savings Rate" value={`${mc.savingsRate.toFixed(0)}%`} icon={<IconDashboard size={18} />} tone={mc.savingsRate >= 30 ? "success" : "warning"} sub="Inspect income & outflow →" onClick={() => router.push("/reports")} />
+        <KpiCard label="Emergency Cover" value={`${mc.emergencyMonths.toFixed(1)} mo`} icon={<IconEmergency size={18} />} tone={mc.emergencyMonths >= 6 ? "success" : "danger"} sub="Open emergency plan →" onClick={() => router.push("/emergency")} />
+        <KpiCard label="Asset Portfolio" value={inr(mc.investmentValue, { compact: true })} icon={<IconInvestments size={18} />} tone={mc.investmentGrowth >= 0 ? "success" : "danger"} sub="View all holdings →" onClick={() => router.push("/investments")} />
       </div>
 
       {/* ═══ DUAL SOVEREIGN DIAGNOSTIC TOWERS (SPLIT COCKPIT) ═══ */}
