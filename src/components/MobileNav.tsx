@@ -37,6 +37,7 @@ const MORE_LINKS_GROUPS = [
     items: [
       { href: "/settings#accounts", label: "Accounts & Wallets", icon: IconSavings },
       { href: "/transfers", label: "Account Transfers", icon: IconTimeline },
+      { href: "/reconciliation", label: "Reconciliation", icon: IconReports },
       { href: "/networth", label: "Net Worth Deck", icon: IconNetWorth },
       { href: "/investments", label: "Portfolio Assets", icon: IconInvestments },
       { href: "/markets", label: "Live Market Tickers", icon: IconMarkets },

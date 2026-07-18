@@ -4,12 +4,16 @@ import { db } from "@/db";
 import { transactions } from "@/db/schema";
 import { apiError, apiHandler, apiSuccess } from "@/lib/api-utils";
 import { isSession, requireApiSession } from "@/lib/server-auth";
+import { writeAuditLog } from "@/lib/audit";
+import { getClientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 
 const schema = z.object({ id: z.number().int().positive(), reconciled: z.boolean() }).strict();
 
 export const PATCH = apiHandler(async (req) => {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
+  const limited = await rateLimitAsync(`reconcile:${session.userId}:${getClientIp(req)}`, 60, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.resetAt);
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return apiError("Invalid reconciliation request", 400);
 
@@ -20,5 +24,6 @@ export const PATCH = apiHandler(async (req) => {
   }).where(and(eq(transactions.id, parsed.data.id), eq(transactions.userId, session.userId))).returning();
 
   if (!row) return apiError("Transaction not found", 404);
+  writeAuditLog({ userId: session.userId, action: "update", table: "transactions", recordId: row.id, ip: getClientIp(req), changes: { reconciled: parsed.data.reconciled } });
   return apiSuccess({ row });
 });

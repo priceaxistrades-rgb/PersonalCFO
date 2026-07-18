@@ -43,6 +43,7 @@ const NAV_GROUPS = [
     items: [
       { href: "/settings#accounts", label: "Bank Accounts & Wallets", icon: IconSavings, desc: "Bank accounts, cash balances, credit cards & digital wallets" },
       { href: "/transfers", label: "Account Transfers", icon: IconTimeline, desc: "Move money without changing income or expenses" },
+      { href: "/reconciliation", label: "Reconciliation", icon: IconReports, desc: "Verify transactions and review potential duplicates" },
       { href: "/networth", label: "Net Worth Deck", icon: IconNetWorth, desc: "Consolidated asset vs liability valuation" },
       { href: "/investments", label: "Portfolio Assets", icon: IconInvestments, desc: "Equities, mutual funds & capital holdings" },
       { href: "/markets", label: "Live Market Tickers", icon: IconMarkets, desc: "Real-time NSE stocks & AMFI scheme NAVs" },
