@@ -79,6 +79,7 @@ export type InvestmentFormData = {
   units: string;
   startDate: string;
   memberId?: number | null;
+  fundingAccountId?: number | null;
 };
 
 export type InvestmentInitialData = {

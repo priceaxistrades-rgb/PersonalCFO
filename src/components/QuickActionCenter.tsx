@@ -350,7 +350,9 @@ export function QuickActionCenter({
                 <InvestmentForm
                   key={investmentFormKey}
                   editingInvestment={null}
-                  existingInvestments={investments || []}
+                  existingInvestments={activeInvestments}
+                  accounts={activeAccounts}
+                  requireFundingAccount
                   onSave={async (payload) => {
                     const method = payload.id ? "PATCH" : "POST";
                     const res = await fetch("/api/manage/investments", {

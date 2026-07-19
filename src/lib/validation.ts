@@ -241,6 +241,9 @@ export const investmentCreateSchema = z.object({
   units: z.union([z.string(), z.number()]).transform((v) => String(v)).pipe(z.string().refine((v) => /^\d+(\.\d{1,4})?$/.test(v), "Invalid units")).nullable().optional(),
   startDate: dateStr.nullable().optional(),
   memberId: optionalIntId,
+  // Funding account is required by Quick Entry purchases; kept optional here
+  // for legacy/manual holdings and historical imports.
+  fundingAccountId: optionalIntId,
 }).strict();
 
 export const investmentUpdateSchema = z.object({

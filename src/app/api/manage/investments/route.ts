@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { investments } from "@/db/schema";
+import { accounts, investments, transactions } from "@/db/schema";
 import { and, eq, or, sql } from "drizzle-orm";
 import { isSession, requireApiSession } from "@/lib/server-auth";
 import { validate, investmentCreateSchema, investmentUpdateSchema, idDeleteSchema } from "@/lib/validation";
@@ -63,6 +63,7 @@ export const POST = apiHandler(async (req, { log }) => {
     const result = validate(investmentCreateSchema, raw);
     if (!result.ok) return result.error;
     const b = result.data;
+    const fundingAccountId = b.fundingAccountId ? Number(b.fundingAccountId) : null;
 
     // Check for duplicate symbol for same user
     if (b.symbol) {
@@ -79,19 +80,27 @@ export const POST = apiHandler(async (req, { log }) => {
       }
     }
 
-    const [row] = await db.insert(investments).values({
-      userId: session.userId,
-      name: b.name,
-      type: b.type,
-      invested: b.invested,
-      currentValue: b.currentValue,
-      annualReturn: b.annualReturn,
-      symbol: b.symbol ?? null,
-      schemeCode: b.schemeCode ?? null,
-      units: b.units ?? null,
-      startDate: b.startDate ?? null,
-      memberId: b.memberId,
-    }).returning();
+    const [row] = await db.transaction(async (tx) => {
+      if (fundingAccountId) {
+        const [account] = await tx.select({ balance: accounts.balance }).from(accounts)
+          .where(and(eq(accounts.id, fundingAccountId), eq(accounts.userId, session.userId))).limit(1);
+        if (!account) throw new Error("Funding account was not found");
+        if (Number(account.balance) < Number(b.invested)) throw new Error("Insufficient funds in the selected account");
+      }
+      const [created] = await tx.insert(investments).values({
+        userId: session.userId, name: b.name, type: b.type, invested: b.invested, currentValue: b.currentValue,
+        annualReturn: b.annualReturn, symbol: b.symbol ?? null, schemeCode: b.schemeCode ?? null,
+        units: b.units ?? null, startDate: b.startDate ?? null, memberId: b.memberId,
+      }).returning();
+      if (fundingAccountId) {
+        const group = `investment:${created.id}`;
+        await tx.update(accounts).set({ balance: sql`${accounts.balance} - ${b.invested}`, updatedAt: new Date() })
+          .where(and(eq(accounts.id, fundingAccountId), eq(accounts.userId, session.userId)));
+        await tx.insert(transactions).values({ userId: session.userId, type: "expense", category: "Investments", amount: b.invested,
+          txnDate: new Date().toISOString().slice(0, 10), accountId: fundingAccountId, note: `Investment purchase: ${b.name}`, transferGroupId: group });
+      }
+      return [created];
+    });
 
     log.info("Investment created", { id: row.id, name: b.name, type: b.type }); writeAuditLog({ userId: session.userId, action: "create", table: "investments", recordId: row.id, changes: { name: b.name, type: b.type } });
     return apiSuccess({ row });
@@ -100,7 +109,7 @@ export const POST = apiHandler(async (req, { log }) => {
     if (err instanceof Error && err.message.includes("investments_user_symbol_idx")) {
       return apiError("An investment with this symbol already exists.", 409);
     }
-    return apiError("Failed to create investment", 500, undefined, err);
+    return apiError(err instanceof Error && (err.message.includes("Funding account") || err.message.includes("Insufficient funds")) ? err.message : "Failed to create investment", err instanceof Error && (err.message.includes("Funding account") || err.message.includes("Insufficient funds")) ? 400 : 500, undefined, err);
   }
 });
 

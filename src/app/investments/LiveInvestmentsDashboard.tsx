@@ -49,11 +49,9 @@ function sumBy<T>(arr: T[], fn: (x: T) => number) {
 }
 
 function instrumentKey(i: Investment) {
-  if (i.type === "Stocks" && i.symbol) return `stock:${i.symbol}`;
   if (i.type === "MutualFunds" && i.schemeCode) return `mf:${i.schemeCode}`;
-  if (i.symbol) return `stock:${i.symbol}`;
-  if (i.schemeCode) return `mf:${i.schemeCode}`;
-  return null;
+  const resolved = resolveLiveSymbol(i.type, i.symbol);
+  return resolved ? `${resolved.kind}:${resolved.yahooSymbol}` : null;
 }
 
 function chartUrl(i: Investment) {
@@ -74,15 +72,17 @@ export function useLiveInvestments(investments: Investment[]) {
   const [error, setError] = useState("");
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const stocks = useMemo(() => [...new Set(investments.map((i) => i.symbol).filter(Boolean) as string[])], [investments]);
-  const mfs = useMemo(() => [...new Set(investments.map((i) => i.schemeCode).filter(Boolean) as string[])], [investments]);
+  const liveInstruments = useMemo(() => investments.map((investment) => resolveLiveSymbol(investment.type, investment.symbol)).filter(Boolean) as NonNullable<ReturnType<typeof resolveLiveSymbol>>[], [investments]);
+  const mfs = useMemo(() => [...new Set(investments.filter((i) => i.type === "MutualFunds").map((i) => i.schemeCode).filter(Boolean) as string[])], [investments]);
 
   const loadQuotes = useCallback(async () => {
-    if (!stocks.length && !mfs.length) return;
+    if (!liveInstruments.length && !mfs.length) return;
     setLoading(true);
     setError("");
     const params = new URLSearchParams();
-    if (stocks.length) params.set("stocks", stocks.join(","));
+    const byKind = (kind: string) => [...new Set(liveInstruments.filter((item) => item.kind === kind).map((item) => item.yahooSymbol))];
+    const add = (key: string, kind: string) => { const values = byKind(kind); if (values.length) params.set(key, values.join(",")); };
+    add("stocks", "stock"); add("commodities", "commodity"); add("crypto", "crypto"); add("indices", "index"); add("reits", "reit"); add("bonds", "bond");
     if (mfs.length) params.set("mf", mfs.join(","));
     try {
       const res = await fetch(`/api/market/quote?${params.toString()}`, { cache: "no-store" });
@@ -95,7 +95,7 @@ export function useLiveInvestments(investments: Investment[]) {
     } finally {
       setLoading(false);
     }
-  }, [stocks, mfs]);
+  }, [liveInstruments, mfs]);
 
   useEffect(() => {
     const start = setTimeout(() => void loadQuotes(), 0);

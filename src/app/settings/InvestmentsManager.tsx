@@ -34,6 +34,7 @@ function buildPayload(form: InvestmentFormData): Record<string, unknown> {
     units: units !== null ? units.toString() : null,
     startDate: form.startDate || null,
     memberId: form.memberId ?? null,
+    fundingAccountId: form.fundingAccountId ?? null,
   };
 }
 
@@ -43,6 +44,8 @@ export function InvestmentForm({
   onSave,
   onCancel,
   existingInvestments,
+  accounts = [],
+  requireFundingAccount = false,
 }: {
   editingInvestment: InvestmentRow | null;
   initialData?: InvestmentInitialData;
@@ -50,6 +53,8 @@ export function InvestmentForm({
   onCancel: () => void;
   /** Pass the full investment list so the "Add More" flow can find existing holdings */
   existingInvestments?: InvestmentRow[];
+  accounts?: AccountOption[];
+  requireFundingAccount?: boolean;
 }) {
   const [stockQuery, setStockQuery] = useState("");
   const [stockResults, setStockResults] = useState<{ symbol: string; name: string; exchange: string; sector?: string }[]>([]);
@@ -75,6 +80,7 @@ export function InvestmentForm({
   const [priceMode, setPriceMode] = useState<"live" | "manual">(livePrice > 0 ? "live" : "manual");
   const [fetchedLivePrice, setFetchedLivePrice] = useState<number>(livePrice);
   const [livePriceLoading, setLivePriceLoading] = useState(false);
+  const [fundingAccountId, setFundingAccountId] = useState("");
 
   // Auto-fetch live price when symbol or type changes (for new investments)
   useEffect(() => {
@@ -252,7 +258,11 @@ export function InvestmentForm({
   const hasLivePrice = effectiveLivePrice > 0;
 
   const handleSave = () => {
-    const finalForm = { ...form };
+    if (requireFundingAccount && !fundingAccountId) {
+      alert("Select the bank account to debit for this investment purchase.");
+      return;
+    }
+    const finalForm = { ...form, fundingAccountId: fundingAccountId ? Number(fundingAccountId) : null };
     const u = Number(finalForm.units) || 0;
 
     // In "live" mode, force avgPrice to the live price
@@ -481,6 +491,17 @@ export function InvestmentForm({
           <p className="text-[11px] mt-1 font-medium" style={{ color: "var(--warning)" }}>
             💡 Enter units + invested amount for accurate live P&L tracking across all dashboards.
           </p>
+        </div>
+      )}
+
+      {requireFundingAccount && (
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" htmlFor="investment-funding-account" style={{ color: "var(--text-faint)" }}>Debit / Funding Account <span className="text-red-400">*</span></label>
+          <select id="investment-funding-account" required value={fundingAccountId} onChange={(e) => setFundingAccountId(e.target.value)} className="input">
+            <option value="">Select the account to debit</option>
+            {accounts.map((account) => <option key={account.id} value={account.id}>{account.name} ({account.type})</option>)}
+          </select>
+          <p className="mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>The purchase amount is debited once from this account and recorded as an Investment Purchase transaction.</p>
         </div>
       )}
 
