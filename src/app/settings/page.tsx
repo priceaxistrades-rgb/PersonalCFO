@@ -11,6 +11,7 @@ import { InsuranceManager } from "./InsuranceManager";
 import { TransactionsManager } from "./TransactionsManager";
 import { AICFOFeature } from "./AICFOFeature";
 import { AccountDataManager } from "@/components/AccountDataManager";
+import { AccountDeletion } from "@/components/AccountDeletion";
 import {
   IconSettings, IconReports, IconSavings, IconExpenses, IconInvestments, IconFamily
 } from "@/components/ui/Icons";
@@ -45,6 +46,19 @@ export default async function SettingsPage() {
 
       <Card title="Data Privacy & Archive Protection" subtitle="Manage local cache telemetry, privacy preferences, and account reset options">
         <AccountDataManager />
+      </Card>
+
+      <Card title="Account Management" subtitle="Export your data or permanently delete your account and all financial records">
+        <div className="space-y-4">
+          <a 
+            href="/api/account/export" 
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/20 hover:bg-white/5 text-sm font-medium"
+          >
+            ⬇️ Download Full Data Export (JSON)
+          </a>
+          
+          <AccountDeletion />
+        </div>
       </Card>
 
       {/* Quick Stats */}

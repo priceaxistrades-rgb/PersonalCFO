@@ -7,8 +7,13 @@ import { logger } from "@/lib/logger";
 import { hashPassword } from "@/lib/auth";
 import { hashPasswordResetToken } from "@/lib/password-reset";
 import { clearSessionCookieHeader } from "@/lib/server-auth";
+import { getClientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
+  // Rate limit password reset attempts (prevent brute force on tokens)
+  const limited = await rateLimitAsync(`reset-password:${getClientIp(req)}`, 5, 15 * 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.resetAt);
+
   try {
     const raw = await req.json();
     const result = validate(resetPasswordSchema, raw);

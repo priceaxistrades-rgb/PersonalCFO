@@ -4,6 +4,8 @@ import { debts } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { isSession, requireApiSession } from "@/lib/server-auth";
 import { validate, debtCreateSchema, debtUpdateSchema, idDeleteSchema } from "@/lib/validation";
+import { verifyDebtOwnership } from "@/lib/ownership";
+import { getClientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function GET(req: Request) {
   const session = requireApiSession(req);
@@ -45,11 +47,21 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
+
+  // Rate limit + ownership verification
+  const limited = await rateLimitAsync(`debts:${session.userId}`, 30, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.resetAt);
+
   try {
     const raw = await req.json();
     const result = validate(debtUpdateSchema, raw);
     if (!result.ok) return result.error;
     const { id, ...updates } = result.data;
+
+    // CRITICAL: Explicit ownership verification to prevent IDOR
+    if (!(await verifyDebtOwnership(id, session.userId))) {
+      return Response.json({ ok: false, error: "Debt not found or access denied" }, { status: 404 });
+    }
 
     const safeUpdates: Record<string, unknown> = {};
     if (updates.name !== undefined) safeUpdates.name = updates.name;
@@ -71,11 +83,20 @@ export async function PATCH(req: Request) {
 export async function DELETE(req: Request) {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
+
+  const limited = await rateLimitAsync(`debts:${session.userId}`, 30, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.resetAt);
+
   try {
     const raw = await req.json();
     const result = validate(idDeleteSchema, raw);
     if (!result.ok) return result.error;
     const { id } = result.data;
+
+    // CRITICAL: Explicit ownership verification
+    if (!(await verifyDebtOwnership(id, session.userId))) {
+      return Response.json({ ok: false, error: "Debt not found or access denied" }, { status: 404 });
+    }
 
     await db.delete(debts).where(and(eq(debts.id, id), eq(debts.userId, session.userId)));
     return Response.json({ ok: true });

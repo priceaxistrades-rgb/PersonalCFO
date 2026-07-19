@@ -4,6 +4,8 @@ import { goals } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { isSession, requireApiSession } from "@/lib/server-auth";
 import { validate, goalCreateSchema, goalUpdateSchema, idDeleteSchema } from "@/lib/validation";
+import { verifyGoalOwnership } from "@/lib/ownership";
+import { getClientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function GET(req: Request) {
   const session = requireApiSession(req);
@@ -43,11 +45,19 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
+
+  const limited = await rateLimitAsync(`goals:${session.userId}`, 30, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.resetAt);
+
   try {
     const raw = await req.json();
     const result = validate(goalUpdateSchema, raw);
     if (!result.ok) return result.error;
     const { id, ...updates } = result.data;
+
+    if (!(await verifyGoalOwnership(id, session.userId))) {
+      return Response.json({ ok: false, error: "Goal not found or access denied" }, { status: 404 });
+    }
 
     const safeUpdates: Record<string, unknown> = {};
     if (updates.name !== undefined) safeUpdates.name = updates.name;

@@ -41,6 +41,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           <main className="app-main page-canvas px-4 sm:px-6 md:px-7 lg:px-10 pt-5 sm:pt-7 lg:pt-8 pb-[calc(7.75rem+env(safe-area-inset-bottom))] lg:pb-10 max-w-[1500px] mx-auto w-full">
             <ErrorBoundary name="Main Content">{children}</ErrorBoundary>
           </main>
+
+          {/* Footer with legal links */}
+          <footer className="border-t border-white/10 py-6 text-center text-xs text-slate-400">
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-1">
+              <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
+              <a href="/terms" className="hover:text-white transition-colors">Terms of Service</a>
+              <span>© 2026 Personal CFO</span>
+            </div>
+          </footer>
         </div>
       </div>
       <MobileNav />

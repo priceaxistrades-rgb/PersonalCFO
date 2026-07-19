@@ -22,13 +22,14 @@ function getSecret(): string {
 
   if (!secret || !isStrongEnough || secret === "dev-only-change-me-personal-cfo-secret") {
     const message = "AUTH_SECRET must be configured with at least 32 random characters before sessions can be issued.";
+    
+    // CRITICAL: Hard fail in production — never allow weak or missing secrets
     if (isProduction) {
-      // Never issue forgeable sessions in production. A hard failure is safer
-      // than silently falling back to a known signing key.
       logger.fatal(message);
-      throw new Error("Server authentication is not configured");
+      throw new Error("Server authentication is not configured. Set AUTH_SECRET in production environment variables.");
     }
 
+    // Development only — safe fallback
     logger.warn(`${message} Development-only fallback is active.`);
     return "dev-only-change-me-personal-cfo-secret";
   }

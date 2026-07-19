@@ -6,6 +6,8 @@ import { validate, investmentCreateSchema, investmentUpdateSchema, idDeleteSchem
 import { apiHandler, apiSuccess, apiError } from "@/lib/api-utils";
 import { writeAuditLog } from "@/lib/audit";
 import { logger } from "@/lib/logger";
+import { verifyInvestmentOwnership } from "@/lib/ownership";
+import { rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 
 export const GET = apiHandler(async (req, { log }) => {
   const session = requireApiSession(req);
@@ -106,19 +108,17 @@ export const PATCH = apiHandler(async (req, { log }) => {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
 
+  const limited = await rateLimitAsync(`investments:${session.userId}`, 30, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.resetAt);
+
   try {
     const raw = await req.json();
     const result = validate(investmentUpdateSchema, raw);
     if (!result.ok) return result.error;
     const { id, ...updates } = result.data;
 
-    // Verify ownership before update
-    const [existing] = await db
-      .select()
-      .from(investments)
-      .where(and(eq(investments.id, id), eq(investments.userId, session.userId)));
-
-    if (!existing) {
+    // CRITICAL: Explicit ownership verification
+    if (!(await verifyInvestmentOwnership(id, session.userId))) {
       return apiError("Investment not found or you don't have permission to edit it", 404);
     }
 
@@ -150,19 +150,17 @@ export const DELETE = apiHandler(async (req, { log }) => {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
 
+  const limited = await rateLimitAsync(`investments:${session.userId}`, 30, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.resetAt);
+
   try {
     const raw = await req.json();
     const result = validate(idDeleteSchema, raw);
     if (!result.ok) return result.error;
     const { id } = result.data;
 
-    // Verify ownership before delete
-    const [existing] = await db
-      .select()
-      .from(investments)
-      .where(and(eq(investments.id, id), eq(investments.userId, session.userId)));
-
-    if (!existing) {
+    // CRITICAL: Explicit ownership verification
+    if (!(await verifyInvestmentOwnership(id, session.userId))) {
       return apiError("Investment not found or you don't have permission to delete it", 404);
     }
 

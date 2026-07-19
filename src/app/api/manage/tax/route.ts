@@ -4,6 +4,7 @@ import { taxProfile } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { isSession, requireApiSession } from "@/lib/server-auth";
 import { validate, taxProfileCreateSchema, taxProfileUpdateSchema } from "@/lib/validation";
+import { rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function GET(req: Request) {
   const session = requireApiSession(req);
@@ -46,6 +47,10 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   const session = requireApiSession(req);
   if (!isSession(session)) return session;
+
+  const limited = await rateLimitAsync(`tax:${session.userId}`, 15, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.resetAt);
+
   try {
     const raw = await req.json();
     const result = validate(taxProfileUpdateSchema, raw);

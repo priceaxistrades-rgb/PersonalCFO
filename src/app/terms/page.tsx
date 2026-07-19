@@ -1,39 +1,66 @@
-import { Card, SectionTitle } from "@/components/ui/Card";
+import Link from "next/link";
 
-export const dynamic = "force-static";
-
-export default function TermsPage() {
+export default function TermsOfService() {
   return (
-    <div className="space-y-6 max-w-4xl">
-      <SectionTitle title="Terms & Disclaimer" subtitle="Important usage terms for Personal CFO" />
+    <div className="min-h-screen bg-bg text-white py-12 px-6 max-w-4xl mx-auto">
+      <div className="mb-10">
+        <Link href="/" className="text-indigo-400 hover:text-indigo-300 text-sm">← Back to PersonalCFO</Link>
+        <h1 className="text-4xl font-black tracking-tight mt-4">Terms of Service</h1>
+        <p className="text-slate-400 mt-2">Last updated: July 19, 2026</p>
+      </div>
 
-      <Card title="No financial advice">
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-          Personal CFO is a tracking, planning, and reporting tool. It does not provide investment, tax, legal, accounting, or financial advice. Always consult a qualified professional before making financial decisions.
-        </p>
-      </Card>
+      <div className="prose prose-invert max-w-none space-y-8 text-slate-300">
+        <section>
+          <h2 className="text-2xl font-bold text-white">1. Acceptance of Terms</h2>
+          <p>By accessing or using PersonalCFO ("the Service"), you agree to be bound by these Terms of Service.</p>
+        </section>
 
-      <Card title="Market data disclaimer">
-        <ul className="list-disc list-inside space-y-2 text-sm" style={{ color: "var(--text-muted)" }}>
-          <li>Stock and mutual fund data may be delayed, incomplete, or unavailable.</li>
-          <li>Mutual fund NAVs normally update daily, not every second.</li>
-          <li>Do not make trades or investments based only on this app’s displayed values.</li>
-        </ul>
-      </Card>
+        <section>
+          <h2 className="text-2xl font-bold text-white">2. Description of Service</h2>
+          <p>PersonalCFO is a personal financial planning and tracking tool for Indian households. It helps users manage income, expenses, investments, debts, goals, and taxes.</p>
+        </section>
 
-      <Card title="User responsibility">
-        <ul className="list-disc list-inside space-y-2 text-sm" style={{ color: "var(--text-muted)" }}>
-          <li>You are responsible for verifying entered and imported data.</li>
-          <li>You are responsible for maintaining safe access to your account.</li>
-          <li>Do not upload or store passwords, OTPs, PINs, or other highly sensitive credentials.</li>
-        </ul>
-      </Card>
+        <section>
+          <h2 className="text-2xl font-bold text-white">3. User Responsibilities</h2>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>You are responsible for maintaining the confidentiality of your account credentials</li>
+            <li>You must provide accurate financial information</li>
+            <li>You must not use the service for illegal activities</li>
+            <li>You are solely responsible for any financial decisions made using the Service</li>
+          </ul>
+        </section>
 
-      <Card title="Availability">
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-          The service may be unavailable due to maintenance, third-party API failures, deployment changes, or infrastructure issues.
-        </p>
-      </Card>
+        <section>
+          <h2 className="text-2xl font-bold text-white">4. No Financial Advice</h2>
+          <p className="font-semibold text-amber-400">
+            PersonalCFO is a tracking and planning tool only. It does not provide personalized financial, investment, tax, or legal advice. Always consult qualified professionals before making financial decisions.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold text-white">5. Data &amp; Privacy</h2>
+          <p>Your use of the Service is also governed by our <Link href="/privacy" className="text-indigo-400 hover:underline">Privacy Policy</Link>.</p>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold text-white">6. Account Termination</h2>
+          <p>You may delete your account at any time. We reserve the right to suspend or terminate accounts that violate these terms.</p>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold text-white">7. Limitation of Liability</h2>
+          <p>To the maximum extent permitted by law, PersonalCFO and its creators shall not be liable for any indirect, incidental, or consequential damages arising from the use of the Service.</p>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold text-white">8. Changes to Terms</h2>
+          <p>We may update these terms. Continued use of the Service after changes constitutes acceptance of the new terms.</p>
+        </section>
+      </div>
+
+      <div className="mt-16 pt-8 border-t border-white/10 text-sm text-slate-400">
+        © 2026 PersonalCFO — Sovereign Wealth OS
+      </div>
     </div>
   );
 }

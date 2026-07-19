@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Block admin and sensitive paths
+Disallow: /api/
+Disallow: /login
+Disallow: /signup
+Disallow: /reset-password
+Disallow: /forgot-password
+
+# Sitemap
+Sitemap: https://your-domain.vercel.app/sitemap.xml

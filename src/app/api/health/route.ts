@@ -38,7 +38,7 @@ export async function GET() {
   };
 
   // ─── Version ───
-  checks.version = { ok: true, detail: "4.0.0" };
+  checks.version = { ok: true, detail: "5.5.0 (Production Hardened)" };
 
   const allOk = Object.values(checks).every((c) => c.ok);
   const totalLatency = Date.now() - start;

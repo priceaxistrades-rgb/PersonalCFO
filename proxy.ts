@@ -14,6 +14,7 @@ const PUBLIC_PATHS = [
   "/api/auth/reset-password",
   "/api/auth/demo",
   "/api/health",
+  "/api/account/export",   // Allow authenticated users to export their data
 ];
 const SESSION_COOKIE = "pcfo_session";
 
