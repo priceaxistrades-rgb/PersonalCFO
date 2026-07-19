@@ -1,8 +1,11 @@
-Health Index popup UX fix
+Market search and live-price fix
 
-Copy src/components/FilteredDashboard.tsx into your existing PersonalCFO repository.
+Copy the contents into your existing PersonalCFO GitHub Desktop repository.
 
-Change: removes the blocking centered first-login Financial Health Index modal.
-The Health Index remains available as normal dashboard KPI/insight content and on the dedicated /health page, without obscuring the dashboard after login.
+Fixes:
+- Mutual fund search now calls MFAPI's lightweight search endpoint, instead of downloading the complete 5MB fund directory during a user search. Fund names should populate promptly.
+- Market holdings resolve a real Yahoo symbol for crypto/commodities/REITs/bonds before polling. A holding without a manual symbol receives its supported default (for example Crypto -> BTC-USD, Gold -> GOLDBEES.NS).
+- Live Markets deduplication now preserves separate kinds correctly.
 
-Validated: TypeScript passed; production build passed.
+Test symbols: BTC-USD, ETH-USD, GOLDBEES.NS, SILVERBEES.NS, GC=F, SI=F.
+Validated: TypeScript passed, Jest 91/91 passed, build passed.

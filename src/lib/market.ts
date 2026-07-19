@@ -498,39 +498,20 @@ function scoreMfResult(name: string, query: string) {
 }
 
 export async function searchMutualFunds(q: string) {
-  const query = q.trim().toLowerCase();
+  const query = q.trim();
   if (query.length < 2) return [];
-
   try {
-    const now = Date.now();
-    if (!mfSchemeCache || now - mfSchemeCache.loadedAt > MF_CACHE_MS) {
-      // mfapi.in /mf returns the complete public Indian MF scheme list.
-      // This is more reliable than the older search endpoint and lets us filter fast server-side.
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch("https://api.mfapi.in/mf", {
-        next: { revalidate: 86400 },
-        headers: { Accept: "application/json" },
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-      if (!res.ok) return [];
-      const json = (await res.json()) as MfScheme[];
-      mfSchemeCache = {
-        data: Array.isArray(json) ? json : [],
-        loadedAt: now,
-      };
-    }
-
-    const words = query.split(/\s+/).filter(Boolean);
-    return mfSchemeCache.data
-      .filter((scheme) => {
-        const name = scheme.schemeName.toLowerCase();
-        return words.every((word) => name.includes(word)) || String(scheme.schemeCode).includes(query);
-      })
-      .sort((a, b) => scoreMfResult(a.schemeName, query) - scoreMfResult(b.schemeName, query))
-      .slice(0, 30);
-  } catch {
-    return [];
-  }
+    // The provider supports a small server-side search response. Fetching its
+    // entire 5MB scheme directory on each cold serverless instance caused the
+    // UI to time out and silently display no funds.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8_000);
+    const res = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(query)}`, {
+      next: { revalidate: 3600 }, headers: { Accept: "application/json" }, signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return [];
+    const data = await res.json() as MfScheme[];
+    return Array.isArray(data) ? data.slice(0, 30) : [];
+  } catch { return []; }
 }

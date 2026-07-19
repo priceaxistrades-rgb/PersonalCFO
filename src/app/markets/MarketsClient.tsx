@@ -7,6 +7,7 @@ import { LiveMarkets } from "./LiveMarkets";
 import { AddWatch } from "./AddWatch";
 import { MarketsPortfolioSync } from "./MarketsPortfolioSync";
 import { InvestmentForm, SellInvestmentModal } from "../settings/InvestmentsManager";
+import { resolveLiveSymbol } from "@/lib/market";
 import type { InvestmentRow } from "@/lib/types";
 
 export function MarketsClient({
@@ -57,18 +58,13 @@ export function MarketsClient({
       return false;
     })
     .map((investment) => {
-      // Determine the kind for the watchlist item
-      let kind = investment.schemeCode ? "mf" : "stock";
-      if (investment.type === "Gold" || investment.type === "Silver") kind = "commodity";
-      else if (investment.type === "Crypto") kind = "crypto";
-      else if (investment.type === "RealEstate") kind = "reit";
-      else if (investment.type === "Bonds") kind = "bond";
-      else if (investment.schemeCode) kind = "mf";
-
+      const resolved = investment.schemeCode ? null : resolveLiveSymbol(investment.type, investment.symbol);
+      const kind = investment.schemeCode ? "mf" : (resolved?.kind || "stock");
       return {
         id: -investment.id,
         kind,
-        symbol: investment.symbol || investment.schemeCode || investment.name,
+        // Use the real Yahoo symbol/default tracker, never the display name.
+        symbol: investment.schemeCode ? undefined : (resolved?.yahooSymbol || investment.symbol || undefined),
         schemeCode: investment.schemeCode,
         name: investment.name,
         label: investment.name,
@@ -83,7 +79,7 @@ export function MarketsClient({
 
   const seen = new Set<string>();
   const items = [...manualItems, ...investmentItems].filter((item) => {
-    const key = item.kind === "stock" ? `stock:${item.symbol}` : `mf:${item.schemeCode}`;
+    const key = `${item.kind}:${item.kind === "mf" ? item.schemeCode : item.symbol}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
