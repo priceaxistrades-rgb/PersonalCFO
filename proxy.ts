@@ -7,9 +7,10 @@ const protectedRoutes = [
   '/income',
   '/expenses',
   '/investments',
-  '/debts',
+  '/debt',
   '/goals',
   '/bills',
+  '/budget',
   '/recurring',
   '/reports',
   '/settings',
@@ -33,23 +34,8 @@ const protectedRoutes = [
   '/simulator',
   '/dreams',
   '/guide',
-];
-
-// Public routes that should never require auth
-const publicRoutes = [
-  '/',
-  '/login',
-  '/signup',
-  '/reset-password',
-  '/privacy',
-  '/terms',
-  '/api/auth/login',
-  '/api/auth/signup',
-  '/api/auth/logout',
-  '/api/auth/forgot-password',
-  '/api/auth/reset-password',
-  '/api/auth/demo',
-  '/api/health',
+  '/health',
+  '/onboarding',
 ];
 
 export function proxy(request: NextRequest) {
@@ -76,13 +62,10 @@ export function proxy(request: NextRequest) {
     pathname === route || pathname.startsWith(route + '/')
   );
 
-  const isPublic = publicRoutes.some(route => 
-    pathname === route || pathname.startsWith(route + '/')
-  );
-
-  // Get session token from cookies
-  const sessionToken = request.cookies.get('session')?.value || 
-                       request.cookies.get('auth-token')?.value;
+  // The application issues the signed session cookie as `pcfo_session`
+  // in src/lib/server-auth.ts. This layer only makes the inexpensive
+  // presence check; server pages and API routes verify its HMAC signature.
+  const sessionToken = request.cookies.get('pcfo_session')?.value;
 
   // Redirect to login if trying to access protected route without session
   if (isProtected && !sessionToken) {
