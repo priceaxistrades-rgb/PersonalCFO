@@ -152,6 +152,7 @@ export function LiveMarkets({
   const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
   const [loading, setLoading] = useState(true);
   const [updated, setUpdated] = useState("");
+  const [quoteError, setQuoteError] = useState("");
   const [chartTarget, setChartTarget] = useState<ChartTarget | null>(null);
   const [chartRange, setChartRange] = useState<ChartRange>("1mo");
   const [chartType, setChartType] = useState<ChartType>("line");
@@ -186,6 +187,7 @@ export function LiveMarkets({
       return;
     }
     setLoading(true);
+    setQuoteError("");
     const params = new URLSearchParams();
     if (stocks.length) params.set("stocks", stocks.join(","));
     if (mfs.length) params.set("mf", mfs.join(","));
@@ -196,12 +198,14 @@ export function LiveMarkets({
     if (bonds.length) params.set("bonds", bonds.join(","));
     try {
       const res = await fetch(`/api/market/quote?${params.toString()}`, { cache: "no-store" });
-      const json = await res.json();
-      setQuotes(json.quotes || {});
+      const json = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(json?.error || `Quote service unavailable (HTTP ${res.status})`);
+      setQuotes(json?.quotes || {});
       lastLoadTime.current = new Date();
       setUpdated(new Date().toLocaleTimeString("en-IN"));
-    } catch {}
-    setLoading(false);
+    } catch (error) {
+      setQuoteError(error instanceof Error ? error.message : "Unable to refresh live market quotes");
+    } finally { setLoading(false); }
   }, [items.length, stocks, mfs, commodities, cryptos, indices, reits, bonds]);
 
   useEffect(() => {
@@ -253,6 +257,8 @@ export function LiveMarkets({
       if (res.ok) router.refresh();
     } catch {}
   };
+
+  const marketStatus = updated ? `Updated ${updated} · Yahoo Finance / AMFI MFAPI` : loading ? "Loading live quotes…" : "Live quotes ready";
 
   const renderRows = (list: WatchItem[]) =>
     list.map((it) => {

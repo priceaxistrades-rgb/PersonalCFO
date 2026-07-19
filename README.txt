@@ -1,13 +1,13 @@
-FINAL MUTUAL FUND SEARCH FIX
+Market discovery and quote-status update
 
-Copy src/app/markets/AddWatch.tsx over the same file in your existing GitHub Desktop PersonalCFO repository. This is a single-file replacement.
+Replace the included files in your existing PersonalCFO repository, then commit/push.
 
-This version calls the verified live /api/market/search endpoint directly on every input change (and retains a debounced retry). It also shows the actual API error rather than incorrectly saying no fund was found.
+Included:
+- Mutual fund name search, result rows and Track actions (AMFI/MFAPI).
+- Direct search plus debounced retry and visible real API errors.
+- Crypto/commodity/REIT/bond symbol resolution to valid live tickers.
+- Markets status line showing source and last update time.
+- Preserves existing last/manual values when a provider refresh is unavailable.
 
-Before commit, GitHub Desktop MUST show exactly:
-Modified: src/app/markets/AddWatch.tsx
-
-After Vercel says Ready, hard refresh /markets (Ctrl+Shift+R). Search PARAG.
-Expected: names and Track buttons. If an error occurs, send the visible red "Fund search error" text.
-
-Validated: TypeScript passed; Jest 91/91 passed; production build passed.
+No API key is required. Test: search PARAG, then track 122639; test BTC-USD and GOLDBEES.NS.
+Validated: TypeScript passed, Jest 91/91 passed, production build passed.
