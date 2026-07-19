@@ -1,0 +1,229 @@
+diff --git a/proxy.ts b/proxy.ts
+index 1d34c46..77622a4 100644
+--- a/proxy.ts
++++ b/proxy.ts
+@@ -7,9 +7,10 @@ const protectedRoutes = [
+   '/income',
+   '/expenses',
+   '/investments',
+-  '/debts',
++  '/debt',
+   '/goals',
+   '/bills',
++  '/budget',
+   '/recurring',
+   '/reports',
+   '/settings',
+@@ -33,23 +34,8 @@ const protectedRoutes = [
+   '/simulator',
+   '/dreams',
+   '/guide',
+-];
+-
+-// Public routes that should never require auth
+-const publicRoutes = [
+-  '/',
+-  '/login',
+-  '/signup',
+-  '/reset-password',
+-  '/privacy',
+-  '/terms',
+-  '/api/auth/login',
+-  '/api/auth/signup',
+-  '/api/auth/logout',
+-  '/api/auth/forgot-password',
+-  '/api/auth/reset-password',
+-  '/api/auth/demo',
+-  '/api/health',
++  '/health',
++  '/onboarding',
+ ];
+ 
+ export function proxy(request: NextRequest) {
+@@ -76,13 +62,10 @@ export function proxy(request: NextRequest) {
+     pathname === route || pathname.startsWith(route + '/')
+   );
+ 
+-  const isPublic = publicRoutes.some(route => 
+-    pathname === route || pathname.startsWith(route + '/')
+-  );
+-
+-  // Get session token from cookies
+-  const sessionToken = request.cookies.get('session')?.value || 
+-                       request.cookies.get('auth-token')?.value;
++  // The application issues the signed session cookie as `pcfo_session`
++  // in src/lib/server-auth.ts. This layer only makes the inexpensive
++  // presence check; server pages and API routes verify its HMAC signature.
++  const sessionToken = request.cookies.get('pcfo_session')?.value;
+ 
+   // Redirect to login if trying to access protected route without session
+   if (isProtected && !sessionToken) {
+diff --git a/src/app/api/upload/excel/route.ts b/src/app/api/upload/excel/route.ts
+index db8594f..af99744 100644
+--- a/src/app/api/upload/excel/route.ts
++++ b/src/app/api/upload/excel/route.ts
+@@ -163,6 +163,8 @@ function detectSheetType(headers: string[], sheetName: string): ImportType {
+   if (name.includes("member") || name.includes("family")) return "members";
+ 
+   const headerText = headers.join(" ");
++  // Bank exports commonly use debit/credit/narration instead of an Amount column.
++  if (headerText.includes("debit") || headerText.includes("credit") || headerText.includes("withdrawal") || headerText.includes("deposit")) return "transactions";
+   if (headerText.includes("amount") && headerText.includes("date")) return "transactions";
+   if (headerText.includes("balance") && headerText.includes("account")) return "accounts";
+   if (headerText.includes("invested") || headerText.includes("current value")) return "investments";
+@@ -179,7 +181,14 @@ function parseRow(row: unknown[], headers: string[]): ImportRow {
+     const value = row[index];
+     if (!header) continue;
+ 
+-    if (header === "description" || header === "details" || header === "memo") data.note = value;
++    // Privacy boundary: identifiers are neither copied into the normalized row
++    // nor persisted in transactions/audit records. The uploaded file is parsed
++    // in memory and is never stored by this route.
++    if (/(transaction\s*(id|ref|reference)|reference\s*(no|number)?|utr|rrn|cheque\s*(no|number)?|bank\s*reference)/i.test(header)) continue;
++
++    if (header.includes("debit") || header.includes("withdrawal")) data.debit = value;
++    else if (header.includes("credit") || header.includes("deposit")) data.credit = value;
++    else if (header === "description" || header === "details" || header === "memo" || header.includes("narration") || header.includes("particular")) data.note = value;
+     else if (header.includes("name")) data.name = value;
+     else if (header.includes("type")) data.type = value;
+     else if (header.includes("category")) data.category = value;
+@@ -212,6 +221,20 @@ function parseRow(row: unknown[], headers: string[]): ImportRow {
+   return data;
+ }
+ 
++function categorizeBankNarration(note: string | null, type: "income" | "expense"): string {
++  const value = (note || "").toLowerCase();
++  if (/(salary|payroll|sal credit)/.test(value)) return "Salary";
++  if (/(upi|swiggy|zomato|restaurant|grocery|supermarket|mart)/.test(value)) return "Food";
++  if (/(petrol|fuel|diesel|uber|ola|metro|railway|irctc|parking)/.test(value)) return "Transport";
++  if (/(rent|landlord)/.test(value)) return "Housing";
++  if (/(electricity|water bill|broadband|wifi|mobile|recharge|airtel|jio|vi )/.test(value)) return "Utilities";
++  if (/(emi|loan|credit card)/.test(value)) return "Debt Repayment";
++  if (/(sip|mutual fund|mf |zerodha|groww|investment|nps|ppf)/.test(value)) return "Investments";
++  if (/(insurance|lic |premium)/.test(value)) return "Insurance";
++  if (/(interest|dividend|cashback|refund)/.test(value)) return type === "income" ? "Other Income" : "Refund";
++  return type === "income" ? "Other Income" : "Miscellaneous";
++}
++
+ type NormalizedImportResult =
+   | { success: true; data: ImportRow }
+   | { success: false; error: { issues: Array<{ message: string }> } };
+@@ -241,14 +264,27 @@ function normalizeImportRow(type: ImportType, row: ImportRow) {
+         category: text(row.category) || "liquid",
+         balance: parseAmount(row.balance) || "0",
+       }));
+-    case "transactions":
++    case "transactions": { 
++      const debit = parseAmount(row.debit);
++      const credit = parseAmount(row.credit);
++      const explicitType = text(row.type).toLowerCase();
++      const type = credit && !debit
++        ? "income"
++        : debit && !credit
++          ? "expense"
++          : explicitType === "income" || explicitType === "credit" || explicitType === "deposit"
++            ? "income"
++            : "expense";
++      const note = row.note ? text(row.note) : null;
++      const category = text(row.category) || categorizeBankNarration(note, type);
+       return toNormalizedImportResult(transactionCreateSchema.safeParse({
+-        type: text(row.type) || "expense",
+-        category: text(row.category) || "Miscellaneous",
+-        amount: parseAmount(row.amount),
++        type,
++        category,
++        amount: parseAmount(row.amount) || debit || credit,
+         txnDate: row.date,
+-        note: row.note ? text(row.note) : null,
++        note,
+       }));
++    }
+     case "investments":
+       return toNormalizedImportResult(investmentCreateSchema.safeParse({
+         name: text(row.name),
+@@ -305,6 +341,7 @@ export async function POST(req: Request) {
+     const formData = await req.formData();
+     const file = formData.get("file");
+     const requestedType = text(formData.get("type")) || "auto";
++    const source = text(formData.get("source"));
+ 
+     if (!(file instanceof File)) return Response.json({ ok: false, error: "No file provided" }, { status: 400 });
+     if (!IMPORT_TYPES.includes(requestedType as (typeof IMPORT_TYPES)[number])) {
+@@ -411,7 +448,9 @@ export async function POST(req: Request) {
+       userId: session.userId,
+       action: "import",
+       table: "bulk_import",
+-      changes: { filename: file.name.slice(0, 120), inserted },
++      // Statement filenames can reveal account/provider details. Keep only
++      // aggregate counts for privacy-focused bank imports.
++      changes: source === "bank_statement" ? { source: "bank_statement", inserted } : { filename: file.name.slice(0, 120), inserted },
+     });
+ 
+     return Response.json({ ok: true, message: "Successfully imported data", inserted, detected: Object.keys(inserted) });
+diff --git a/src/components/FileUploader.tsx b/src/components/FileUploader.tsx
+index 3899913..daedaaa 100644
+--- a/src/components/FileUploader.tsx
++++ b/src/components/FileUploader.tsx
+@@ -9,6 +9,7 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
+   const [uploading, setUploading] = useState(false);
+   const [result, setResult] = useState<{ message: string; inserted: Record<string, number> } | null>(null);
+   const [error, setError] = useState<string | null>(null);
++  const [bankStatementMode, setBankStatementMode] = useState(true);
+ 
+   const handleDragOver = useCallback((e: React.DragEvent) => {
+     e.preventDefault();
+@@ -29,6 +30,7 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
+       const formData = new FormData();
+       formData.append("file", file);
+       formData.append("type", "auto");
++      formData.append("source", bankStatementMode ? "bank_statement" : "general_import");
+ 
+       try {
+         const res = await fetch("/api/upload/excel", {
+@@ -54,7 +56,7 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
+     }
+ 
+     setUploading(false);
+-  }, [onSuccess, router]);
++  }, [bankStatementMode, onSuccess, router]);
+ 
+   const handleDrop = useCallback(async (e: React.DragEvent) => {
+     e.preventDefault();
+@@ -72,6 +74,18 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
+ 
+   return (
+     <div className="space-y-4">
++      <div className="rounded-xl border p-4 text-sm" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
++        <label className="flex items-start gap-3 cursor-pointer">
++          <input type="checkbox" checked={bankStatementMode} onChange={(event) => setBankStatementMode(event.target.checked)} className="mt-1" />
++          <span>
++            <strong style={{ color: "var(--text)" }}>Safe bank statement import</strong>
++            <span className="block mt-1" style={{ color: "var(--text-muted)" }}>
++              Transaction IDs, UTRs, RRN, cheque numbers and bank references are ignored and never saved. The original file is parsed in memory, not retained, and no AI, bank, analytics, or third-party financial service receives it. Saved transactions go only to your PersonalCFO account database.
++            </span>
++          </span>
++        </label>
++      </div>
++
+       {/* Drag & Drop Zone */}
+       <div
+         onDragOver={handleDragOver}
+@@ -107,7 +121,7 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
+         
+         <div className="text-4xl mb-3">📁</div>
+         <p className="font-medium mb-1" style={{ color: "var(--text)" }}>
+-          {uploading ? "Uploading..." : "Drop Excel files here"}
++          {uploading ? "Importing securely..." : bankStatementMode ? "Drop bank statement exports here" : "Drop Excel files here"}
+         </p>
+         <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+           or click to browse (.xlsx, .csv)
+@@ -169,7 +183,8 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
+         <ul className="space-y-1 list-disc list-inside">
+           <li>Excel workbooks (.xlsx) or CSV files with rows for Transactions, Accounts, Investments, etc.</li>
+           <li>CSV files with headers like: Date, Amount, Category, Description</li>
+-          <li>Bank statement exports (automatically detected)</li>
++          <li>Bank statement exports: detects Debit/Credit, Withdrawal/Deposit, Narration and Particulars columns.</li>
++          <li>Safe mode excludes transaction IDs, UTRs, RRN, cheque numbers and bank references before data is saved.</li>
+         </ul>
+         <p className="mt-3 text-xs">
+           💡 Tip: Download our template from the Settings page for the correct format.

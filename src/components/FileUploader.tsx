@@ -9,6 +9,7 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<{ message: string; inserted: Record<string, number> } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [bankStatementMode, setBankStatementMode] = useState(true);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -29,6 +30,7 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("type", "auto");
+      formData.append("source", bankStatementMode ? "bank_statement" : "general_import");
 
       try {
         const res = await fetch("/api/upload/excel", {
@@ -54,7 +56,7 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
     }
 
     setUploading(false);
-  }, [onSuccess, router]);
+  }, [bankStatementMode, onSuccess, router]);
 
   const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
@@ -72,6 +74,18 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
 
   return (
     <div className="space-y-4">
+      <div className="rounded-xl border p-4 text-sm" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" checked={bankStatementMode} onChange={(event) => setBankStatementMode(event.target.checked)} className="mt-1" />
+          <span>
+            <strong style={{ color: "var(--text)" }}>Safe bank statement import</strong>
+            <span className="block mt-1" style={{ color: "var(--text-muted)" }}>
+              Transaction IDs, UTRs, RRN, cheque numbers and bank references are ignored and never saved. The original file is parsed in memory, not retained, and no AI, bank, analytics, or third-party financial service receives it. Saved transactions go only to your PersonalCFO account database.
+            </span>
+          </span>
+        </label>
+      </div>
+
       {/* Drag & Drop Zone */}
       <div
         onDragOver={handleDragOver}
@@ -107,7 +121,7 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
         
         <div className="text-4xl mb-3">📁</div>
         <p className="font-medium mb-1" style={{ color: "var(--text)" }}>
-          {uploading ? "Uploading..." : "Drop Excel files here"}
+          {uploading ? "Importing securely..." : bankStatementMode ? "Drop bank statement exports here" : "Drop Excel files here"}
         </p>
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>
           or click to browse (.xlsx, .csv)
@@ -169,7 +183,8 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
         <ul className="space-y-1 list-disc list-inside">
           <li>Excel workbooks (.xlsx) or CSV files with rows for Transactions, Accounts, Investments, etc.</li>
           <li>CSV files with headers like: Date, Amount, Category, Description</li>
-          <li>Bank statement exports (automatically detected)</li>
+          <li>Bank statement exports: detects Debit/Credit, Withdrawal/Deposit, Narration and Particulars columns.</li>
+          <li>Safe mode excludes transaction IDs, UTRs, RRN, cheque numbers and bank references before data is saved.</li>
         </ul>
         <p className="mt-3 text-xs">
           💡 Tip: Download our template from the Settings page for the correct format.

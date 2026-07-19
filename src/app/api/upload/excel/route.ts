@@ -163,6 +163,8 @@ function detectSheetType(headers: string[], sheetName: string): ImportType {
   if (name.includes("member") || name.includes("family")) return "members";
 
   const headerText = headers.join(" ");
+  // Bank exports commonly use debit/credit/narration instead of an Amount column.
+  if (headerText.includes("debit") || headerText.includes("credit") || headerText.includes("withdrawal") || headerText.includes("deposit")) return "transactions";
   if (headerText.includes("amount") && headerText.includes("date")) return "transactions";
   if (headerText.includes("balance") && headerText.includes("account")) return "accounts";
   if (headerText.includes("invested") || headerText.includes("current value")) return "investments";
@@ -179,7 +181,14 @@ function parseRow(row: unknown[], headers: string[]): ImportRow {
     const value = row[index];
     if (!header) continue;
 
-    if (header === "description" || header === "details" || header === "memo") data.note = value;
+    // Privacy boundary: identifiers are neither copied into the normalized row
+    // nor persisted in transactions/audit records. The uploaded file is parsed
+    // in memory and is never stored by this route.
+    if (/(transaction\s*(id|ref|reference)|reference\s*(no|number)?|utr|rrn|cheque\s*(no|number)?|bank\s*reference)/i.test(header)) continue;
+
+    if (header.includes("debit") || header.includes("withdrawal")) data.debit = value;
+    else if (header.includes("credit") || header.includes("deposit")) data.credit = value;
+    else if (header === "description" || header === "details" || header === "memo" || header.includes("narration") || header.includes("particular")) data.note = value;
     else if (header.includes("name")) data.name = value;
     else if (header.includes("type")) data.type = value;
     else if (header.includes("category")) data.category = value;
@@ -212,6 +221,20 @@ function parseRow(row: unknown[], headers: string[]): ImportRow {
   return data;
 }
 
+function categorizeBankNarration(note: string | null, type: "income" | "expense"): string {
+  const value = (note || "").toLowerCase();
+  if (/(salary|payroll|sal credit)/.test(value)) return "Salary";
+  if (/(upi|swiggy|zomato|restaurant|grocery|supermarket|mart)/.test(value)) return "Food";
+  if (/(petrol|fuel|diesel|uber|ola|metro|railway|irctc|parking)/.test(value)) return "Transport";
+  if (/(rent|landlord)/.test(value)) return "Housing";
+  if (/(electricity|water bill|broadband|wifi|mobile|recharge|airtel|jio|vi )/.test(value)) return "Utilities";
+  if (/(emi|loan|credit card)/.test(value)) return "Debt Repayment";
+  if (/(sip|mutual fund|mf |zerodha|groww|investment|nps|ppf)/.test(value)) return "Investments";
+  if (/(insurance|lic |premium)/.test(value)) return "Insurance";
+  if (/(interest|dividend|cashback|refund)/.test(value)) return type === "income" ? "Other Income" : "Refund";
+  return type === "income" ? "Other Income" : "Miscellaneous";
+}
+
 type NormalizedImportResult =
   | { success: true; data: ImportRow }
   | { success: false; error: { issues: Array<{ message: string }> } };
@@ -241,14 +264,27 @@ function normalizeImportRow(type: ImportType, row: ImportRow) {
         category: text(row.category) || "liquid",
         balance: parseAmount(row.balance) || "0",
       }));
-    case "transactions":
+    case "transactions": { 
+      const debit = parseAmount(row.debit);
+      const credit = parseAmount(row.credit);
+      const explicitType = text(row.type).toLowerCase();
+      const type = credit && !debit
+        ? "income"
+        : debit && !credit
+          ? "expense"
+          : explicitType === "income" || explicitType === "credit" || explicitType === "deposit"
+            ? "income"
+            : "expense";
+      const note = row.note ? text(row.note) : null;
+      const category = text(row.category) || categorizeBankNarration(note, type);
       return toNormalizedImportResult(transactionCreateSchema.safeParse({
-        type: text(row.type) || "expense",
-        category: text(row.category) || "Miscellaneous",
-        amount: parseAmount(row.amount),
+        type,
+        category,
+        amount: parseAmount(row.amount) || debit || credit,
         txnDate: row.date,
-        note: row.note ? text(row.note) : null,
+        note,
       }));
+    }
     case "investments":
       return toNormalizedImportResult(investmentCreateSchema.safeParse({
         name: text(row.name),
@@ -305,6 +341,7 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     const file = formData.get("file");
     const requestedType = text(formData.get("type")) || "auto";
+    const source = text(formData.get("source"));
 
     if (!(file instanceof File)) return Response.json({ ok: false, error: "No file provided" }, { status: 400 });
     if (!IMPORT_TYPES.includes(requestedType as (typeof IMPORT_TYPES)[number])) {
@@ -411,7 +448,9 @@ export async function POST(req: Request) {
       userId: session.userId,
       action: "import",
       table: "bulk_import",
-      changes: { filename: file.name.slice(0, 120), inserted },
+      // Statement filenames can reveal account/provider details. Keep only
+      // aggregate counts for privacy-focused bank imports.
+      changes: source === "bank_statement" ? { source: "bank_statement", inserted } : { filename: file.name.slice(0, 120), inserted },
     });
 
     return Response.json({ ok: true, message: "Successfully imported data", inserted, detected: Object.keys(inserted) });
