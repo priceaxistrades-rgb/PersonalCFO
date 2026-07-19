@@ -38,18 +38,6 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
     return () => clearInterval(timer);
   }, []);
 
-  const [showHealthPopup, setShowHealthPopup] = useState(false);
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const shown = sessionStorage.getItem("healthPopupShown");
-      if (!shown) {
-        setShowHealthPopup(true);
-        sessionStorage.setItem("healthPopupShown", "1");
-      }
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, []);
-
   const [spendingView, setSpendingView] = useState<SpendingView>("monthly");
 
   const filteredTxns = useMemo(() => txns.filter((t) => isSelected(t.memberId)), [txns, isSelected]);
@@ -132,54 +120,9 @@ export function FilteredDashboard({ txns, bills, debts, goals, invs, accounts, m
 
   return (
     <div className="space-y-6 animate-fade-in w-full">
-      {/* ─── Health Score Executive Dialog (First load only) ─── */}
-      {showHealthPopup && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/65 backdrop-blur-md animate-fade-in" onClick={() => setShowHealthPopup(false)} role="dialog" aria-modal="true" aria-labelledby="health-score-title">
-          <Card variant="glass" className="w-full max-w-lg p-7 scale-in border border-indigo-500/30 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between pb-4 border-b mb-5" style={{ borderColor: "var(--border)" }}>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl grid place-items-center text-xl shadow-lg shrink-0" style={{ background: `var(--${scoreTone})`, color: "#fff" }}>
-                  <IconHealth size={24} />
-                </div>
-                <div>
-                  <h2 id="health-score-title" className="text-xl font-extrabold tracking-tight" style={{ color: "var(--text-heading)" }}>Your Financial Health Index</h2>
-                  <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{now.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
-                </div>
-              </div>
-              <button onClick={() => setShowHealthPopup(false)} className="btn btn-ghost w-8 h-8 rounded-full font-mono font-bold">✕</button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-center mb-6">
-              <div className="relative w-36 h-36 mx-auto sm:col-span-1">
-                <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
-                  <circle cx="60" cy="60" r="52" fill="none" stroke="var(--surface-3)" strokeWidth="12" />
-                  <circle cx="60" cy="60" r="52" fill="none" stroke={`var(--${scoreTone})`} strokeWidth="12" strokeLinecap="round" strokeDasharray={`${(score / 100) * 2 * Math.PI * 52} ${2 * Math.PI * 52}`} />
-                </svg>
-                <div className="absolute inset-0 grid place-items-center text-center">
-                  <div>
-                    <span className="text-3xl font-black tabular-nums font-mono leading-none" style={{ color: "var(--text-heading)" }}>{score}</span>
-                    <span className="block text-[10px] font-bold uppercase tracking-wider mt-0.5" style={{ color: `var(--${scoreTone})` }}>
-                      {score >= 75 ? "Grade A" : score >= 50 ? "Grade B" : "Grade C"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="sm:col-span-2 space-y-3">
-                <ScoreRow label="Savings Rate" value={`${savingsRate.toFixed(0)}%`} ok={savingsRate >= 20} reason={savingsRate >= 20 ? "Target met (≥20%)" : "Target: 20%+"} />
-                <ScoreRow label="Emergency Cover" value={`${emergencyMonths.toFixed(1)} mo`} ok={emergencyMonths >= 6} reason={emergencyMonths >= 6 ? "Safe (≥6 mo)" : "Target: 6 mo+"} />
-                <ScoreRow label="Debt-to-Income" value={`${debtToIncome.toFixed(0)}%`} ok={debtToIncome <= 35} reason={debtToIncome <= 35 ? "Healthy (≤35%)" : "Over 35% limit"} />
-                <ScoreRow label="Asset Allocation" value={`${investmentRate.toFixed(0)}%`} ok={investmentRate >= 30} reason={investmentRate >= 30 ? "Optimized (≥30%)" : "Target: 30%+"} />
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button onClick={() => setShowHealthPopup(false)} className="btn btn-primary flex-1 py-3 text-sm font-bold shadow-lg">Launch Dashboard →</button>
-              <button onClick={() => go("/health")} className="btn btn-secondary px-5 py-3 text-sm font-bold">Deep Breakdown →</button>
-            </div>
-          </Card>
-        </div>
-      )}
+      {/* Health index remains visible in the dashboard KPI/insight cards.
+          A blocking first-login modal was intentionally removed: it obscured
+          core balances and made the score harder to scan on mobile. */}
 
       {/* Filter status banner */}
       {hasSelection && (
