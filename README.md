@@ -123,3 +123,4 @@ Staging environment initialized for financial-integrity testing.
 ## License
 
 MIT
+<!-- Deployment stabilized on 2026-07-19 -->
