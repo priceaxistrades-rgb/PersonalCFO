@@ -5,7 +5,10 @@ import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const supplied = req.headers.get("authorization");
+  const expected = process.env.HEALTHCHECK_SECRET;
+  const detailed = Boolean(expected && supplied === `Bearer ${expected}`);
   const start = Date.now();
   const checks: Record<string, { ok: boolean; latencyMs?: number; detail?: string }> = {};
 
@@ -43,12 +46,7 @@ export async function GET() {
   const allOk = Object.values(checks).every((c) => c.ok);
   const totalLatency = Date.now() - start;
 
-  return Response.json({
-    ok: allOk,
-    status: allOk ? "healthy" : "degraded",
-    uptime: process.uptime(),
-    latencyMs: totalLatency,
-    checks,
-    timestamp: new Date().toISOString(),
-  }, { status: allOk ? 200 : 503 });
+  // Public callers receive no infrastructure/configuration reconnaissance.
+  if (!detailed) return Response.json({ ok: allOk, status: allOk ? "healthy" : "degraded" }, { status: allOk ? 200 : 503 });
+  return Response.json({ ok: allOk, status: allOk ? "healthy" : "degraded", uptime: process.uptime(), latencyMs: totalLatency, checks, timestamp: new Date().toISOString() }, { status: allOk ? 200 : 503 });
 }
