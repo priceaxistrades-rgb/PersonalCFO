@@ -124,13 +124,16 @@ export const PATCH = apiHandler(async (req, { log }) => {
     const raw = await req.json();
     const result = validate(investmentUpdateSchema, raw);
     if (!result.ok) return result.error;
-    const { id, ...updates } = result.data;
+    const { id, fundingAccountId, ...updates } = result.data;
 
     // CRITICAL: Explicit ownership verification
     if (!(await verifyInvestmentOwnership(id, session.userId))) {
       return apiError("Investment not found or you don't have permission to edit it", 404);
     }
 
+    const [existingInvestment] = await db.select({ invested: investments.invested, name: investments.name }).from(investments)
+      .where(and(eq(investments.id, id), eq(investments.userId, session.userId))).limit(1);
+    if (!existingInvestment) return apiError("Investment not found", 404);
     const safeUpdates: Record<string, unknown> = {};
     if (updates.name !== undefined) safeUpdates.name = updates.name;
     if (updates.type !== undefined) safeUpdates.type = updates.type;
@@ -143,10 +146,19 @@ export const PATCH = apiHandler(async (req, { log }) => {
     if (updates.startDate !== undefined) safeUpdates.startDate = updates.startDate;
     if (updates.memberId !== undefined) safeUpdates.memberId = updates.memberId;
 
-    const result_update = await db
-      .update(investments)
-      .set(safeUpdates)
-      .where(and(eq(investments.id, id), eq(investments.userId, session.userId)));
+    const topUp = fundingAccountId && updates.invested !== undefined
+      ? Number(updates.invested) - Number(existingInvestment.invested) : 0;
+    if (topUp < 0) return apiError("Use the sell workflow to reduce an investment", 400);
+    await db.transaction(async (tx) => {
+      if (fundingAccountId && topUp > 0) {
+        const [account] = await tx.select({ balance: accounts.balance }).from(accounts).where(and(eq(accounts.id, Number(fundingAccountId)), eq(accounts.userId, session.userId))).limit(1);
+        if (!account) throw new Error("Funding account was not found");
+        if (Number(account.balance) < topUp) throw new Error("Insufficient funds in the selected account");
+        await tx.update(accounts).set({ balance: sql`${accounts.balance} - ${topUp.toFixed(2)}`, updatedAt: new Date() }).where(and(eq(accounts.id, Number(fundingAccountId)), eq(accounts.userId, session.userId)));
+        await tx.insert(transactions).values({ userId: session.userId, type: "expense", category: "Investments", amount: topUp.toFixed(2), txnDate: new Date().toISOString().slice(0, 10), accountId: Number(fundingAccountId), note: `Investment top-up: ${existingInvestment.name}`, transferGroupId: `investment:${id}` });
+      }
+      await tx.update(investments).set(safeUpdates).where(and(eq(investments.id, id), eq(investments.userId, session.userId)));
+    });
 
     log.info("Investment updated", { id, fields: Object.keys(safeUpdates) }); writeAuditLog({ userId: session.userId, action: "update", table: "investments", recordId: id, changes: safeUpdates });
     return apiSuccess();

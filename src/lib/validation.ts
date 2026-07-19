@@ -258,6 +258,7 @@ export const investmentUpdateSchema = z.object({
   units: z.union([z.string(), z.number()]).transform((v) => String(v)).pipe(z.string().refine((v) => /^\d+(\.\d{1,4})?$/.test(v), "Invalid units")).nullable().optional(),
   startDate: dateStr.nullable().optional(),
   memberId: optionalIntId.optional(),
+  fundingAccountId: optionalIntId.optional(),
 }).strict();
 
 // ─── Sell Investment Schema ────────────────────────────────────

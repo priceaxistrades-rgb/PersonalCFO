@@ -1,0 +1,687 @@
+diff --git a/.env.example b/.env.example
+index fe98843..c1b8bb4 100644
+--- a/.env.example
++++ b/.env.example
+@@ -50,3 +50,11 @@ EMAIL_FROM="PersonalCFO <noreply@yourdomain.com>"
+ #
+ # Other providers: See src/lib/email.ts for integration points
+ # (SendGrid, Gmail SMTP with Nodemailer, etc.)
++
++# ─── Production Request Security (server-only) ────────────────
++# Exact allowed browser origins, comma-separated. Required in production.
++ALLOWED_ORIGINS=https://personal-cfo-snjo.vercel.app
++# Optional dedicated origin if using one canonical domain.
++APP_ORIGIN=https://personal-cfo-snjo.vercel.app
++# Protects detailed /api/health diagnostics. Generate: openssl rand -base64 32
++HEALTHCHECK_SECRET=
+diff --git a/proxy.ts b/proxy.ts
+index 1d34c46..25d671b 100644
+--- a/proxy.ts
++++ b/proxy.ts
+@@ -1,116 +1,60 @@
+-import { NextResponse } from 'next/server';
+-import type { NextRequest } from 'next/server';
++import { NextResponse } from "next/server";
++import type { NextRequest } from "next/server";
+ 
+-// Protected routes that require authentication
+ const protectedRoutes = [
+-  '/dashboard',
+-  '/income',
+-  '/expenses',
+-  '/investments',
+-  '/debts',
+-  '/goals',
+-  '/bills',
+-  '/recurring',
+-  '/reports',
+-  '/settings',
+-  '/family',
+-  '/tax',
+-  '/insurance',
+-  '/emergency',
+-  '/annual',
+-  '/wealth',
+-  '/networth',
+-  '/savings',
+-  '/transfers',
+-  '/reconciliation',
+-  '/opportunities',
+-  '/coach',
+-  '/brief',
+-  '/ai',
+-  '/markets',
+-  '/control',
+-  '/stress',
+-  '/simulator',
+-  '/dreams',
+-  '/guide',
++  "/dashboard", "/income", "/expenses", "/investments", "/debt", "/goals", "/bills", "/budget", "/recurring", "/reports", "/settings", "/family", "/tax", "/insurance", "/emergency", "/annual", "/wealth", "/networth", "/savings", "/transfers", "/reconciliation", "/opportunities", "/coach", "/brief", "/ai", "/markets", "/control", "/stress", "/simulator", "/dreams", "/guide", "/health", "/onboarding",
+ ];
+ 
+-// Public routes that should never require auth
+-const publicRoutes = [
+-  '/',
+-  '/login',
+-  '/signup',
+-  '/reset-password',
+-  '/privacy',
+-  '/terms',
+-  '/api/auth/login',
+-  '/api/auth/signup',
+-  '/api/auth/logout',
+-  '/api/auth/forgot-password',
+-  '/api/auth/reset-password',
+-  '/api/auth/demo',
+-  '/api/health',
+-];
++function allowedOrigins(request: NextRequest): string[] {
++  const configured = process.env.ALLOWED_ORIGINS || process.env.APP_ORIGIN || "https://personal-cfo-snjo.vercel.app";
++  // Request origin supports Vercel preview deployments only when explicitly
++  // listed above; it is intentionally not trusted by default.
++  return configured.split(",").map((value) => value.trim().replace(/\/$/, "")).filter(Boolean);
++}
++
++function applySecurityHeaders(response: NextResponse) {
++  response.headers.set("X-Frame-Options", "DENY");
++  response.headers.set("X-Content-Type-Options", "nosniff");
++  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
++  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()");
++  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
++  response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
++  response.headers.set("Content-Security-Policy-Report-Only", [
++    "default-src 'self'", "script-src 'self' 'unsafe-inline'", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", "font-src 'self' https://fonts.gstatic.com", "img-src 'self' data: blob:", "connect-src 'self' https://api.mfapi.in https://query1.finance.yahoo.com", "base-uri 'self'", "object-src 'none'", "form-action 'self'", "frame-ancestors 'none'",
++  ].join("; "));
++  if (process.env.NODE_ENV === "production") response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
++  return response;
++}
+ 
+ export function proxy(request: NextRequest) {
+   const { pathname } = request.nextUrl;
+ 
+-  // Allow all API routes (auth handled inside each route)
+-  if (pathname.startsWith('/api/')) {
+-    return NextResponse.next();
+-  }
+-
+-  // Allow static files and Next internals
+-  if (
+-    pathname.startsWith('/_next') ||
+-    pathname.startsWith('/public') ||
+-    pathname.includes('.') ||
+-    pathname === '/favicon.ico' ||
+-    pathname === '/manifest.json'
+-  ) {
+-    return NextResponse.next();
++  // Browser-originated writes must come from an explicitly configured first-
++  // party origin. APIs still verify the signed session independently.
++  if (pathname.startsWith("/api/") && !["GET", "HEAD", "OPTIONS"].includes(request.method)) {
++    const origin = request.headers.get("origin")?.replace(/\/$/, "");
++    if (!origin || !allowedOrigins(request).includes(origin)) {
++      return applySecurityHeaders(NextResponse.json({ ok: false, error: "Invalid request origin" }, { status: 403 }));
++    }
+   }
+ 
+-  // Check if route needs protection
+-  const isProtected = protectedRoutes.some(route => 
+-    pathname === route || pathname.startsWith(route + '/')
+-  );
+-
+-  const isPublic = publicRoutes.some(route => 
+-    pathname === route || pathname.startsWith(route + '/')
+-  );
++  if (pathname.startsWith("/api/")) return applySecurityHeaders(NextResponse.next());
+ 
+-  // Get session token from cookies
+-  const sessionToken = request.cookies.get('session')?.value || 
+-                       request.cookies.get('auth-token')?.value;
++  if (pathname.startsWith("/_next") || pathname.startsWith("/public") || pathname.includes(".") || pathname === "/favicon.ico" || pathname === "/manifest.json") {
++    return applySecurityHeaders(NextResponse.next());
++  }
+ 
+-  // Redirect to login if trying to access protected route without session
++  const isProtected = protectedRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
++  const sessionToken = request.cookies.get("pcfo_session")?.value;
+   if (isProtected && !sessionToken) {
+-    const loginUrl = new URL('/login', request.url);
+-    loginUrl.searchParams.set('redirect', pathname);
+-    return NextResponse.redirect(loginUrl);
++    const loginUrl = new URL("/login", request.url);
++    loginUrl.searchParams.set("redirect", pathname);
++    return applySecurityHeaders(NextResponse.redirect(loginUrl));
+   }
+ 
+-  // Add security headers
+-  const response = NextResponse.next();
+-
+-  response.headers.set('X-Frame-Options', 'DENY');
+-  response.headers.set('X-Content-Type-Options', 'nosniff');
+-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+-  response.headers.set('X-XSS-Protection', '1; mode=block');
+-
+-  return response;
++  return applySecurityHeaders(NextResponse.next());
+ }
+ 
+ export const config = {
+-  matcher: [
+-    /*
+-     * Match all request paths except for the ones starting with:
+-     * - api (API routes)
+-     * - _next/static (static files)
+-     * - _next/image (image optimization files)
+-     * - favicon.ico (favicon file)
+-     */
+-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+-  ],
+-};
+\ No newline at end of file
++  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
++};
+diff --git a/src/app/api/health/route.ts b/src/app/api/health/route.ts
+index bc307c5..88988d3 100644
+--- a/src/app/api/health/route.ts
++++ b/src/app/api/health/route.ts
+@@ -5,7 +5,10 @@ import { logger } from "@/lib/logger";
+ 
+ export const dynamic = "force-dynamic";
+ 
+-export async function GET() {
++export async function GET(req: Request) {
++  const supplied = req.headers.get("authorization");
++  const expected = process.env.HEALTHCHECK_SECRET;
++  const detailed = Boolean(expected && supplied === `Bearer ${expected}`);
+   const start = Date.now();
+   const checks: Record<string, { ok: boolean; latencyMs?: number; detail?: string }> = {};
+ 
+@@ -43,12 +46,7 @@ export async function GET() {
+   const allOk = Object.values(checks).every((c) => c.ok);
+   const totalLatency = Date.now() - start;
+ 
+-  return Response.json({
+-    ok: allOk,
+-    status: allOk ? "healthy" : "degraded",
+-    uptime: process.uptime(),
+-    latencyMs: totalLatency,
+-    checks,
+-    timestamp: new Date().toISOString(),
+-  }, { status: allOk ? 200 : 503 });
++  // Public callers receive no infrastructure/configuration reconnaissance.
++  if (!detailed) return Response.json({ ok: allOk, status: allOk ? "healthy" : "degraded" }, { status: allOk ? 200 : 503 });
++  return Response.json({ ok: allOk, status: allOk ? "healthy" : "degraded", uptime: process.uptime(), latencyMs: totalLatency, checks, timestamp: new Date().toISOString() }, { status: allOk ? 200 : 503 });
+ }
+diff --git a/src/app/api/manage/investments/route.ts b/src/app/api/manage/investments/route.ts
+index 7ee0619..fe6df29 100644
+--- a/src/app/api/manage/investments/route.ts
++++ b/src/app/api/manage/investments/route.ts
+@@ -1,5 +1,5 @@
+ import { db } from "@/db";
+-import { investments } from "@/db/schema";
++import { accounts, investments, transactions } from "@/db/schema";
+ import { and, eq, or, sql } from "drizzle-orm";
+ import { isSession, requireApiSession } from "@/lib/server-auth";
+ import { validate, investmentCreateSchema, investmentUpdateSchema, idDeleteSchema } from "@/lib/validation";
+@@ -63,6 +63,7 @@ export const POST = apiHandler(async (req, { log }) => {
+     const result = validate(investmentCreateSchema, raw);
+     if (!result.ok) return result.error;
+     const b = result.data;
++    const fundingAccountId = b.fundingAccountId ? Number(b.fundingAccountId) : null;
+ 
+     // Check for duplicate symbol for same user
+     if (b.symbol) {
+@@ -79,19 +80,27 @@ export const POST = apiHandler(async (req, { log }) => {
+       }
+     }
+ 
+-    const [row] = await db.insert(investments).values({
+-      userId: session.userId,
+-      name: b.name,
+-      type: b.type,
+-      invested: b.invested,
+-      currentValue: b.currentValue,
+-      annualReturn: b.annualReturn,
+-      symbol: b.symbol ?? null,
+-      schemeCode: b.schemeCode ?? null,
+-      units: b.units ?? null,
+-      startDate: b.startDate ?? null,
+-      memberId: b.memberId,
+-    }).returning();
++    const [row] = await db.transaction(async (tx) => {
++      if (fundingAccountId) {
++        const [account] = await tx.select({ balance: accounts.balance }).from(accounts)
++          .where(and(eq(accounts.id, fundingAccountId), eq(accounts.userId, session.userId))).limit(1);
++        if (!account) throw new Error("Funding account was not found");
++        if (Number(account.balance) < Number(b.invested)) throw new Error("Insufficient funds in the selected account");
++      }
++      const [created] = await tx.insert(investments).values({
++        userId: session.userId, name: b.name, type: b.type, invested: b.invested, currentValue: b.currentValue,
++        annualReturn: b.annualReturn, symbol: b.symbol ?? null, schemeCode: b.schemeCode ?? null,
++        units: b.units ?? null, startDate: b.startDate ?? null, memberId: b.memberId,
++      }).returning();
++      if (fundingAccountId) {
++        const group = `investment:${created.id}`;
++        await tx.update(accounts).set({ balance: sql`${accounts.balance} - ${b.invested}`, updatedAt: new Date() })
++          .where(and(eq(accounts.id, fundingAccountId), eq(accounts.userId, session.userId)));
++        await tx.insert(transactions).values({ userId: session.userId, type: "expense", category: "Investments", amount: b.invested,
++          txnDate: new Date().toISOString().slice(0, 10), accountId: fundingAccountId, note: `Investment purchase: ${b.name}`, transferGroupId: group });
++      }
++      return [created];
++    });
+ 
+     log.info("Investment created", { id: row.id, name: b.name, type: b.type }); writeAuditLog({ userId: session.userId, action: "create", table: "investments", recordId: row.id, changes: { name: b.name, type: b.type } });
+     return apiSuccess({ row });
+@@ -100,7 +109,7 @@ export const POST = apiHandler(async (req, { log }) => {
+     if (err instanceof Error && err.message.includes("investments_user_symbol_idx")) {
+       return apiError("An investment with this symbol already exists.", 409);
+     }
+-    return apiError("Failed to create investment", 500, undefined, err);
++    return apiError(err instanceof Error && (err.message.includes("Funding account") || err.message.includes("Insufficient funds")) ? err.message : "Failed to create investment", err instanceof Error && (err.message.includes("Funding account") || err.message.includes("Insufficient funds")) ? 400 : 500, undefined, err);
+   }
+ });
+ 
+@@ -115,13 +124,16 @@ export const PATCH = apiHandler(async (req, { log }) => {
+     const raw = await req.json();
+     const result = validate(investmentUpdateSchema, raw);
+     if (!result.ok) return result.error;
+-    const { id, ...updates } = result.data;
++    const { id, fundingAccountId, ...updates } = result.data;
+ 
+     // CRITICAL: Explicit ownership verification
+     if (!(await verifyInvestmentOwnership(id, session.userId))) {
+       return apiError("Investment not found or you don't have permission to edit it", 404);
+     }
+ 
++    const [existingInvestment] = await db.select({ invested: investments.invested, name: investments.name }).from(investments)
++      .where(and(eq(investments.id, id), eq(investments.userId, session.userId))).limit(1);
++    if (!existingInvestment) return apiError("Investment not found", 404);
+     const safeUpdates: Record<string, unknown> = {};
+     if (updates.name !== undefined) safeUpdates.name = updates.name;
+     if (updates.type !== undefined) safeUpdates.type = updates.type;
+@@ -134,10 +146,19 @@ export const PATCH = apiHandler(async (req, { log }) => {
+     if (updates.startDate !== undefined) safeUpdates.startDate = updates.startDate;
+     if (updates.memberId !== undefined) safeUpdates.memberId = updates.memberId;
+ 
+-    const result_update = await db
+-      .update(investments)
+-      .set(safeUpdates)
+-      .where(and(eq(investments.id, id), eq(investments.userId, session.userId)));
++    const topUp = fundingAccountId && updates.invested !== undefined
++      ? Number(updates.invested) - Number(existingInvestment.invested) : 0;
++    if (topUp < 0) return apiError("Use the sell workflow to reduce an investment", 400);
++    await db.transaction(async (tx) => {
++      if (fundingAccountId && topUp > 0) {
++        const [account] = await tx.select({ balance: accounts.balance }).from(accounts).where(and(eq(accounts.id, Number(fundingAccountId)), eq(accounts.userId, session.userId))).limit(1);
++        if (!account) throw new Error("Funding account was not found");
++        if (Number(account.balance) < topUp) throw new Error("Insufficient funds in the selected account");
++        await tx.update(accounts).set({ balance: sql`${accounts.balance} - ${topUp.toFixed(2)}`, updatedAt: new Date() }).where(and(eq(accounts.id, Number(fundingAccountId)), eq(accounts.userId, session.userId)));
++        await tx.insert(transactions).values({ userId: session.userId, type: "expense", category: "Investments", amount: topUp.toFixed(2), txnDate: new Date().toISOString().slice(0, 10), accountId: Number(fundingAccountId), note: `Investment top-up: ${existingInvestment.name}`, transferGroupId: `investment:${id}` });
++      }
++      await tx.update(investments).set(safeUpdates).where(and(eq(investments.id, id), eq(investments.userId, session.userId)));
++    });
+ 
+     log.info("Investment updated", { id, fields: Object.keys(safeUpdates) }); writeAuditLog({ userId: session.userId, action: "update", table: "investments", recordId: id, changes: safeUpdates });
+     return apiSuccess();
+diff --git a/src/app/api/manage/investments/sell/route.ts b/src/app/api/manage/investments/sell/route.ts
+index a68da60..4d7eeba 100644
+--- a/src/app/api/manage/investments/sell/route.ts
++++ b/src/app/api/manage/investments/sell/route.ts
+@@ -15,8 +15,8 @@
+  */
+ 
+ import { db } from "@/db";
+-import { investments, transactions } from "@/db/schema";
+-import { and, eq } from "drizzle-orm";
++import { accounts, investments, transactions } from "@/db/schema";
++import { and, eq, sql } from "drizzle-orm";
+ import { isSession, requireApiSession } from "@/lib/server-auth";
+ import { validate, sellSchema } from "@/lib/validation";
+ import { apiHandler, apiSuccess, apiError } from "@/lib/api-utils";
+@@ -118,6 +118,12 @@ export const POST = apiHandler(async (req, { log }) => {
+         log.info("Investment updated (partial sell)", { id: existing.id, name: existing.name, newInvested, newCurrentValue, newUnits });
+       }
+ 
++      // Credit the user-owned receiving account in the same transaction.
++      if (s.accountId) {
++        const [account] = await tx.select({ id: accounts.id }).from(accounts).where(and(eq(accounts.id, s.accountId), eq(accounts.userId, session.userId))).limit(1);
++        if (!account) throw new Error("Receiving account was not found");
++        await tx.update(accounts).set({ balance: sql`${accounts.balance} + ${saleAmount}`, updatedAt: new Date() }).where(and(eq(accounts.id, s.accountId), eq(accounts.userId, session.userId)));
++      }
+       // Record the sale transaction
+       await tx.insert(transactions).values({
+         userId: session.userId,
+diff --git a/src/app/api/upload/excel/route.ts b/src/app/api/upload/excel/route.ts
+index db8594f..af99744 100644
+--- a/src/app/api/upload/excel/route.ts
++++ b/src/app/api/upload/excel/route.ts
+@@ -163,6 +163,8 @@ function detectSheetType(headers: string[], sheetName: string): ImportType {
+   if (name.includes("member") || name.includes("family")) return "members";
+ 
+   const headerText = headers.join(" ");
++  // Bank exports commonly use debit/credit/narration instead of an Amount column.
++  if (headerText.includes("debit") || headerText.includes("credit") || headerText.includes("withdrawal") || headerText.includes("deposit")) return "transactions";
+   if (headerText.includes("amount") && headerText.includes("date")) return "transactions";
+   if (headerText.includes("balance") && headerText.includes("account")) return "accounts";
+   if (headerText.includes("invested") || headerText.includes("current value")) return "investments";
+@@ -179,7 +181,14 @@ function parseRow(row: unknown[], headers: string[]): ImportRow {
+     const value = row[index];
+     if (!header) continue;
+ 
+-    if (header === "description" || header === "details" || header === "memo") data.note = value;
++    // Privacy boundary: identifiers are neither copied into the normalized row
++    // nor persisted in transactions/audit records. The uploaded file is parsed
++    // in memory and is never stored by this route.
++    if (/(transaction\s*(id|ref|reference)|reference\s*(no|number)?|utr|rrn|cheque\s*(no|number)?|bank\s*reference)/i.test(header)) continue;
++
++    if (header.includes("debit") || header.includes("withdrawal")) data.debit = value;
++    else if (header.includes("credit") || header.includes("deposit")) data.credit = value;
++    else if (header === "description" || header === "details" || header === "memo" || header.includes("narration") || header.includes("particular")) data.note = value;
+     else if (header.includes("name")) data.name = value;
+     else if (header.includes("type")) data.type = value;
+     else if (header.includes("category")) data.category = value;
+@@ -212,6 +221,20 @@ function parseRow(row: unknown[], headers: string[]): ImportRow {
+   return data;
+ }
+ 
++function categorizeBankNarration(note: string | null, type: "income" | "expense"): string {
++  const value = (note || "").toLowerCase();
++  if (/(salary|payroll|sal credit)/.test(value)) return "Salary";
++  if (/(upi|swiggy|zomato|restaurant|grocery|supermarket|mart)/.test(value)) return "Food";
++  if (/(petrol|fuel|diesel|uber|ola|metro|railway|irctc|parking)/.test(value)) return "Transport";
++  if (/(rent|landlord)/.test(value)) return "Housing";
++  if (/(electricity|water bill|broadband|wifi|mobile|recharge|airtel|jio|vi )/.test(value)) return "Utilities";
++  if (/(emi|loan|credit card)/.test(value)) return "Debt Repayment";
++  if (/(sip|mutual fund|mf |zerodha|groww|investment|nps|ppf)/.test(value)) return "Investments";
++  if (/(insurance|lic |premium)/.test(value)) return "Insurance";
++  if (/(interest|dividend|cashback|refund)/.test(value)) return type === "income" ? "Other Income" : "Refund";
++  return type === "income" ? "Other Income" : "Miscellaneous";
++}
++
+ type NormalizedImportResult =
+   | { success: true; data: ImportRow }
+   | { success: false; error: { issues: Array<{ message: string }> } };
+@@ -241,14 +264,27 @@ function normalizeImportRow(type: ImportType, row: ImportRow) {
+         category: text(row.category) || "liquid",
+         balance: parseAmount(row.balance) || "0",
+       }));
+-    case "transactions":
++    case "transactions": { 
++      const debit = parseAmount(row.debit);
++      const credit = parseAmount(row.credit);
++      const explicitType = text(row.type).toLowerCase();
++      const type = credit && !debit
++        ? "income"
++        : debit && !credit
++          ? "expense"
++          : explicitType === "income" || explicitType === "credit" || explicitType === "deposit"
++            ? "income"
++            : "expense";
++      const note = row.note ? text(row.note) : null;
++      const category = text(row.category) || categorizeBankNarration(note, type);
+       return toNormalizedImportResult(transactionCreateSchema.safeParse({
+-        type: text(row.type) || "expense",
+-        category: text(row.category) || "Miscellaneous",
+-        amount: parseAmount(row.amount),
++        type,
++        category,
++        amount: parseAmount(row.amount) || debit || credit,
+         txnDate: row.date,
+-        note: row.note ? text(row.note) : null,
++        note,
+       }));
++    }
+     case "investments":
+       return toNormalizedImportResult(investmentCreateSchema.safeParse({
+         name: text(row.name),
+@@ -305,6 +341,7 @@ export async function POST(req: Request) {
+     const formData = await req.formData();
+     const file = formData.get("file");
+     const requestedType = text(formData.get("type")) || "auto";
++    const source = text(formData.get("source"));
+ 
+     if (!(file instanceof File)) return Response.json({ ok: false, error: "No file provided" }, { status: 400 });
+     if (!IMPORT_TYPES.includes(requestedType as (typeof IMPORT_TYPES)[number])) {
+@@ -411,7 +448,9 @@ export async function POST(req: Request) {
+       userId: session.userId,
+       action: "import",
+       table: "bulk_import",
+-      changes: { filename: file.name.slice(0, 120), inserted },
++      // Statement filenames can reveal account/provider details. Keep only
++      // aggregate counts for privacy-focused bank imports.
++      changes: source === "bank_statement" ? { source: "bank_statement", inserted } : { filename: file.name.slice(0, 120), inserted },
+     });
+ 
+     return Response.json({ ok: true, message: "Successfully imported data", inserted, detected: Object.keys(inserted) });
+diff --git a/src/app/investments/LiveInvestmentsDashboard.tsx b/src/app/investments/LiveInvestmentsDashboard.tsx
+index 4bbc9fe..e9c489c 100644
+--- a/src/app/investments/LiveInvestmentsDashboard.tsx
++++ b/src/app/investments/LiveInvestmentsDashboard.tsx
+@@ -49,11 +49,9 @@ function sumBy<T>(arr: T[], fn: (x: T) => number) {
+ }
+ 
+ function instrumentKey(i: Investment) {
+-  if (i.type === "Stocks" && i.symbol) return `stock:${i.symbol}`;
+   if (i.type === "MutualFunds" && i.schemeCode) return `mf:${i.schemeCode}`;
+-  if (i.symbol) return `stock:${i.symbol}`;
+-  if (i.schemeCode) return `mf:${i.schemeCode}`;
+-  return null;
++  const resolved = resolveLiveSymbol(i.type, i.symbol);
++  return resolved ? `${resolved.kind}:${resolved.yahooSymbol}` : null;
+ }
+ 
+ function chartUrl(i: Investment) {
+@@ -74,15 +72,17 @@ export function useLiveInvestments(investments: Investment[]) {
+   const [error, setError] = useState("");
+   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+ 
+-  const stocks = useMemo(() => [...new Set(investments.map((i) => i.symbol).filter(Boolean) as string[])], [investments]);
+-  const mfs = useMemo(() => [...new Set(investments.map((i) => i.schemeCode).filter(Boolean) as string[])], [investments]);
++  const liveInstruments = useMemo(() => investments.map((investment) => resolveLiveSymbol(investment.type, investment.symbol)).filter(Boolean) as NonNullable<ReturnType<typeof resolveLiveSymbol>>[], [investments]);
++  const mfs = useMemo(() => [...new Set(investments.filter((i) => i.type === "MutualFunds").map((i) => i.schemeCode).filter(Boolean) as string[])], [investments]);
+ 
+   const loadQuotes = useCallback(async () => {
+-    if (!stocks.length && !mfs.length) return;
++    if (!liveInstruments.length && !mfs.length) return;
+     setLoading(true);
+     setError("");
+     const params = new URLSearchParams();
+-    if (stocks.length) params.set("stocks", stocks.join(","));
++    const byKind = (kind: string) => [...new Set(liveInstruments.filter((item) => item.kind === kind).map((item) => item.yahooSymbol))];
++    const add = (key: string, kind: string) => { const values = byKind(kind); if (values.length) params.set(key, values.join(",")); };
++    add("stocks", "stock"); add("commodities", "commodity"); add("crypto", "crypto"); add("indices", "index"); add("reits", "reit"); add("bonds", "bond");
+     if (mfs.length) params.set("mf", mfs.join(","));
+     try {
+       const res = await fetch(`/api/market/quote?${params.toString()}`, { cache: "no-store" });
+@@ -95,7 +95,7 @@ export function useLiveInvestments(investments: Investment[]) {
+     } finally {
+       setLoading(false);
+     }
+-  }, [stocks, mfs]);
++  }, [liveInstruments, mfs]);
+ 
+   useEffect(() => {
+     const start = setTimeout(() => void loadQuotes(), 0);
+diff --git a/src/app/settings/InvestmentsManager.tsx b/src/app/settings/InvestmentsManager.tsx
+index cbb4fd5..db127ee 100644
+--- a/src/app/settings/InvestmentsManager.tsx
++++ b/src/app/settings/InvestmentsManager.tsx
+@@ -34,6 +34,7 @@ function buildPayload(form: InvestmentFormData): Record<string, unknown> {
+     units: units !== null ? units.toString() : null,
+     startDate: form.startDate || null,
+     memberId: form.memberId ?? null,
++    fundingAccountId: form.fundingAccountId ?? null,
+   };
+ }
+ 
+@@ -43,6 +44,8 @@ export function InvestmentForm({
+   onSave,
+   onCancel,
+   existingInvestments,
++  accounts = [],
++  requireFundingAccount = false,
+ }: {
+   editingInvestment: InvestmentRow | null;
+   initialData?: InvestmentInitialData;
+@@ -50,6 +53,8 @@ export function InvestmentForm({
+   onCancel: () => void;
+   /** Pass the full investment list so the "Add More" flow can find existing holdings */
+   existingInvestments?: InvestmentRow[];
++  accounts?: AccountOption[];
++  requireFundingAccount?: boolean;
+ }) {
+   const [stockQuery, setStockQuery] = useState("");
+   const [stockResults, setStockResults] = useState<{ symbol: string; name: string; exchange: string; sector?: string }[]>([]);
+@@ -75,6 +80,7 @@ export function InvestmentForm({
+   const [priceMode, setPriceMode] = useState<"live" | "manual">(livePrice > 0 ? "live" : "manual");
+   const [fetchedLivePrice, setFetchedLivePrice] = useState<number>(livePrice);
+   const [livePriceLoading, setLivePriceLoading] = useState(false);
++  const [fundingAccountId, setFundingAccountId] = useState("");
+ 
+   // Auto-fetch live price when symbol or type changes (for new investments)
+   useEffect(() => {
+@@ -252,7 +258,11 @@ export function InvestmentForm({
+   const hasLivePrice = effectiveLivePrice > 0;
+ 
+   const handleSave = () => {
+-    const finalForm = { ...form };
++    if (requireFundingAccount && !fundingAccountId) {
++      alert("Select the bank account to debit for this investment purchase.");
++      return;
++    }
++    const finalForm = { ...form, fundingAccountId: fundingAccountId ? Number(fundingAccountId) : null };
+     const u = Number(finalForm.units) || 0;
+ 
+     // In "live" mode, force avgPrice to the live price
+@@ -484,6 +494,17 @@ export function InvestmentForm({
+         </div>
+       )}
+ 
++      {requireFundingAccount && (
++        <div>
++          <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" htmlFor="investment-funding-account" style={{ color: "var(--text-faint)" }}>Debit / Funding Account <span className="text-red-400">*</span></label>
++          <select id="investment-funding-account" required value={fundingAccountId} onChange={(e) => setFundingAccountId(e.target.value)} className="input">
++            <option value="">Select the account to debit</option>
++            {accounts.map((account) => <option key={account.id} value={account.id}>{account.name} ({account.type})</option>)}
++          </select>
++          <p className="mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>The purchase amount is debited once from this account and recorded as an Investment Purchase transaction.</p>
++        </div>
++      )}
++
+       {/* Computed values preview */}
+       {(form.units && (form.avgPrice || hasLivePrice)) && (
+         <div className="grid sm:grid-cols-3 gap-3 p-3 rounded-lg" style={{ background: "var(--surface-2)" }}>
+diff --git a/src/components/FileUploader.tsx b/src/components/FileUploader.tsx
+index 3899913..daedaaa 100644
+--- a/src/components/FileUploader.tsx
++++ b/src/components/FileUploader.tsx
+@@ -9,6 +9,7 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
+   const [uploading, setUploading] = useState(false);
+   const [result, setResult] = useState<{ message: string; inserted: Record<string, number> } | null>(null);
+   const [error, setError] = useState<string | null>(null);
++  const [bankStatementMode, setBankStatementMode] = useState(true);
+ 
+   const handleDragOver = useCallback((e: React.DragEvent) => {
+     e.preventDefault();
+@@ -29,6 +30,7 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
+       const formData = new FormData();
+       formData.append("file", file);
+       formData.append("type", "auto");
++      formData.append("source", bankStatementMode ? "bank_statement" : "general_import");
+ 
+       try {
+         const res = await fetch("/api/upload/excel", {
+@@ -54,7 +56,7 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
+     }
+ 
+     setUploading(false);
+-  }, [onSuccess, router]);
++  }, [bankStatementMode, onSuccess, router]);
+ 
+   const handleDrop = useCallback(async (e: React.DragEvent) => {
+     e.preventDefault();
+@@ -72,6 +74,18 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
+ 
+   return (
+     <div className="space-y-4">
++      <div className="rounded-xl border p-4 text-sm" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
++        <label className="flex items-start gap-3 cursor-pointer">
++          <input type="checkbox" checked={bankStatementMode} onChange={(event) => setBankStatementMode(event.target.checked)} className="mt-1" />
++          <span>
++            <strong style={{ color: "var(--text)" }}>Safe bank statement import</strong>
++            <span className="block mt-1" style={{ color: "var(--text-muted)" }}>
++              Transaction IDs, UTRs, RRN, cheque numbers and bank references are ignored and never saved. The original file is parsed in memory, not retained, and no AI, bank, analytics, or third-party financial service receives it. Saved transactions go only to your PersonalCFO account database.
++            </span>
++          </span>
++        </label>
++      </div>
++
+       {/* Drag & Drop Zone */}
+       <div
+         onDragOver={handleDragOver}
+@@ -107,7 +121,7 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
+         
+         <div className="text-4xl mb-3">📁</div>
+         <p className="font-medium mb-1" style={{ color: "var(--text)" }}>
+-          {uploading ? "Uploading..." : "Drop Excel files here"}
++          {uploading ? "Importing securely..." : bankStatementMode ? "Drop bank statement exports here" : "Drop Excel files here"}
+         </p>
+         <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+           or click to browse (.xlsx, .csv)
+@@ -169,7 +183,8 @@ export function FileUploader({ onSuccess }: { onSuccess?: () => void }) {
+         <ul className="space-y-1 list-disc list-inside">
+           <li>Excel workbooks (.xlsx) or CSV files with rows for Transactions, Accounts, Investments, etc.</li>
+           <li>CSV files with headers like: Date, Amount, Category, Description</li>
+-          <li>Bank statement exports (automatically detected)</li>
++          <li>Bank statement exports: detects Debit/Credit, Withdrawal/Deposit, Narration and Particulars columns.</li>
++          <li>Safe mode excludes transaction IDs, UTRs, RRN, cheque numbers and bank references before data is saved.</li>
+         </ul>
+         <p className="mt-3 text-xs">
+           💡 Tip: Download our template from the Settings page for the correct format.
+diff --git a/src/components/QuickActionCenter.tsx b/src/components/QuickActionCenter.tsx
+index 4d56461..7413813 100644
+--- a/src/components/QuickActionCenter.tsx
++++ b/src/components/QuickActionCenter.tsx
+@@ -350,7 +350,9 @@ export function QuickActionCenter({
+                 <InvestmentForm
+                   key={investmentFormKey}
+                   editingInvestment={null}
+-                  existingInvestments={investments || []}
++                  existingInvestments={activeInvestments}
++                  accounts={activeAccounts}
++                  requireFundingAccount
+                   onSave={async (payload) => {
+                     const method = payload.id ? "PATCH" : "POST";
+                     const res = await fetch("/api/manage/investments", {
+diff --git a/src/lib/types.ts b/src/lib/types.ts
+index 59cccd7..f3370e1 100644
+--- a/src/lib/types.ts
++++ b/src/lib/types.ts
+@@ -79,6 +79,7 @@ export type InvestmentFormData = {
+   units: string;
+   startDate: string;
+   memberId?: number | null;
++  fundingAccountId?: number | null;
+ };
+ 
+ export type InvestmentInitialData = {
+diff --git a/src/lib/validation.ts b/src/lib/validation.ts
+index 5996996..cc7657c 100644
+--- a/src/lib/validation.ts
++++ b/src/lib/validation.ts
+@@ -241,6 +241,9 @@ export const investmentCreateSchema = z.object({
+   units: z.union([z.string(), z.number()]).transform((v) => String(v)).pipe(z.string().refine((v) => /^\d+(\.\d{1,4})?$/.test(v), "Invalid units")).nullable().optional(),
+   startDate: dateStr.nullable().optional(),
+   memberId: optionalIntId,
++  // Funding account is required by Quick Entry purchases; kept optional here
++  // for legacy/manual holdings and historical imports.
++  fundingAccountId: optionalIntId,
+ }).strict();
+ 
+ export const investmentUpdateSchema = z.object({
+@@ -255,6 +258,7 @@ export const investmentUpdateSchema = z.object({
+   units: z.union([z.string(), z.number()]).transform((v) => String(v)).pipe(z.string().refine((v) => /^\d+(\.\d{1,4})?$/.test(v), "Invalid units")).nullable().optional(),
+   startDate: dateStr.nullable().optional(),
+   memberId: optionalIntId.optional(),
++  fundingAccountId: optionalIntId.optional(),
+ }).strict();
+ 
+ // ─── Sell Investment Schema ────────────────────────────────────

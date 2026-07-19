@@ -15,8 +15,8 @@
  */
 
 import { db } from "@/db";
-import { investments, transactions } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
+import { accounts, investments, transactions } from "@/db/schema";
+import { and, eq, sql } from "drizzle-orm";
 import { isSession, requireApiSession } from "@/lib/server-auth";
 import { validate, sellSchema } from "@/lib/validation";
 import { apiHandler, apiSuccess, apiError } from "@/lib/api-utils";
@@ -118,6 +118,12 @@ export const POST = apiHandler(async (req, { log }) => {
         log.info("Investment updated (partial sell)", { id: existing.id, name: existing.name, newInvested, newCurrentValue, newUnits });
       }
 
+      // Credit the user-owned receiving account in the same transaction.
+      if (s.accountId) {
+        const [account] = await tx.select({ id: accounts.id }).from(accounts).where(and(eq(accounts.id, s.accountId), eq(accounts.userId, session.userId))).limit(1);
+        if (!account) throw new Error("Receiving account was not found");
+        await tx.update(accounts).set({ balance: sql`${accounts.balance} + ${saleAmount}`, updatedAt: new Date() }).where(and(eq(accounts.id, s.accountId), eq(accounts.userId, session.userId)));
+      }
       // Record the sale transaction
       await tx.insert(transactions).values({
         userId: session.userId,

@@ -1,27 +1,31 @@
-PersonalCFO combined repair, security, safe-bank-import, and investment-integrity update
+PersonalCFO consolidated update — apply to existing GitHub Desktop clone
 
-1. Extract the CONTENTS into the root of your existing GitHub Desktop PersonalCFO repository.
-2. Allow files to be replaced, then review the changes in GitHub Desktop.
-3. Add Vercel Production environment variables:
-   ALLOWED_ORIGINS=https://personal-cfo-snjo.vercel.app
-   APP_ORIGIN=https://personal-cfo-snjo.vercel.app
-   HEALTHCHECK_SECRET=<openssl rand -base64 32>
-4. Commit and push.
+1. Download and extract this ZIP.
+2. Open the personal-cfo-release folder.
+3. Copy its CONTENTS into the root of your existing PersonalCFO clone (the folder GitHub Desktop uses). Allow replacement of matching files.
+4. In GitHub Desktop, review changed files, commit, and push.
 
-Important investment changes:
-- Quick Entry investment purchases now require a Debit / Funding Account.
-- The server atomically creates the holding, reduces the selected account balance,
-  and creates an Investment Purchase expense transaction. This prevents cash and
-  investment value from being double-counted in net worth.
-- A purchase is rejected when the account does not belong to the user or has
-  insufficient balance.
-- Existing manually entered/imported investments continue to be supported.
+Production Vercel variables (Settings > Environment Variables > Production):
+ALLOWED_ORIGINS=https://personal-cfo-snjo.vercel.app
+APP_ORIGIN=https://personal-cfo-snjo.vercel.app
+HEALTHCHECK_SECRET=<run: openssl rand -base64 32>
+Never commit real secrets.
 
-Market changes:
-- Investment dashboard live polling now requests crypto, commodities, indices,
-  REITs and bonds in addition to stocks and mutual funds.
-- A crypto holding should use e.g. BTC-USD / ETH-USD. Commodity examples:
-  GOLDBEES.NS, SILVERBEES.NS, GC=F, SI=F.
-- A mutual fund requires a valid scheme code from its search selection.
+Included functional changes:
+- Fix login redirect proxy cookie mismatch.
+- First-party origin checks and response security headers.
+- Public health response is minimal; detailed diagnostics need a bearer secret.
+- Safe bank CSV/XLSX import ignores transaction IDs/UTR/RRN/cheque/reference columns and recognises bank debit/credit/narration formats.
+- Quick Entry investment purchase requires a debit account, verifies account ownership and funds, debits it atomically, and creates an Investment Purchase expense ledger record.
+- Investment top-ups also debit only the added amount atomically.
+- Investment sale validates and credits the selected receiving account atomically.
+- Live portfolio poller requests crypto, commodities, indices, REITs and bond ETFs in addition to stocks/MFs.
 
-Validated locally: TypeScript passed; 91/91 tests passed; production build passed.
+Deployment smoke test:
+1. Use a test account with a ₹10,000 bank balance.
+2. Add a ₹1,000 investment via Quick Entry. Confirm the bank is ₹9,000, investment is ₹1,000, and net worth has not risen merely because of the purchase.
+3. Add more units for ₹500. Confirm bank falls only by ₹500.
+4. Sell an investment and confirm receiving account balance increases by proceeds.
+5. Test BTC-USD and GOLDBEES.NS holdings, and an MF with a valid scheme code.
+
+Validation run locally: TypeScript passed; Jest 91/91 tests passed; production build passed. ESLint has 7 existing image/font warnings, no errors.
