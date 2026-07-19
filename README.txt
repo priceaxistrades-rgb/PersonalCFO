@@ -1,8 +1,13 @@
-Mutual Fund search UI + live-market symbol fix
+FINAL MUTUAL FUND SEARCH FIX
 
-Extract CONTENTS into the root of your existing PersonalCFO GitHub Desktop repository.
+Copy src/app/markets/AddWatch.tsx over the same file in your existing GitHub Desktop PersonalCFO repository. This is a single-file replacement.
 
-This replaces the old manual-only mutual fund scheme-code panel. Typing 2+ characters now searches AMFI/MFAPI and displays fund name + 6-digit scheme code, with a Track button for every result.
+This version calls the verified live /api/market/search endpoint directly on every input change (and retains a debounced retry). It also shows the actual API error rather than incorrectly saying no fund was found.
 
-Includes real-symbol resolution for crypto/commodity holdings.
-Validated: TypeScript passed, 91/91 tests passed, production build passed.
+Before commit, GitHub Desktop MUST show exactly:
+Modified: src/app/markets/AddWatch.tsx
+
+After Vercel says Ready, hard refresh /markets (Ctrl+Shift+R). Search PARAG.
+Expected: names and Track buttons. If an error occurs, send the visible red "Fund search error" text.
+
+Validated: TypeScript passed; Jest 91/91 passed; production build passed.

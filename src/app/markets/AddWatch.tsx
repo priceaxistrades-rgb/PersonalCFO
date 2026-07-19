@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Badge } from "@/components/ui/Card";
 import { Table, Tr, Td } from "@/components/ui/Table";
@@ -26,21 +26,30 @@ export function AddWatch() {
   const [busy, setBusy] = useState(false);
   const [mfResults, setMfResults] = useState<{ schemeCode: number; schemeName: string }[]>([]);
   const [mfSearching, setMfSearching] = useState(false);
+  const [mfError, setMfError] = useState("");
+
+  const searchFunds = useCallback(async (value: string) => {
+    const term = value.trim();
+    if (term.length < 2) { setMfResults([]); setMfError(""); return; }
+    setMfSearching(true); setMfError("");
+    try {
+      const res = await fetch(`/api/market/search?q=${encodeURIComponent(term)}`, { cache: "no-store" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || `Search unavailable (HTTP ${res.status})`);
+      const results = data?.results;
+      if (!Array.isArray(results)) throw new Error("The fund-search service returned an invalid response.");
+      setMfResults(results);
+    } catch (error) {
+      setMfResults([]);
+      setMfError(error instanceof Error ? error.message : "Unable to search mutual funds. Please try again.");
+    } finally { setMfSearching(false); }
+  }, []);
 
   useEffect(() => {
-    if (tab !== "mf" || query.trim().length < 2) { setMfResults([]); return; }
-    let active = true;
-    const timer = window.setTimeout(async () => {
-      setMfSearching(true);
-      try {
-        const res = await fetch(`/api/market/search?q=${encodeURIComponent(query.trim())}`);
-        const data = await res.json();
-        if (active) setMfResults(Array.isArray(data.results) ? data.results : []);
-      } catch { if (active) setMfResults([]); }
-      finally { if (active) setMfSearching(false); }
-    }, 250);
-    return () => { active = false; window.clearTimeout(timer); };
-  }, [query, tab]);
+    if (tab !== "mf") return;
+    const timer = window.setTimeout(() => void searchFunds(query), 250);
+    return () => window.clearTimeout(timer);
+  }, [query, tab, searchFunds]);
 
   const add = async (symbol: string, name: string, kind: string) => {
     setBusy(true);
@@ -122,13 +131,14 @@ export function AddWatch() {
         <div className="space-y-4">
           <input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Enter exact AMFI scheme code or mutual fund keyword…"
+            onChange={(e) => { const value = e.target.value; setQuery(value); void searchFunds(value); }}
+            placeholder="Search mutual funds by name… e.g. Parag, HDFC, SBI"
             className="input font-medium"
           />
           <div className="rounded-xl border border-white/[0.06] bg-surface-2 overflow-hidden">
             {mfSearching && <p className="p-4 text-center text-xs text-slate-400">Searching AMFI mutual funds…</p>}
-            {!mfSearching && query.trim().length >= 2 && mfResults.length === 0 && <p className="p-4 text-center text-xs text-slate-400">No matching fund found. Try a different name or use the 6-digit AMFI scheme code.</p>}
+            {mfError && <p className="p-4 text-center text-xs text-red-400">Fund search error: {mfError}</p>}
+            {!mfSearching && !mfError && query.trim().length >= 2 && mfResults.length === 0 && <p className="p-4 text-center text-xs text-slate-400">No matching fund found. Try a different name or use the 6-digit AMFI scheme code.</p>}
             {mfResults.map((fund) => (
               <div key={fund.schemeCode} className="p-3 border-b border-white/[0.06] last:border-0 flex items-center justify-between gap-3">
                 <div className="min-w-0"><p className="text-xs font-bold text-white truncate">{fund.schemeName}</p><p className="text-[10px] font-mono text-indigo-400 mt-0.5">AMFI Scheme Code: {fund.schemeCode}</p></div>
