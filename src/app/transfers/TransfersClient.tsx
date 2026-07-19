@@ -30,6 +30,7 @@ export function TransfersClient({ accounts: initialAccounts }: { accounts: Accou
 
   useEffect(() => {
     if (toAccountId === fromAccountId || !accountMap.has(toAccountId)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setToAccountId(destinationOptions[0]?.id || 0);
     }
   }, [accountMap, destinationOptions, fromAccountId, toAccountId]);
@@ -45,7 +46,10 @@ export function TransfersClient({ accounts: initialAccounts }: { accounts: Accou
     }
   }, []);
 
-  useEffect(() => { void loadHistory(); }, [loadHistory]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadHistory();
+  }, [loadHistory]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();

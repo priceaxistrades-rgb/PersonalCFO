@@ -8,7 +8,7 @@ export default function ServerError() {
         
         <h1 className="text-4xl font-black tracking-tight mb-3">Something went wrong</h1>
         <p className="text-slate-400 mb-8 text-lg">
-          We're experiencing technical difficulties. Our team has been notified.
+          We&apos;re experiencing technical difficulties. Our team has been notified.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">

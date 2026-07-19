@@ -8,7 +8,7 @@ export default function NotFound() {
         
         <h1 className="text-4xl font-black tracking-tight mb-3">Page not found</h1>
         <p className="text-slate-400 mb-8 text-lg">
-          The financial page you're looking for doesn't exist or has moved.
+          The financial page you&apos;re looking for doesn&apos;t exist or has moved.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">

@@ -165,7 +165,7 @@ export const DELETE = apiHandler(async (req, { log }) => {
     }
 
     await db.delete(investments).where(and(eq(investments.id, id), eq(investments.userId, session.userId)));
-    log.info("Investment deleted", { id, name: existing.name }); writeAuditLog({ userId: session.userId, action: "delete", table: "investments", recordId: id });
+    log.info("Investment deleted", { id }); writeAuditLog({ userId: session.userId, action: "delete", table: "investments", recordId: id });
     return apiSuccess();
   } catch (err) {
     return apiError("Failed to delete investment", 500, undefined, err);

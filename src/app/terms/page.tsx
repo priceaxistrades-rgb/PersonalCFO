@@ -12,7 +12,7 @@ export default function TermsOfService() {
       <div className="prose prose-invert max-w-none space-y-8 text-slate-300">
         <section>
           <h2 className="text-2xl font-bold text-white">1. Acceptance of Terms</h2>
-          <p>By accessing or using PersonalCFO ("the Service"), you agree to be bound by these Terms of Service.</p>
+          <p>By accessing or using PersonalCFO (&quot;the Service&quot;), you agree to be bound by these Terms of Service.</p>
         </section>
 
         <section>
