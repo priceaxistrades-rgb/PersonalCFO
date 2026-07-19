@@ -1,11 +1,8 @@
-Market search and live-price fix
+Mutual Fund search UI + live-market symbol fix
 
-Copy the contents into your existing PersonalCFO GitHub Desktop repository.
+Extract CONTENTS into the root of your existing PersonalCFO GitHub Desktop repository.
 
-Fixes:
-- Mutual fund search now calls MFAPI's lightweight search endpoint, instead of downloading the complete 5MB fund directory during a user search. Fund names should populate promptly.
-- Market holdings resolve a real Yahoo symbol for crypto/commodities/REITs/bonds before polling. A holding without a manual symbol receives its supported default (for example Crypto -> BTC-USD, Gold -> GOLDBEES.NS).
-- Live Markets deduplication now preserves separate kinds correctly.
+This replaces the old manual-only mutual fund scheme-code panel. Typing 2+ characters now searches AMFI/MFAPI and displays fund name + 6-digit scheme code, with a Track button for every result.
 
-Test symbols: BTC-USD, ETH-USD, GOLDBEES.NS, SILVERBEES.NS, GC=F, SI=F.
-Validated: TypeScript passed, Jest 91/91 passed, build passed.
+Includes real-symbol resolution for crypto/commodity holdings.
+Validated: TypeScript passed, 91/91 tests passed, production build passed.

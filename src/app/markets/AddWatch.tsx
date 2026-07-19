@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Badge } from "@/components/ui/Card";
 import { Table, Tr, Td } from "@/components/ui/Table";
@@ -24,6 +24,23 @@ export function AddWatch() {
   const [customName, setCustomName] = useState("");
   const [customKind, setCustomKind] = useState("stock");
   const [busy, setBusy] = useState(false);
+  const [mfResults, setMfResults] = useState<{ schemeCode: number; schemeName: string }[]>([]);
+  const [mfSearching, setMfSearching] = useState(false);
+
+  useEffect(() => {
+    if (tab !== "mf" || query.trim().length < 2) { setMfResults([]); return; }
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      setMfSearching(true);
+      try {
+        const res = await fetch(`/api/market/search?q=${encodeURIComponent(query.trim())}`);
+        const data = await res.json();
+        if (active) setMfResults(Array.isArray(data.results) ? data.results : []);
+      } catch { if (active) setMfResults([]); }
+      finally { if (active) setMfSearching(false); }
+    }, 250);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [query, tab]);
 
   const add = async (symbol: string, name: string, kind: string) => {
     setBusy(true);
@@ -109,18 +126,20 @@ export function AddWatch() {
             placeholder="Enter exact AMFI scheme code or mutual fund keyword…"
             className="input font-medium"
           />
-          <div className="p-4 rounded-xl border border-white/[0.06] bg-surface-2 text-center text-xs text-slate-400">
-            To link mutual funds, enter the 6-digit AMFI scheme code (e.g. `122639` for Parag Parikh Flexi Cap) and click Track Fund.
-            <div className="mt-3">
-              <button
-                onClick={() => query.trim() && add(query.trim(), `Mutual Fund (${query.trim()})`, "mf")}
-                disabled={busy || !query.trim()}
-                className="btn btn-primary px-4 py-2 text-xs font-bold rounded-xl"
-              >
-                Track Scheme Code #{query || "XXXXXX"}
-              </button>
-            </div>
+          <div className="rounded-xl border border-white/[0.06] bg-surface-2 overflow-hidden">
+            {mfSearching && <p className="p-4 text-center text-xs text-slate-400">Searching AMFI mutual funds…</p>}
+            {!mfSearching && query.trim().length >= 2 && mfResults.length === 0 && <p className="p-4 text-center text-xs text-slate-400">No matching fund found. Try a different name or use the 6-digit AMFI scheme code.</p>}
+            {mfResults.map((fund) => (
+              <div key={fund.schemeCode} className="p-3 border-b border-white/[0.06] last:border-0 flex items-center justify-between gap-3">
+                <div className="min-w-0"><p className="text-xs font-bold text-white truncate">{fund.schemeName}</p><p className="text-[10px] font-mono text-indigo-400 mt-0.5">AMFI Scheme Code: {fund.schemeCode}</p></div>
+                <button onClick={() => add(String(fund.schemeCode), fund.schemeName, "mf")} disabled={busy} className="btn btn-primary px-3 py-1.5 text-xs font-bold rounded-lg shrink-0"><IconPlus size={13} /> Track</button>
+              </div>
+            ))}
+            {query.trim().length < 2 && <p className="p-4 text-center text-xs text-slate-400">Type at least two letters, such as “Parag”, “HDFC”, or “SBI”, to search AMFI fund names.</p>}
           </div>
+          {/^\d{6}$/.test(query.trim()) && (
+            <button onClick={() => add(query.trim(), `Mutual Fund (${query.trim()})`, "mf")} disabled={busy} className="btn btn-secondary px-4 py-2 text-xs font-bold rounded-xl">Track scheme code {query.trim()}</button>
+          )}
         </div>
       )}
 
